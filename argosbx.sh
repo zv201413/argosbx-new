@@ -40,7 +40,6 @@ export ippz=${ippz:-''}
 export warp=${warp:-''}
 export name=${name:-''}
 export oap=${oap:-''}
-[ -z "${novps+x}" ] || force_nohup=yes
 v46url="https://icanhazip.com"
 agsbxurl="https://raw.githubusercontent.com/yonggekkk/argosbx/main/argosbx.sh"
 showmode(){
@@ -825,6 +824,46 @@ cat >> "$HOME/agsbx/xr.json" <<EOF
   }
 }
 EOF
+if [ "$force_nohup" != "yes" ] && pidof systemd >/dev/null 2>&1 && [ "$EUID" -eq 0 ]; then
+cat > /etc/systemd/system/xr.service <<EOF
+[Unit]
+Description=xr service
+After=network.target
+[Service]
+Type=simple
+NoNewPrivileges=yes
+TimeoutStartSec=0
+ExecStart=/root/agsbx/xray run -c /root/agsbx/xr.json
+Restart=on-failure
+RestartSec=5s
+StandardOutput=journal
+StandardError=journal
+[Install]
+WantedBy=multi-user.target
+EOF
+systemctl daemon-reload >/dev/null 2>&1
+systemctl enable xr >/dev/null 2>&1
+systemctl start xr >/dev/null 2>&1
+elif command -v rc-service >/dev/null 2>&1 && [ "$EUID" -eq 0 ]; then
+cat > /etc/init.d/xray <<EOF
+#!/sbin/openrc-run
+description="xr service"
+command="/root/agsbx/xray"
+command_args="run -c /root/agsbx/xr.json"
+command_background=yes
+pidfile="/run/xray.pid"
+command_background="yes"
+depend() {
+need net
+}
+EOF
+chmod +x /etc/init.d/xray >/dev/null 2>&1
+rc-update add xray default >/dev/null 2>&1
+rc-service xray start >/dev/null 2>&1
+else
+nohup "$HOME/agsbx/xray" run -c "$HOME/agsbx/xr.json" >/dev/null 2>&1 &
+fi
+fi
 if [ -e "$HOME/agsbx/sb.json" ]; then
 sed -i '${s/,\s*$//}' "$HOME/agsbx/sb.json"
 cat >> "$HOME/agsbx/sb.json" <<EOF
@@ -876,11 +915,7 @@ cat >> "$HOME/agsbx/sb.json" <<EOF
   }
 }
 EOF
-# 如果强制使用nohup或没有systemd权限，则使用nohup启动
-if [ "$force_nohup" = "yes" ] || [ "$EUID" -ne 0 ] || ! pidof systemd >/dev/null 2>&1; then
-nohup "$HOME/agsbx/sing-box" run -c "$HOME/agsbx/sb.json" >/dev/null 2>&1 &
-else
-if pidof systemd >/dev/null 2>if pidof systemd >/dev/null 2>&1 && [ "$EUID" -eq 0 ]1 if pidof systemd >/dev/null 2>&1 && [ "$EUID" -eq 0 ]if pidof systemd >/dev/null 2>&1 && [ "$EUID" -eq 0 ] [ "$EUID" -eq 0 ]; then; then
+if [ "$force_nohup" != "yes" ] && pidof systemd >/dev/null 2>&1 && [ "$EUID" -eq 0 ]; then
 cat > /etc/systemd/system/sb.service <<EOF
 [Unit]
 Description=sb service
@@ -920,7 +955,6 @@ else
 nohup "$HOME/agsbx/sing-box" run -c "$HOME/agsbx/sb.json" >/dev/null 2>&1 &
 fi
 fi
-fi
 }
 ins(){
 if [ "$hyp" != yes ] && [ "$tup" != yes ] && [ "$anp" != yes ] && [ "$arp" != yes ] && [ "$ssp" != yes ]; then
@@ -956,13 +990,9 @@ chmod +x "$HOME/agsbx/cloudflared"
 fi
 if [ "$argo" = "vmpt" ]; then argoport=$(cat "$HOME/agsbx/port_vm_ws" 2>/dev/null); echo "Vmess" > "$HOME/agsbx/vlvm"; elif [ "$argo" = "vwpt" ]; then argoport=$(cat "$HOME/agsbx/port_vw" 2>/dev/null); echo "Vless" > "$HOME/agsbx/vlvm"; fi; echo "$argoport" > "$HOME/agsbx/argoport.log"
 if [ -n "${ARGO_DOMAIN}" ] && [ -n "${ARGO_AUTH}" ]; then
-    argoname='固定'
-    # 如果强制使用nohup或没有systemd权限，则使用nohup启动
-    if [ "$force_nohup" = "yes" ] || [ "$EUID" -ne 0 ] || ! pidof systemd >/dev/null 2>&1; then
-        nohup "$HOME/agsbx/cloudflared" tunnel --no-autoupdate --edge-ip-version auto --protocol http2 run --token "${ARGO_AUTH}" >/dev/null 2>&1 &
-    else
-        if pidof systemd >/dev/null 2>&1 && [ "$EUID" -eq 0 ]; then
-            cat > /etc/systemd/system/argo.service <<EOF
+argoname='固定'
+if [ "$force_nohup" != "yes" ] && pidof systemd >/dev/null 2>&1 && [ "$EUID" -eq 0 ]; then
+cat > /etc/systemd/system/argo.service <<EOF
 [Unit]
 Description=argo service
 After=network.target
@@ -976,11 +1006,11 @@ RestartSec=5s
 [Install]
 WantedBy=multi-user.target
 EOF
-            systemctl daemon-reload >/dev/null 2>&1
-            systemctl enable argo >/dev/null 2>&1
-            systemctl start argo >/dev/null 2>&1
-        elif command -v rc-service >/dev/null 2>&1 && [ "$EUID" -eq 0 ]; then
-            cat > /etc/init.d/argo <<EOF
+systemctl daemon-reload >/dev/null 2>&1
+systemctl enable argo >/dev/null 2>&1
+systemctl start argo >/dev/null 2>&1
+elif command -v rc-service >/dev/null 2>&1 && [ "$EUID" -eq 0 ]; then
+cat > /etc/init.d/argo <<EOF
 #!/sbin/openrc-run
 description="argo service"
 command="/root/agsbx/cloudflared tunnel"
@@ -991,13 +1021,12 @@ depend() {
 need net
 }
 EOF
-            chmod +x /etc/init.d/argo >/dev/null 2>&1
-            rc-update add argo default >/dev/null 2>&1
-            rc-service argo start >/dev/null 2>&1
-        else
-            nohup "$HOME/agsbx/cloudflared" tunnel --no-autoupdate --edge-ip-version auto --protocol http2 run --token "${ARGO_AUTH}" >/dev/null 2>&1 &
-        fi
-    fi
+chmod +x /etc/init.d/argo >/dev/null 2>&1
+rc-update add argo default >/dev/null 2>&1
+rc-service argo start >/dev/null 2>&1
+else
+nohup "$HOME/agsbx/cloudflared" tunnel --no-autoupdate --edge-ip-version auto --protocol http2 run --token "${ARGO_AUTH}" >/dev/null 2>&1 &
+fi
 echo "${ARGO_DOMAIN}" > "$HOME/agsbx/sbargoym.log"
 echo "${ARGO_AUTH}" > "$HOME/agsbx/sbargotoken.log"
 else
