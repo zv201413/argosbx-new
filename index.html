@@ -1,0 +1,817 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ArgoSBX一键SSH命令生成器-甬哥ygkkk</title>
+  <style>
+    :root {
+      --bg:#0b1020;
+      --card:#121831;
+      --ink:#e9edf7;
+      --sub:#b7c1d9;
+      --line:#263255;
+      --acc:#4f7cff;
+      --ok:#22c55e;
+      --warn:#f59e0b;
+      --err:#ef4444;
+      --input-bg:#0d1430;
+      --button-bg-dark:#1a2346;
+      --button-bg-light:#121a39;
+      --body-bg: linear-gradient(180deg, var(--bg) 0%, #0e1530 100%);
+    }
+    .light-mode {
+      --bg:#ffffff;
+      --card:#ffffff;
+      --ink:#1a202c;
+      --sub:#4a5568;
+      --line:#e2e8f0;
+      --acc:#4f7cff;
+      --ok:#22c55e;
+      --warn:#f59e0b;
+      --err:#ef4444;
+      --input-bg:#ffffff;
+      --button-bg-dark:#e2e8f0;
+      --button-bg-light:#f0f4f9;
+      --body-bg: var(--bg);
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      background: var(--body-bg);
+      color: var(--ink);
+      font: 16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, "Helvetica Neue", Arial;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    .wrap {
+      max-width: 1450px; 
+      margin: 32px auto;
+      padding: 0 20px;
+    }
+    header {
+      position: relative;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+    header h1 {
+      font-size: 36px;
+      margin-bottom: 6px;
+      text-align: center;
+    }
+    header p {
+      margin: 0;
+      font-size: 14px;
+      color: var(--sub);
+      line-height: 1.6;
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
+      text-align: left;
+    }
+    a {
+      color: var(--acc);
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: auto auto auto;
+      gap: 20px;
+    }
+    @media (max-width: 1100px) {
+      .grid {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto;
+      }
+    }
+    .protocol-port {
+      grid-column: 1;
+      grid-row: 1 / 3;
+    }
+    .outbound-warp {
+      grid-column: 2;
+      grid-row: 1;
+    }
+    .argo-tunnel {
+      grid-column: 2;
+      grid-row: 2;
+    }
+    .shortcut-commands-card {
+      grid-column: 1 / 3;
+      grid-row: 3;
+    }
+    .out {
+      grid-column: 1 / 3;
+      grid-row: 4;
+    }
+    .card {
+      background: rgba(255, 255, 255, .04);
+      backdrop-filter: blur(6px);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 20px;
+      transition: background-color 0.3s, border-color 0.3s;
+    }
+    .light-mode .card {
+      background: var(--card);
+      border-color: var(--line);
+    }
+    .card h2 {
+      margin: 0 0 12px;
+      font-size: 20px;
+      color: var(--ink);
+    }
+    .card h3 {
+      margin: 0 0 12px;
+      font-size: 16px;
+      color: var(--ink);
+    }
+    .protocol-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+    .protocol-item label {
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .protocol-item input[type="text"] {
+      flex-grow: 1;
+      min-width: 100px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--input-bg);
+      color: var(--ink);
+      outline: none;
+      transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+    }
+    .protocol-grid {
+      display: grid;
+      grid-template-columns: auto 1fr; 
+      gap: 10px 16px;
+      align-items: center;
+    }
+    .protocol-grid .protocol-item {
+      margin: 0; 
+    }
+    .row:not(.protocol-port .row) {
+      display: grid;
+      grid-template-columns: 240px 1fr; 
+      gap: 16px;
+      align-items: center;
+      margin: 8px 0;
+    }
+    @media (max-width: 600px) {
+      .row:not(.protocol-port .row) {
+        grid-template-columns: 1fr;
+      }
+    }
+    label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    input[type="text"], input[type="number"], select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--input-bg);
+      color: var(--ink);
+      outline: none;
+      transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+    }
+    input[disabled] {
+      opacity: .5;
+    }
+    .switch {
+      position: relative;
+      width: 48px;
+      height: 28px;
+      background: #263255;
+      border-radius: 99px;
+      cursor: pointer;
+      transition: .2s;
+    }
+    .light-mode .switch {
+      background: var(--sub);
+    }
+    .switch::after {
+      content: "";
+      position: absolute;
+      inset: 3px auto 3px 3px;
+      width: 22px;
+      border-radius: 50%;
+      background: white;
+      transition: .2s;
+    }
+    .switch.on {
+      background: var(--acc);
+    }
+    .switch.on::after {
+      left: auto;
+      right: 3px;
+    }
+    .pill {
+      display: inline-block;
+      font-size: 12px;
+      padding: 2px 8px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--sub);
+      margin-left: 6px;
+      transition: border-color 0.3s, color 0.3s;
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    button {
+      cursor: pointer;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, var(--button-bg-dark), var(--button-bg-light));
+      color: var(--ink);
+      padding: 10px 14px;
+      border-radius: 12px;
+      transition: background 0.3s, color 0.3s, border-color 0.3s;
+    }
+    button.primary {
+      background: linear-gradient(180deg, #4f7cff, #385fdf);
+      border-color: #476de2;
+      color: #fff;
+    }
+    button.ghost {
+      background: transparent;
+    }
+    .out {
+      position: relative;
+    }
+    textarea {
+      width: 100%;
+      min-height: 130px;
+      background: #0a1128;
+      color: #dbeafe;
+      border: 1px dashed #3752a6;
+      border-radius: 12px;
+      padding: 12px;
+      white-space: pre;
+      resize: vertical;
+      transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+    }
+    .light-mode textarea {
+      background: #f0f4f9;
+      color: #1a202c;
+      border-color: #929faf;
+    }
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin: 0 0 12px;
+    }
+    .tab {
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      color: var(--sub);
+      cursor: pointer;
+      transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+    }
+    .tab.active {
+      border-color: #5a73c9;
+      color: var(--ink);
+      background: rgba(79, 124, 255, .15);
+    }
+    .shortcut-commands-content {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .shortcut-commands-content p {
+      margin: 0;
+      white-space: nowrap;
+    }
+    .shortcut-commands-content .command-button {
+      background: var(--button-bg-dark);
+      color: var(--ink);
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+    }
+    .shortcut-commands-content .command-button:hover {
+      background: var(--line);
+    }
+    .input-with-button {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .input-with-button input[type="text"] {
+      flex: 1;
+    }
+    .input-with-button button {
+      padding: 8px 12px;
+      font-size: 14px;
+      white-space: nowrap;
+      border-radius: 8px;
+    }
+    .protocol-group {
+      margin-bottom: 16px;
+    }
+    .protocol-group.separator {
+      border-bottom: 1px dotted var(--line);
+      padding-bottom: 16px;
+    }
+    .theme-switch {
+      position: absolute;
+      top: 0;
+      right: 0;
+      z-index: 10;
+      padding: 10px;
+    }
+    .theme-switch-icon {
+      width: 24px;
+      height: 24px;
+      cursor: pointer;
+      color: var(--ink);
+      transition: color 0.3s;
+    }
+    .theme-switch-checkbox {
+      display: none;
+    }
+    .theme-switch-label {
+      cursor: pointer;
+    }
+    .command-type-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .command-type-row label {
+      white-space: nowrap;
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="theme-switch">
+        <input type="checkbox" id="theme-switch-checkbox" class="theme-switch-checkbox">
+        <label for="theme-switch-checkbox" class="theme-switch-label">
+          <svg class="theme-switch-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </label>
+      </div>
+      <h1>ArgoSBX小钢炮脚本💣一键SSH命令生成器 V25.11.20</h1>
+      <p>
+        甬哥Github项目：
+        <a href="https://github.com/yonggekkk" target="_blank">github.com/yonggekkk</a><br>
+        甬哥Blogger博客：
+        <a href="https://ygkkk.blogspot.com" target="_blank">ygkkk.blogspot.com</a><br>
+        甬哥YouTube频道：
+        <a href="https://www.youtube.com/@ygkkk" target="_blank">www.youtube.com/@ygkkk</a><br>
+      </p>
+    </header>
+
+    <div class="grid">
+      <section class="card protocol-port">
+        <h2>必选内核协议端口：</h2>
+        <div class="protocol-group separator">
+          <h3>Xray可选协议：</h3>
+          <div class="protocol-grid">
+            <label><input type="checkbox" data-proto="vlpt"> Vless-tcp-reality-vision <span class="pill">vlpt</span></label><input type="text" placeholder="留空则随机端口" data-port="vlpt">
+            <label><input type="checkbox" data-proto="xhpt"> Vless-xhttp-reality <span class="pill">xhpt</span></label><input type="text" placeholder="留空则随机端口" data-port="xhpt">
+            <label><input type="checkbox" data-proto="vxpt"> Vless-xhttp <span class="pill">vxpt</span></label><input type="text" placeholder="留空则随机端口（支持CDN优选）" data-port="vxpt">
+            <label><input type="checkbox" data-proto="vwpt"> Vless-ws <span class="pill">vwpt</span></label><input type="text" placeholder="留空则随机端口（支持CDN优选，固定隧道必填URL端口）" data-port="vwpt">
+          </div>
+        </div>
+        <div class="protocol-group separator">
+          <h3>Singbox可选协议：</h3>
+          <div class="protocol-grid">
+            <label><input type="checkbox" data-proto="hypt"> Hysteria2 <span class="pill">hypt</span></label><input type="text" placeholder="留空则随机端口" data-port="hypt">
+            <label><input type="checkbox" data-proto="tupt"> Tuic <span class="pill">tupt</span></label><input type="text" placeholder="留空则随机端口" data-port="tupt">
+            <label><input type="checkbox" data-proto="anpt"> AnyTLS <span class="pill">anpt</span></label><input type="text" placeholder="留空则随机端口" data-port="anpt">
+            <label><input type="checkbox" data-proto="arpt"> Any-reality <span class="pill">arpt</span></label><input type="text" placeholder="留空则随机端口" data-port="arpt">
+            <label><input type="checkbox" data-proto="sspt"> Shadowsocks-2022 <span class="pill">sspt</span></label><input type="text" placeholder="留空则随机端口" data-port="sspt">
+          </div>
+        </div>
+        <div class="protocol-group separator">
+          <h3>Xray/Singbox自动分配协议：</h3>
+          <div class="protocol-grid">
+            <label><input type="checkbox" data-proto="sopt"> Socks5 <span class="pill">sopt</span></label><input type="text" placeholder="留空则随机端口" data-port="sopt">
+            <label><input type="checkbox" data-proto="vmpt"> Vmess-ws <span class="pill">vmpt</span></label><input type="text" placeholder="留空则随机端口（支持CDN优选，固定隧道必填URL端口）" data-port="vmpt">
+          </div>
+        </div>
+      </section>
+
+      <section class="card outbound-warp">
+        <h2>相关全局配置调整： </h2>
+        <div class="row">
+          <label>UUID 密码 <span class="pill">uuid</span></label>
+          <div class="input-with-button">
+            <input id="uuid" type="text" placeholder="留空则随机生成uuid密码"/>
+            <button id="generateUuidBtn" type="button" class="primary">生成 UUID</button>
+          </div>
+        </div>
+        <div class="row"><label>Reality 域名 <span class="pill">reym</span></label><input id="reym" type="text" placeholder="留空则默认apple.com"/></div>
+        <div class="row"><label>CF解析IP的域名<span class="pill">cdnym</span></label><input id="cdnym" type="text" placeholder="Vmess-ws、Vless-xhttp/ws启用80、回源CDN时可用" disabled/></div>
+        <div class="row"><label>套WARP-IP出站 <span class="pill">warp</span></label>
+          <select id="warp">
+            <option value="">默认 服务器本地IP出站</option>
+            <option value="s">1、Singbox套WARP IPv4+IPv6、Xray本地IP</option>
+            <option value="s4">2、Singbox套WARP IPv4、Xray本地IP</option>
+            <option value="s6">3、Singbox套WARP IPv6、Xray本地IP</option>
+            <option value="x">4、Singbox本地IP、Xray套WARP IPv4+IPv6</option>
+            <option value="x4">5、Singbox本地IP、Xray套WARP IPv4</option>
+            <option value="x6">6、Singbox本地IP、Xray套WARP IPv6</option>
+            <option value="s4x4">7、Singbox+Xray同时套WARP IPv4</option>
+            <option value="s4x6">8、Singbox套WARP IPv4、Xray套WARP IPv6</option>
+            <option value="s6x4">9、Singbox套WARP IPv6、Xray套WARP IPv4</option>
+            <option value="s6x6">10、Singbox+Xray同时套WARP IPv6</option>
+            <option value="sx4">11、Singbox套WARP IPv4+IPv6、Xray套WARP IPv4</option>
+            <option value="sx6">12、Singbox套WARP IPv4+IPv6、Xray套WARP IPv6</option>
+            <option value="s4x">13、Singbox套WARP IPv4、Xray套WARP IPv4+IPv6</option>
+            <option value="s6x">14、Singbox套WARP IPv6、Xray套WARP IPv4+IPv6</option>
+            <option value="sx">15、Singbox+Xray同时套WARP IPv4+IPv6</option>
+          </select>
+        </div>
+        
+        <div class="row"><label>IPv4/IPv6 配置导出 <span class="pill">ippz</span></label>
+          <select id="ippz">
+            <option value="">默认 自动</option>
+            <option value="4">导出 IPv4</option>
+            <option value="6">导出 IPv6</option>
+          </select>
+        </div>
+        <div class="row">
+          <label>当前系统开放所有端口 <span class="pill">oap</span></label>
+          <select id="oap">
+            <option value="">默认 关闭</option>
+            <option value="y">开启 执行一次即可关闭</option>
+          </select>
+        </div>
+        <div class="row"><label>导出节点名称前缀 <span class="pill">name</span></label><input id="name" type="text" placeholder="留空则默认协议名前缀"/></div>
+      </section>
+
+      <section class="card argo-tunnel">
+        <h2>Argo临时/固定隧道CDN：</h2>
+        <div class="row">
+          <label>启用Argo隧道开关 <span class="pill">argo</span></label>
+          <select id="argoSelect">
+            <option value="">默认 关闭</option>
+            <option value="vwpt">启用Vless-ws的Argo隧道 </option>
+            <option value="vmpt">启用Vmess-ws的Argo隧道 </option>
+          </select>
+        </div>
+        <div class="row"><label>固定隧道CF域名 <span class="pill">agn</span></label><input id="agn" type="text" placeholder="Zero Trust已设置有子域名称的CF域名，留空则临时隧道" disabled></div>
+        <div class="row"><label>固定隧道Token <span class="pill">agk</span></label><input id="agk" type="text" placeholder="Zero Trust已提取ey开头的秘钥，留空则临时隧道" disabled></div>
+      </section>
+
+      <section class="card shortcut-commands-card">
+        <h2>如已安装脚本，可用以下快捷方式：</h2>
+        <div class="shortcut-commands-content">
+          <button class="command-button" data-command="list">节点显示命令：list</button>
+          <button class="command-button" data-command="del">卸载脚本命令：del</button>
+          <button class="command-button" data-command="upx">升级Xray内核：upx</button>
+          <button class="command-button" data-command="ups">升级Singbox内核：ups</button>
+          <button class="command-button" data-command="res">重启脚本命令：res</button>
+          <button class="command-button" data-command="rep">调整变量、更新脚本命令（注:变量设置完成后再点击）：rep</button>
+        </div>
+      </section>
+
+      <section class="card out">
+        <div class="tabs">
+          <h2>进入服务器的SSH界面，复制下方生成的一键脚本命令，回车一次搞定</h2>
+        </div>
+        <div class="command-type-row">
+            <label>命令类型选择：</label>
+            <label style="margin-bottom: 0;"><input type="radio" name="commandType" value="curl" checked> curl</label>
+            <label style="margin-bottom: 0;"><input type="radio" name="commandType" value="wget"> wget</label>
+        </div>
+        <textarea id="output" spellcheck="false"></textarea>
+        <div class="actions">
+          <button id="reset">重置</button>
+          <button id="copy">复制</button>
+        </div>
+        <p style="margin-top: 10px;">相关细节说明，请参考ArgoSBX小钢炮脚本项目💣：<a href="https://github.com/yonggekkk/argosbx" target="_blank">github.com/yonggekkk/argosbx</a></p>
+1、ArgoSBX一键SSH命令生成器发布，只要点几下，各大代理协议任你选：<a href="https://youtu.be/4u6W4c-t3oU" target="_blank">点击视频教程</a></p>
+2、ArgoSBX内置15种WARP出站组合，轻松替代独立的WARP脚本：<a href="https://youtu.be/iywjT8fIka4" target="_blank">点击视频教程</a></p>
+3、代理节点的IP、端口被封依旧可用！ArgoSBX脚本套CDN优选4大方案：<a href="https://youtu.be/RnUT1CNbCr8" target="_blank">点击视频教程</a></p>
+4、VPS+容器搭建最强CDN节点；独家解读Argo临时/固定隧道区别：<a href="https://youtu.be/K35NhrNiLK8" target="_blank">点击视频教程</a></p>
+5、ArgoSBX更新：VLESS抗量子加密；80端口开启TLS，无需域名CDN：<a href="https://youtu.be/X8BFVyeiY9g" target="_blank">点击视频教程</a></p>
+        安卓手机客户端推荐：<a href="https://github.com/starifly/NekoBoxForAndroid/releases" target="_blank">Nekobox-starifly版 (全协议支持)</a>、<a href="https://github.com/2dust/v2rayNG/releases" target="_blank">V2rayNG官方版</a><br>
+        电脑win客户端推荐：<a href="https://github.com/2dust/v2rayN/releases" target="_blank">V2rayN官方版 (全协议支持)</a><br>
+        苹果IOS客户端推荐：Happ、OneXray、Streisand
+      </p>
+      </section>
+    </div>
+  </div>
+
+<script>
+(function(){
+  const CURL = 'bash <(curl -Ls https://raw.githubusercontent.com/yonggekkk/argosbx/main/argosbx.sh)';
+  const WGET = 'bash <(wget -qO- https://raw.githubusercontent.com/yonggekkk/argosbx/main/argosbx.sh)';
+  const protoKeys = ['sopt','vmpt','vlpt','xhpt','vxpt','vwpt','arpt','anpt','hypt','tupt','sspt'];
+  const optIds = ['warp','ippz','uuid','reym','cdnym','name', 'oap'];
+
+  const argoSelect = document.getElementById('argoSelect');
+  const agn = document.getElementById('agn');
+  const agk = document.getElementById('agk');
+  const vmessWsCheckbox = document.querySelector('[data-proto="vmpt"]');
+  const vlessWsVCheckbox = document.querySelector('[data-proto="vwpt"]');
+  const vlessXhttpCheckbox = document.querySelector('[data-proto="vxpt"]');
+  const cdnymInput = document.getElementById('cdnym');
+  const output = document.getElementById('output');
+  const allInputs = document.querySelectorAll('input, select');
+  const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+  const textInputs = document.querySelectorAll('input[type="text"]');
+  const ippzSelect = document.getElementById('ippz');
+  const oapSelect = document.getElementById('oap');
+  const generateUuidBtn = document.getElementById('generateUuidBtn');
+  const uuidInput = document.getElementById('uuid');
+  const themeSwitchCheckbox = document.getElementById('theme-switch-checkbox');
+  const commandTypeRadios = document.querySelectorAll('input[name="commandType"]');
+
+  function initTheme() {
+    const isLightMode = localStorage.getItem('theme') === 'light';
+    if (isLightMode) {
+      document.body.classList.add('light-mode');
+      themeSwitchCheckbox.checked = true;
+    }
+  }
+
+  function toggleTheme() {
+    document.body.classList.toggle('light-mode');
+    const isLightMode = document.body.classList.contains('light-mode');
+    localStorage.setItem('theme', isLightMode ? 'light' : 'dark');
+  }
+
+  themeSwitchCheckbox.addEventListener('change', toggleTheme);
+
+  function updateArgoState(argoValue) {
+    const isEnabled = argoValue !== '';
+    if (!isEnabled) {
+      agn.value = '';
+      agk.value = '';
+    }
+    [agn, agk].forEach(i => i.disabled = !isEnabled);
+  }
+
+  function resetForm(preserveIppz = false) {
+    checkboxes.forEach(cb => {
+        cb.checked = false;
+    });
+    textInputs.forEach(inp => {
+        inp.value = '';
+    });
+    document.getElementById('warp').value = '';
+    if (!preserveIppz) {
+        ippzSelect.value = '';
+    }
+    oapSelect.value = '';
+    document.getElementById('uuid').value = '';
+    document.getElementById('reym').value = '';
+    document.getElementById('name').value = '';
+    argoSelect.value = '';
+    updateArgoState('');
+    updateCdnymState();
+  }
+
+  function updateCdnymState() {
+      const isAnyProtocolChecked = vmessWsCheckbox.checked || vlessXhttpCheckbox.checked || vlessWsVCheckbox.checked;
+      
+      cdnymInput.disabled = !isAnyProtocolChecked;
+      
+      if (!isAnyProtocolChecked) {
+          cdnymInput.value = '';
+      }
+      render();
+  }
+
+  argoSelect.addEventListener('change', () => {
+    const argoValue = argoSelect.value;
+    const isEnabled = argoValue !== '';
+    
+    [agn, agk].forEach(i => i.disabled = !isEnabled);
+
+    if (argoValue === 'vwpt') {
+        vlessWsVCheckbox.checked = true;
+    } else if (argoValue === 'vmpt') {
+        vmessWsCheckbox.checked = true;
+    } 
+
+    if (!isEnabled) {
+        agn.value = '';
+        agk.value = '';
+    }
+
+    updateCdnymState(); 
+    render();
+  });
+
+  vmessWsCheckbox.addEventListener('change', () => {
+    if (!vmessWsCheckbox.checked && argoSelect.value === 'vmpt') { 
+       argoSelect.value = '';
+       updateArgoState('');
+    }
+    updateCdnymState();
+    render();
+  });
+  
+  vlessWsVCheckbox.addEventListener('change', () => {
+      if (!vlessWsVCheckbox.checked && argoSelect.value === 'vwpt') { 
+         argoSelect.value = '';
+         updateArgoState('');
+      }
+      updateCdnymState(); 
+      render();
+  });
+  
+  vlessXhttpCheckbox.addEventListener('change', () => {
+    updateCdnymState();
+    render();
+  });
+
+
+  document.querySelectorAll('[data-port]').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const key = inp.getAttribute('data-port');
+      const ck = document.querySelector(`[data-proto="${key}"]`);
+      if (!ck) return;
+      if (inp.value.trim() !== '' && !ck.checked) {
+        ck.checked = true;
+      }
+      
+      if (key === 'vmpt' || key === 'vwpt' || key === 'vxpt') {
+        updateCdnymState();
+      }
+      render();
+    });
+  });
+
+  document.querySelectorAll('[data-proto]').forEach(ck => {
+    ck.addEventListener('change', () => {
+      if (!ck.checked) {
+        const key = ck.getAttribute('data-proto');
+        const pt = document.querySelector(`[data-port="${key}"]`);
+        if (pt) {
+          pt.value = '';
+        }
+      }
+
+      if (ck.getAttribute('data-proto') === 'vmpt' || ck.getAttribute('data-proto') === 'vxpt' || ck.getAttribute('data-proto') === 'vwpt') {
+          updateCdnymState();
+      }
+      render();
+    });
+  });
+
+  generateUuidBtn.addEventListener('click', () => {
+    uuidInput.value = crypto.randomUUID();
+    render();
+  });
+
+  commandTypeRadios.forEach(radio => {
+    radio.addEventListener('change', render);
+  });
+
+  function collectVars(){
+    const m = {};
+    protoKeys.forEach(k => {
+      const ck = document.querySelector(`[data-proto="${k}"]`);
+      const pt = document.querySelector(`[data-port="${k}"]`);
+      if (ck && ck.checked) {
+        const v = (pt.value || '').trim();
+        m[k] = v;
+      }
+    });
+    optIds.forEach(id => {
+      const el = document.getElementById(id);
+      const v = (el.value || '').trim();
+      if (v !== '' && !el.disabled) {
+        m[id] = v;
+      }
+    });
+    
+    const argoValue = argoSelect.value;
+    if (argoValue !== '') {
+      m['argo'] = argoValue; 
+      
+      const _agn = (agn.value || '').trim();
+      const _agk = (agk.value || '').trim();
+      
+      if (!agn.disabled && _agn) m['agn'] = _agn;
+      if (!agk.disabled && _agk) m['agk'] = _agk;
+    }
+    
+    return m;
+  }
+
+  function toBashVars(m){
+    const keys = Object.keys(m);
+    const ordered = [];
+    protoKeys.forEach(k => { if (keys.includes(k)) ordered.push(k); });
+    ['warp', 'uuid', 'reym', 'cdnym', 'name', 'ippz'].forEach(k => { if (keys.includes(k)) ordered.push(k); });
+    if (keys.includes('argo')) ordered.push('argo');
+    if (keys.includes('agn')) ordered.push('agn');
+    if (keys.includes('agk')) ordered.push('agk');
+    if (keys.includes('oap')) ordered.push('oap');
+    keys.forEach(k => { if (!ordered.includes(k)) ordered.push(k); });
+
+    return ordered.map(k => {
+      const val = m[k];
+      if (val === '') return `${k}=""`;
+      if (/[^\w\-\.:/]/.test(val)) {
+        return `${k}="${val.replace(/"/g, '\\"')}"`;
+      }
+      return `${k}="${val}"`;
+    }).join(' ');
+  }
+
+  function render(){
+    const m = collectVars();
+    const vars = toBashVars(m);
+    const selectedCommand = document.querySelector('input[name="commandType"]:checked').value === 'curl' ? CURL : WGET;
+    output.value = (vars ? vars + ' ' : '') + selectedCommand;
+  }
+
+  initTheme();
+  updateCdnymState();
+  render();
+
+  allInputs.forEach(el => {
+    el.addEventListener('input', render);
+    el.addEventListener('change', render);
+  });
+  
+  document.querySelectorAll('.command-button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const command = btn.getAttribute('data-command');
+      const ippzValue = ippzSelect.value;
+      const selectedCommand = document.querySelector('input[name="commandType"]:checked').value === 'curl' ? CURL : WGET;
+      const shouldPreserveIppz = (command === 'list' && (ippzValue === '4' || ippzValue === '6'));
+
+      if (command === 'rep') {
+        const m = collectVars();
+        const vars = toBashVars(m);
+        output.value = (vars ? vars + ' ' : '') + selectedCommand + ' rep';
+      } else {
+        resetForm(shouldPreserveIppz);
+        if (shouldPreserveIppz) {
+          ippzSelect.value = ippzValue;
+          const m = collectVars();
+          m['ippz'] = ippzValue;
+          const vars = toBashVars(m);
+          output.value = `${vars} ${selectedCommand} ${command}`;
+        } else {
+          output.value = `${selectedCommand} ${command}`;
+        }
+      }
+    });
+  });
+
+  document.getElementById('copy').addEventListener('click', async () => {
+    const t = document.getElementById('output');
+    t.select(); t.setSelectionRange(0, 99999);
+    try { await navigator.clipboard.writeText(t.value); showToast('已复制到剪贴板'); } catch (e) { document.execCommand('copy'); showToast('已复制'); }
+  });
+
+  document.getElementById('reset').addEventListener('click', () => { location.reload(); });
+
+  function showToast(msg) {
+    const d = document.createElement('div');
+    d.textContent = msg; d.style.position = 'fixed'; d.style.left = '50%'; d.style.top = '20px'; d.style.transform = 'translateX(-50%)';
+    d.style.padding = '10px 14px'; d.style.background = 'rgba(0,0,0,.6)'; d.style.color = '#fff'; d.style.border = '1px solid #334155'; d.style.borderRadius = '10px'; d.style.zIndex = 9999;
+    document.body.appendChild(d); setTimeout(() => d.remove(), 1400);
+  }
+})();
+</script>
+</body>
+</html>
+
+
+
+
+
+
