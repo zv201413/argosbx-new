@@ -3,6 +3,9 @@ export LANG=en_US.UTF-8
 # 非root适配：systemd用户级服务前缀
 SYSTEMD_USER_FLAG=""
 [ "$EUID" -ne 0 ] && SYSTEMD_USER_FLAG="--user"
+# 非root适配：systemd用户级服务前缀
+SYSTEMD_USER_FLAG=""
+[ "$EUID" -ne 0 ] && SYSTEMD_USER_FLAG="--user"
 [ -z "${vlpt+x}" ] || vlp=yes
 [ -z "${vmpt+x}" ] || { vmp=yes; vmag=yes; }
 [ -z "${vwpt+x}" ] || { vwp=yes; vmag=yes; }
@@ -839,7 +842,7 @@ EOF
 systemctl $SYSTEMD_USER_FLAG daemon-reload >/dev/null 2>&1
 systemctl $SYSTEMD_USER_FLAG enable xr >/dev/null 2>&1
 systemctl $SYSTEMD_USER_FLAG start xr >/dev/null 2>&1
-elif command -v rc-service >/dev/null 2>&1 && [ "$EUID" -eq 0 ]; then
+elif command -v rc-service >/dev/null 2>elif command -v rc-service >/dev/null 2>&1 && [ "$EUID" -eq 0 ]; then1; then
 cat > $HOME/.local/share/init.d/xray <<EOF
 #!/sbin/openrc-run
 description="xr service"
@@ -931,7 +934,7 @@ EOF
 systemctl $SYSTEMD_USER_FLAG daemon-reload >/dev/null 2>&1
 systemctl $SYSTEMD_USER_FLAG enable sb >/dev/null 2>&1
 systemctl $SYSTEMD_USER_FLAG start sb >/dev/null 2>&1
-elif command -v rc-service >/dev/null 2>&1 && [ "$EUID" -eq 0 ]; then
+elif command -v rc-service >/dev/null 2>elif command -v rc-service >/dev/null 2>&1 && [ "$EUID" -eq 0 ]; then1; then
 cat > $HOME/.local/share/init.d/sing-box <<EOF
 #!/sbin/openrc-run
 description="sb service"
@@ -1006,7 +1009,7 @@ EOF
 systemctl $SYSTEMD_USER_FLAG daemon-reload >/dev/null 2>&1
 systemctl $SYSTEMD_USER_FLAG enable argo >/dev/null 2>&1
 systemctl $SYSTEMD_USER_FLAG start argo >/dev/null 2>&1
-elif command -v rc-service >/dev/null 2>&1 && [ "$EUID" -eq 0 ]; then
+elif command -v rc-service >/dev/null 2>elif command -v rc-service >/dev/null 2>&1 && [ "$EUID" -eq 0 ]; then1; then
 cat > $HOME/.local/share/init.d/argo <<EOF
 #!/sbin/openrc-run
 description="argo service"
