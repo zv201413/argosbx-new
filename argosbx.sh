@@ -1,5 +1,8 @@
 #!/bin/sh
 export LANG=en_US.UTF-8
+# 非root适配：systemd用户级服务前缀
+SYSTEMD_USER_FLAG=""
+[ "$EUID" -ne 0 ] && SYSTEMD_USER_FLAG="--user"
 [ -z "${vlpt+x}" ] || vlp=yes
 [ -z "${vmpt+x}" ] || { vmp=yes; vmag=yes; }
 [ -z "${vwpt+x}" ] || { vwp=yes; vmag=yes; }
@@ -815,8 +818,9 @@ cat >> "$HOME/agsbx/xr.json" <<EOF
   }
 }
 EOF
-if pidof systemd >/dev/null 2>&1 && [ "$EUID" -eq 0 ]; then
-cat > /etc/systemd/system/xr.service <<EOF
+if pidof systemd >/dev/null 2>&1; then
+  mkdir -p "$HOME/.config/systemd/user"
+cat > $HOME/.config/systemd/user/xr.service <<EOF
 [Unit]
 Description=xr service
 After=network.target
@@ -824,7 +828,7 @@ After=network.target
 Type=simple
 NoNewPrivileges=yes
 TimeoutStartSec=0
-ExecStart=/root/agsbx/xray run -c /root/agsbx/xr.json
+ExecStart=$HOME/agsbx/xray run -c $HOME/agsbx/xr.json
 Restart=on-failure
 RestartSec=5s
 StandardOutput=journal
@@ -832,15 +836,15 @@ StandardError=journal
 [Install]
 WantedBy=multi-user.target
 EOF
-systemctl daemon-reload >/dev/null 2>&1
-systemctl enable xr >/dev/null 2>&1
-systemctl start xr >/dev/null 2>&1
+systemctl $SYSTEMD_USER_FLAG daemon-reload >/dev/null 2>&1
+systemctl $SYSTEMD_USER_FLAG enable xr >/dev/null 2>&1
+systemctl $SYSTEMD_USER_FLAG start xr >/dev/null 2>&1
 elif command -v rc-service >/dev/null 2>&1 && [ "$EUID" -eq 0 ]; then
-cat > /etc/init.d/xray <<EOF
+cat > $HOME/.local/share/init.d/xray <<EOF
 #!/sbin/openrc-run
 description="xr service"
-command="/root/agsbx/xray"
-command_args="run -c /root/agsbx/xr.json"
+command="$HOME/agsbx/xray"
+command_args="run -c $HOME/agsbx/xr.json"
 command_background=yes
 pidfile="/run/xray.pid"
 command_background="yes"
@@ -848,7 +852,7 @@ depend() {
 need net
 }
 EOF
-chmod +x /etc/init.d/xray >/dev/null 2>&1
+chmod +x $HOME/.local/share/init.d/xray >/dev/null 2>&1
 rc-update add xray default >/dev/null 2>&1
 rc-service xray start >/dev/null 2>&1
 else
@@ -906,8 +910,9 @@ cat >> "$HOME/agsbx/sb.json" <<EOF
   }
 }
 EOF
-if pidof systemd >/dev/null 2>&1 && [ "$EUID" -eq 0 ]; then
-cat > /etc/systemd/system/sb.service <<EOF
+if pidof systemd >/dev/null 2>&1; then
+  mkdir -p "$HOME/.config/systemd/user"
+cat > $HOME/.config/systemd/user/sb.service <<EOF
 [Unit]
 Description=sb service
 After=network.target
@@ -915,7 +920,7 @@ After=network.target
 Type=simple
 NoNewPrivileges=yes
 TimeoutStartSec=0
-ExecStart=/root/agsbx/sing-box run -c /root/agsbx/sb.json
+ExecStart=$HOME/agsbx/sing-box run -c $HOME/agsbx/sb.json
 Restart=on-failure
 RestartSec=5s
 StandardOutput=journal
@@ -923,15 +928,15 @@ StandardError=journal
 [Install]
 WantedBy=multi-user.target
 EOF
-systemctl daemon-reload >/dev/null 2>&1
-systemctl enable sb >/dev/null 2>&1
-systemctl start sb >/dev/null 2>&1
+systemctl $SYSTEMD_USER_FLAG daemon-reload >/dev/null 2>&1
+systemctl $SYSTEMD_USER_FLAG enable sb >/dev/null 2>&1
+systemctl $SYSTEMD_USER_FLAG start sb >/dev/null 2>&1
 elif command -v rc-service >/dev/null 2>&1 && [ "$EUID" -eq 0 ]; then
-cat > /etc/init.d/sing-box <<EOF
+cat > $HOME/.local/share/init.d/sing-box <<EOF
 #!/sbin/openrc-run
 description="sb service"
-command="/root/agsbx/sing-box"
-command_args="run -c /root/agsbx/sb.json"
+command="$HOME/agsbx/sing-box"
+command_args="run -c $HOME/agsbx/sb.json"
 command_background=yes
 pidfile="/run/sing-box.pid"
 command_background="yes"
@@ -939,7 +944,7 @@ depend() {
 need net
 }
 EOF
-chmod +x /etc/init.d/sing-box >/dev/null 2>&1
+chmod +x $HOME/.local/share/init.d/sing-box >/dev/null 2>&1
 rc-update add sing-box default >/dev/null 2>&1
 rc-service sing-box start >/dev/null 2>&1
 else
@@ -982,8 +987,9 @@ fi
 if [ "$argo" = "vmpt" ]; then argoport=$(cat "$HOME/agsbx/port_vm_ws" 2>/dev/null); echo "Vmess" > "$HOME/agsbx/vlvm"; elif [ "$argo" = "vwpt" ]; then argoport=$(cat "$HOME/agsbx/port_vw" 2>/dev/null); echo "Vless" > "$HOME/agsbx/vlvm"; fi; echo "$argoport" > "$HOME/agsbx/argoport.log"
 if [ -n "${ARGO_DOMAIN}" ] && [ -n "${ARGO_AUTH}" ]; then
 argoname='固定'
-if pidof systemd >/dev/null 2>&1 && [ "$EUID" -eq 0 ]; then
-cat > /etc/systemd/system/argo.service <<EOF
+if pidof systemd >/dev/null 2>&1; then
+  mkdir -p "$HOME/.config/systemd/user"
+cat > $HOME/.config/systemd/user/argo.service <<EOF
 [Unit]
 Description=argo service
 After=network.target
@@ -991,20 +997,20 @@ After=network.target
 Type=simple
 NoNewPrivileges=yes
 TimeoutStartSec=0
-ExecStart=/root/agsbx/cloudflared tunnel --no-autoupdate --edge-ip-version auto --protocol http2 run --token "${ARGO_AUTH}"
+ExecStart=$HOME/agsbx/cloudflared tunnel --no-autoupdate --edge-ip-version auto --protocol http2 run --token "${ARGO_AUTH}"
 Restart=on-failure
 RestartSec=5s
 [Install]
 WantedBy=multi-user.target
 EOF
-systemctl daemon-reload >/dev/null 2>&1
-systemctl enable argo >/dev/null 2>&1
-systemctl start argo >/dev/null 2>&1
+systemctl $SYSTEMD_USER_FLAG daemon-reload >/dev/null 2>&1
+systemctl $SYSTEMD_USER_FLAG enable argo >/dev/null 2>&1
+systemctl $SYSTEMD_USER_FLAG start argo >/dev/null 2>&1
 elif command -v rc-service >/dev/null 2>&1 && [ "$EUID" -eq 0 ]; then
-cat > /etc/init.d/argo <<EOF
+cat > $HOME/.local/share/init.d/argo <<EOF
 #!/sbin/openrc-run
 description="argo service"
-command="/root/agsbx/cloudflared tunnel"
+command="$HOME/agsbx/cloudflared tunnel"
 command_args="--no-autoupdate --edge-ip-version auto --protocol http2 run --token ${ARGO_AUTH}"
 pidfile="/run/argo.pid"
 command_background="yes"
@@ -1012,7 +1018,7 @@ depend() {
 need net
 }
 EOF
-chmod +x /etc/init.d/argo >/dev/null 2>&1
+chmod +x $HOME/.local/share/init.d/argo >/dev/null 2>&1
 rc-update add argo default >/dev/null 2>&1
 rc-service argo start >/dev/null 2>&1
 else
@@ -1379,22 +1385,22 @@ rm /tmp/crontab.tmp
 rm -rf  "$HOME/bin/agsbx"
 if pidof systemd >/dev/null 2>&1; then
 for svc in xr sb argo; do
-systemctl stop "$svc" >/dev/null 2>&1
-systemctl disable "$svc" >/dev/null 2>&1
+systemctl $SYSTEMD_USER_FLAG stop "$svc" >/dev/null 2>&1
+systemctl $SYSTEMD_USER_FLAG disable "$svc" >/dev/null 2>&1
 done
-rm -rf /etc/systemd/system/{xr.service,sb.service,argo.service}
+rm -rf $HOME/.config/systemd/user/{xr.service,sb.service,argo.service}
 elif command -v rc-service >/dev/null 2>&1; then
 for svc in sing-box xray argo; do
 rc-service "$svc" stop >/dev/null 2>&1
 rc-update del "$svc" default >/dev/null 2>&1
 done
-rm -rf /etc/init.d/{sing-box,xray,argo}
+rm -rf $HOME/.local/share/init.d/{sing-box,xray,argo}
 fi
 }
 xrestart(){
 kill -15 $(pgrep -f 'agsbx/x' 2>/dev/null) >/dev/null 2>&1
 if pidof systemd >/dev/null 2>&1; then
-systemctl restart xr >/dev/null 2>&1
+systemctl $SYSTEMD_USER_FLAG restart xr >/dev/null 2>&1
 elif command -v rc-service >/dev/null 2>&1; then
 rc-service xray restart >/dev/null 2>&1
 else
@@ -1404,7 +1410,7 @@ fi
 sbrestart(){
 kill -15 $(pgrep -f 'agsbx/s' 2>/dev/null) >/dev/null 2>&1
 if pidof systemd >/dev/null 2>&1; then
-systemctl restart sb >/dev/null 2>&1
+systemctl $SYSTEMD_USER_FLAG restart sb >/dev/null 2>&1
 elif command -v rc-service >/dev/null 2>&1; then
 rc-service sing-box restart >/dev/null 2>&1
 else
@@ -1455,7 +1461,7 @@ xrestart
 kill "$(basename "$P")" 2>/dev/null
 kill -15 $(pgrep -f 'agsbx/c' 2>/dev/null) >/dev/null 2>&1
 if pidof systemd >/dev/null 2>&1; then
-systemctl restart argo >/dev/null 2>&1
+systemctl $SYSTEMD_USER_FLAG restart argo >/dev/null 2>&1
 elif command -v rc-service >/dev/null 2>&1; then
 rc-service argo restart >/dev/null 2>&1
 else
