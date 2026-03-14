@@ -335,11 +335,40 @@ elif [ -n "$port_vw" ]; then
 echo "$port_vw" > "$HOME/agsbx/port_vw"
 fi
 port_vw=$(cat "$HOME/agsbx/port_vw")
-echo "Vless-ws-enc端口：$port_vw"
+echo "Vless-ws端口：$port_vw"
 if [ -n "$cdnym" ]; then
 echo "$cdnym" > "$HOME/agsbx/cdnym"
 echo "80系CDN或者回源CDN的host域名 (确保IP已解析在CF域名)：$cdnym"
 fi
+if [ "$force_nohup" = "yes" ]; then
+cat >> "$HOME/agsbx/xr.json" <<EOF
+    {
+      "tag":"vless-ws",
+      "listen": "::",
+      "port": ${port_vw},
+      "protocol": "vless",
+      "settings": {
+        "clients": [
+          {
+            "id": "${uuid}"
+          }
+        ],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "ws",
+        "wsSettings": {
+          "path": "/ws"
+        }
+      },
+        "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls", "quic"],
+        "metadataOnly": false
+      }
+    },
+EOF
+else
 cat >> "$HOME/agsbx/xr.json" <<EOF
     {
       "tag":"vless-ws",
@@ -368,6 +397,7 @@ cat >> "$HOME/agsbx/xr.json" <<EOF
       }
     },
 EOF
+fi
 else
 vwp=vwptargo
 fi
@@ -1221,8 +1251,23 @@ echo
 fi
 fi
 if grep vless-ws "$HOME/agsbx/xr.json" >/dev/null 2>&1; then
-echo "💣【 Vless-ws-enc 】支持ENC加密，节点信息如下："
 port_vw=$(cat "$HOME/agsbx/port_vw")
+if [ "$force_nohup" = "yes" ]; then
+echo "💣【 Vless-ws 】节点信息如下："
+vl_vw_link="vless://$uuid@$server_ip:$port_vw?encryption=none&type=ws&path=/ws#${sxname}vl-ws-$hostname"
+echo "$vl_vw_link" >> "$HOME/agsbx/jh.txt"
+echo "$vl_vw_link"
+echo
+if [ -f "$HOME/agsbx/cdnym" ]; then
+echo "💣【 Vless-ws-cdn 】节点信息如下："
+echo "注：默认地址 yg数字.ygkkk.dpdns.org 可自行更换优选IP域名，如是回源端口需手动修改443或者80系端口"
+vl_vw_cdn_link="vless://$uuid@$argodomain:$port_vw?encryption=none&type=ws&host=$xvvmcdnym&path=/ws#${sxname}vl-ws-cdn-$hostname"
+echo "$vl_vw_cdn_link" >> "$HOME/agsbx/jh.txt"
+echo "$vl_vw_cdn_link"
+echo
+fi
+else
+echo "💣【 Vless-ws-enc 】支持ENC加密，节点信息如下："
 vl_vw_link="vless://$uuid@$server_ip:$port_vw?encryption=$enkey&flow=xtls-rprx-vision&type=ws&path=$uuid-vw#${sxname}vl-ws-enc-$hostname"
 echo "$vl_vw_link" >> "$HOME/agsbx/jh.txt"
 echo "$vl_vw_link"
@@ -1234,6 +1279,7 @@ vl_vw_cdn_link="vless://$uuid@$argodomain:$port_vw?encryption=$enkey&flow=xtls-r
 echo "$vl_vw_cdn_link" >> "$HOME/agsbx/jh.txt"
 echo "$vl_vw_cdn_link"
 echo
+fi
 fi
 fi
 if grep reality-vision "$HOME/agsbx/xr.json" >/dev/null 2>&1; then
@@ -1342,10 +1388,17 @@ echo "$vma_link12" >> "$HOME/agsbx/jh.txt"
 vma_link13="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vmess-ws-argo-$hostname-2095\", \"add\": \"[2400:cb00:2049::0]\", \"port\": \"2095\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$argodomain\", \"path\": \"/$uuid-vm\", \"tls\": \"\"}" | base64 -w0)"
 echo "$vma_link13" >> "$HOME/agsbx/jh.txt"
 elif [ "$vlvm" = "Vless" ]; then
+if [ "$force_nohup" = "yes" ]; then
+vwatls_link1="vless://$uuid@$argodomain:443?encryption=none&type=ws&host=$argodomain&path=/ws&security=tls&sni=$argodomain&fp=chrome&insecure=0&allowInsecure=0#${sxname}vless-ws-tls-argo-$hostname"
+echo "$vwatls_link1" >> "$HOME/agsbx/jh.txt"
+vwa_link2="vless://$uuid@$argodomain:80?encryption=none&type=ws&host=$argodomain&path=/ws&security=none#${sxname}vless-ws-argo-$hostname"
+echo "$vwa_link2" >> "$HOME/agsbx/jh.txt"
+else
 vwatls_link1="vless://$uuid@$argodomain:443?encryption=none&flow=xtls-rprx-vision&type=ws&host=$argodomain&path=$uuid-vw&security=tls&sni=$argodomain&fp=chrome&insecure=0&allowInsecure=0#${sxname}vless-ws-tls-argo-none-vision-$hostname"
 echo "$vwatls_link1" >> "$HOME/agsbx/jh.txt"
 vwa_link2="vless://$uuid@$argodomain:80?encryption=none&flow=xtls-rprx-vision&type=ws&host=$argodomain&path=$uuid-vw&security=none#${sxname}vless-ws-argo-enc-vision-$hostname"
 echo "$vwa_link2" >> "$HOME/agsbx/jh.txt"
+fi
 fi
 sbtk=$(cat "$HOME/agsbx/sbargotoken.log" 2>/dev/null)
 if [ -n "$sbtk" ]; then
