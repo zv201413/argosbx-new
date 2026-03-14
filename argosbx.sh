@@ -40,6 +40,7 @@ export ippz=${ippz:-''}
 export warp=${warp:-''}
 export name=${name:-''}
 export oap=${oap:-''}
+[ -z "${novps+x}" ] || force_nohup=yes
 v46url="https://icanhazip.com"
 agsbxurl="https://raw.githubusercontent.com/yonggekkk/argosbx/main/argosbx.sh"
 showmode(){
