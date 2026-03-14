@@ -2,13 +2,6 @@
 
 ---------------------------------------
 
-<img width="757" height="255" alt="d89e2542c513e705106371acc7fa1d33" src="https://github.com/user-attachments/assets/7d7a4678-4223-478c-afe2-d303ba0f85a4" />
-
-
-### 【Argosbx当前版本：V25.11.20】
-
----------------------------------------
-
 #### 1、基于Sing-box + Xray + Cloudflared-Argo 三内核自动分配
 
 #### 2、支持Linux类主流VPS系统（建议最新版系统），SSH脚本支持非root环境运行，几乎无需依赖，无脑一次回车搞定
@@ -198,76 +191,6 @@ Vless-ws的80系端口、回源端口的CDN优选节点
 ```
 vwpt="80系端口、指定回源端口" cdnym="CF解析IP的域名" bash <(curl -Ls https://raw.githubusercontent.com/yonggekkk/argosbx/main/argosbx.sh)
 ```
-
-* #### 如下图：节点IP、端口被封依旧可用！套CDN优选5大方案三步视频教程：
-  
-[视频1：80系+回源cdn](https://youtu.be/RnUT1CNbCr8)
-
-[视频2：Argo临时/固定隧道区别与设置](https://youtu.be/K35NhrNiLK8)
-
-[视频3：黑科技80端口CDN](https://youtu.be/X8BFVyeiY9g)
-
-<img width="1776" height="960" alt="f51af75fcc76bae7e76fe0ef5b9ecc86" src="https://github.com/user-attachments/assets/028b780d-bd48-4c79-8c60-940b3c3d1937" />
-
----------------------------------------------------------
-
-## 三、多功能SSH快捷方式命令组
-
-#### 说明：首次安装成功后需重连SSH，```agsbx 命令```的快捷方式才可生效；如未生效，请使用```主脚本 命令```的快捷方式
-
-1、查看Argo的固定域名、固定隧道的token、临时域名、当前已安装的节点信息命令：```agsbx list``` 或者 ```主脚本 list```
-
-2、更换、增加、删除变量组命令：```自定义各种协议变量组 agsbx rep``` 或者 ```自定义各种协议变量组 主脚本 rep```
-
-3、更新脚本命令：```原已安装的自定义各种协议变量组 主脚本 rep``` 
-
-4、更新Xray或Singbox内核命令：agsbx upx或ups 【或者】 主脚本 upx或ups
-
-5、重启脚本命令：```agsbx res``` 或者 ```主脚本 res```
-
-6、卸载脚本命令：```agsbx del``` 或者 ```主脚本 del```
-
-7、临时切换IPV4/IPV6节点配置 (双栈VPS专享)：
-
-显示IPV4节点配置：```ippz=4 agsbx list```或者```ippz=4 主脚本 list```
-
-显示IPV6节点配置：```ippz=6 agsbx list```或者```ippz=6 主脚本 list```
-
-----------------------------------------------------------
-
-#### 相关教程可参考[甬哥博客](https://ygkkk.blogspot.com/2025/08/argosb.html)，视频教程如下：
-
-[🥇搭建代理9大问题排行榜：第4名全网99%的人被误导！第1名每个人都被折腾到爆！](https://youtu.be/pJwJBqBkcfw)
-
-[🥇2025年度代理协议"拉到夯"综合排名](https://youtu.be/IoFtykGXDao)
-
-[ArgoSBX小钢炮脚本更新说明：新增VLESS ENC抗量子加密；80端口也能开启TLS加密？无需域名也能CDN优选？](https://youtu.be/X8BFVyeiY9g)
-
-[Argo隧道代理节点终极教程：VPS+容器搭建最强CDN节点 | 无视端口IP被封 | Argo临时/固定隧道区别 | CDN优选IP加速](https://youtu.be/K35NhrNiLK8)
-
-[ArgoSBX一键无交互小钢炮脚本💣（四）：一键SSH命令生成器发布，只要点几下，各大代理协议任你选](https://youtu.be/4u6W4c-t3oU)
-
-[ArgoSB一键无交互小钢炮脚本💣（三）：内置15种WARP出站组合，轻松替代独立的WARP脚本](https://youtu.be/iywjT8fIka4)
-
-[ArgoSB一键无交互小钢炮脚本💣（二）：代理节点的IP、端口被封依旧可用！ArgoSB脚本套CDN优选4大方案教程](https://youtu.be/RnUT1CNbCr8)
-
-[ArgoSB一键无交互小钢炮脚本💣（一）：VPS/nat VPS在主协议下的应用；仅按一次回车，多协议自由搭配](https://youtu.be/CiXmttY7mhw)
-
-[Clawcloud爪云、IDX Google VPS的福音：解决服务器IP访问困扰！Argosb脚本新增WARP出站功能，轻松更换落地IP为Cloudflare WARP IP](https://youtu.be/HO_XLBmIYJw)
-
-[Claw.cloud免费VPS搭建代理最终教程（五）：ArgoSB脚本docker镜像更新支持AnyTLS、Xhttp-Reality](https://youtu.be/-mhZIhHRyno)
-
-[Claw.cloud免费VPS搭建代理最终教程（四）：最低仅1美分，4套价格+7组协议的套餐组合任你选；查看节点、重启升级、更换IP、更改配置的操作说明](https://youtu.be/xOQV_E1-C84)
-
-[SAP搭建免费节点一条龙教程：多平台多账号搭建+保活一次搞定，支持Argo/workers/pags多种CDN方式](https://youtu.be/NRYZNKWoLj8)
-
-----------------------------------------------------------
-
-### 交流平台：[甬哥博客地址](https://ygkkk.blogspot.com)、[甬哥YouTube频道](https://www.youtube.com/@ygkkk)、[甬哥TG电报群组](https://t.me/+jZHc6-A-1QQ5ZGVl)、[甬哥TG电报频道](https://t.me/+DkC9ZZUgEFQzMTZl)
-
-----------------------------------------------------------
-### 感谢支持！微信打赏甬哥侃侃侃ygkkk
-![41440820a366deeb8109db5610313a1](https://github.com/user-attachments/assets/e5b1f2c0-bd2c-4b8f-8cda-034d3c8ef73f)
 
 ----------------------------------------------------------
 ### 感谢你右上角的star🌟
