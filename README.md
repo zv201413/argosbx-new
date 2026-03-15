@@ -1,4 +1,4 @@
-## Argosbx-new一键无交互脚本-zv修改版：极简 + 轻量 + 快速
+## 甬哥-Argosbx-new一键无交互脚本-zv修改版：极简 + 轻量 + 快速
 
 ---------------------------------------
 
@@ -6,12 +6,10 @@
 
 #### 2、支持Linux类主流VPS系统（建议最新版系统），SSH脚本支持非root环境运行，几乎无需依赖，无脑一次回车搞定
 
-#### 3、支持各种容器系统，Docker镜像部署，公开镜像库：```zv201413/argosbx-new```
-
-#### 4、所有代理协议都无需域名（除了argo固定隧道、IP端口CDN），支持单个或多个代理协议任意组合并快速重置更换
+#### 3、所有代理协议都无需域名（除了argo固定隧道、IP端口CDN），支持单个或多个代理协议任意组合并快速重置更换
 【 已支持：AnyTLS、Any-reality、Vless-xhttp-reality-vison、Vless-tcp-reality-vision、Vless-xhttp-vison、Vless-ws-vision、Shadowsocks-2022、Vmess-ws、Socks5、Hysteria2、Tuic、Argo临时/固定隧道支持Vless-ws或Vmess-ws 】
 
-#### 5、建议配合SSH一键脚本命令生成器网页使用：https://zv201413.github.io/argosbx-new/
+#### 4、建议配合SSH一键脚本命令生成器网页使用：https://zv201413.github.io/argosbx-new/
 
 ----------------------------------------------------------
 
