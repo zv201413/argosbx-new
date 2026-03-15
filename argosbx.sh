@@ -234,7 +234,7 @@ elif [ -n "$port_xh" ]; then
 echo "$port_xh" > "$HOME/agsbx/port_xh"
 fi
 port_xh=$(cat "$HOME/agsbx/port_xh")
-echo "Vless-xhttp-reality-enc端口：$port_xh"
+echo "Vless-xhttp-reality端口：$port_xh"
 cat >> "$HOME/agsbx/xr.json" <<EOF
     {
       "tag":"xhttp-reality",
@@ -244,11 +244,10 @@ cat >> "$HOME/agsbx/xr.json" <<EOF
       "settings": {
         "clients": [
           {
-            "id": "${uuid}",
-            "flow": "xtls-rprx-vision"
+            "id": "${uuid}"
           }
         ],
-        "decryption": "${dekey}"
+        "decryption": "none"
       },
       "streamSettings": {
         "network": "xhttp",
@@ -264,7 +263,7 @@ cat >> "$HOME/agsbx/xr.json" <<EOF
         },
         "xhttpSettings": {
           "host": "",
-          "path": "${uuid}-xh",
+          "path": "/xhttp",
           "mode": "auto"
         }
       },
@@ -287,7 +286,7 @@ elif [ -n "$port_vx" ]; then
 echo "$port_vx" > "$HOME/agsbx/port_vx"
 fi
 port_vx=$(cat "$HOME/agsbx/port_vx")
-echo "Vless-xhttp-enc端口：$port_vx"
+echo "Vless-xhttp端口：$port_vx"
 if [ -n "$cdnym" ]; then
 echo "$cdnym" > "$HOME/agsbx/cdnym"
 echo "80系CDN或者回源CDN的host域名 (确保IP已解析在CF域名)：$cdnym"
@@ -301,17 +300,16 @@ cat >> "$HOME/agsbx/xr.json" <<EOF
       "settings": {
         "clients": [
           {
-            "id": "${uuid}",
-            "flow": "xtls-rprx-vision"
+            "id": "${uuid}"
           }
         ],
-        "decryption": "${dekey}"
+        "decryption": "none"
       },
       "streamSettings": {
         "network": "xhttp",
         "xhttpSettings": {
           "host": "",
-          "path": "${uuid}-vx",
+          "path": "/xhttp",
           "mode": "auto"
         }
       },
@@ -339,7 +337,6 @@ if [ -n "$cdnym" ]; then
 echo "$cdnym" > "$HOME/agsbx/cdnym"
 echo "80系CDN或者回源CDN的host域名 (确保IP已解析在CF域名)：$cdnym"
 fi
-if [ "$force_nohup" = "yes" ]; then
 cat >> "$HOME/agsbx/xr.json" <<EOF
     {
       "tag":"vless-ws",
@@ -367,36 +364,6 @@ cat >> "$HOME/agsbx/xr.json" <<EOF
       }
     },
 EOF
-else
-cat >> "$HOME/agsbx/xr.json" <<EOF
-    {
-      "tag":"vless-ws",
-      "listen": "::",
-      "port": ${port_vw},
-      "protocol": "vless",
-      "settings": {
-        "clients": [
-          {
-            "id": "${uuid}",
-            "flow": "xtls-rprx-vision"
-          }
-        ],
-        "decryption": "${dekey}"
-      },
-      "streamSettings": {
-        "network": "ws",
-        "wsSettings": {
-          "path": "${uuid}-vw"
-        }
-      },
-        "sniffing": {
-        "enabled": true,
-        "destOverride": ["http", "tls", "quic"],
-        "metadataOnly": false
-      }
-    },
-EOF
-fi
 else
 vwp=vwptargo
 fi
@@ -1226,12 +1193,28 @@ short_id_s=$(cat "$HOME/agsbx/sbk/short_id" 2>/dev/null)
 sskey=$(cat "$HOME/agsbx/sskey" 2>/dev/null)
 fi
 if grep xhttp-reality "$HOME/agsbx/xr.json" >/dev/null 2>&1; then
-echo "💣【 Vless-xhttp-reality-enc 】支持ENC加密，节点信息如下："
+echo "💣【 Vless-xhttp-reality 】节点信息如下："
 port_xh=$(cat "$HOME/agsbx/port_xh")
-vl_xh_link="vless://$uuid@$server_ip:$port_xh?encryption=$enkey&flow=xtls-rprx-vision&security=reality&sni=$ym_vl_re&fp=chrome&pbk=$public_key_x&sid=$short_id_x&type=xhttp&path=$uuid-xh&mode=auto#${sxname}vl-xhttp-reality-enc-$hostname"
+vl_xh_link="vless://$uuid@$server_ip:$port_xh?encryption=none&security=reality&sni=$ym_vl_re&fp=chrome&pbk=$public_key_x&sid=$short_id_x&type=xhttp&path=/xhttp&mode=auto#${sxname}vl-xhttp-reality-$hostname"
 echo "$vl_xh_link" >> "$HOME/agsbx/jh.txt"
 echo "$vl_xh_link"
 echo
+fi
+if grep vless-xhttp "$HOME/agsbx/xr.json" >/dev/null 2>&1; then
+echo "💣【 Vless-xhttp 】节点信息如下："
+port_vx=$(cat "$HOME/agsbx/port_vx")
+vl_vx_link="vless://$uuid@$server_ip:$port_vx?encryption=none&type=xhttp&path=/xhttp&mode=auto#${sxname}vl-xhttp-$hostname"
+echo "$vl_vx_link" >> "$HOME/agsbx/jh.txt"
+echo "$vl_vx_link"
+echo
+if [ -f "$HOME/agsbx/cdnym" ]; then
+echo "💣【 Vless-xhttp-cdn 】节点信息如下："
+echo "注：默认地址 yg数字.ygkkk.dpdns.org 可自行更换优选IP域名，如是回源端口需手动修改443或者80系端口"
+vl_vx_cdn_link="vless://$uuid@$argodomain:$port_vx?encryption=none&type=xhttp&host=$xvvmcdnym&path=/xhttp&mode=auto#${sxname}vl-xhttp-cdn-$hostname"
+echo "$vl_vx_cdn_link" >> "$HOME/agsbx/jh.txt"
+echo "$vl_vx_cdn_link"
+echo
+fi
 fi
 if grep vless-xhttp "$HOME/agsbx/xr.json" >/dev/null 2>&1; then
 echo "💣【 Vless-xhttp-enc 】支持ENC加密，节点信息如下："
@@ -1251,7 +1234,6 @@ fi
 fi
 if grep vless-ws "$HOME/agsbx/xr.json" >/dev/null 2>&1; then
 port_vw=$(cat "$HOME/agsbx/port_vw")
-if [ "$force_nohup" = "yes" ]; then
 echo "💣【 Vless-ws 】节点信息如下："
 vl_vw_link="vless://$uuid@$server_ip:$port_vw?encryption=none&type=ws&path=/ws#${sxname}vl-ws-$hostname"
 echo "$vl_vw_link" >> "$HOME/agsbx/jh.txt"
@@ -1261,20 +1243,6 @@ if [ -f "$HOME/agsbx/cdnym" ]; then
 echo "💣【 Vless-ws-cdn 】节点信息如下："
 echo "注：默认地址 yg数字.ygkkk.dpdns.org 可自行更换优选IP域名，如是回源端口需手动修改443或者80系端口"
 vl_vw_cdn_link="vless://$uuid@$argodomain:$port_vw?encryption=none&type=ws&host=$xvvmcdnym&path=/ws#${sxname}vl-ws-cdn-$hostname"
-echo "$vl_vw_cdn_link" >> "$HOME/agsbx/jh.txt"
-echo "$vl_vw_cdn_link"
-echo
-fi
-else
-echo "💣【 Vless-ws-enc 】支持ENC加密，节点信息如下："
-vl_vw_link="vless://$uuid@$server_ip:$port_vw?encryption=$enkey&flow=xtls-rprx-vision&type=ws&path=$uuid-vw#${sxname}vl-ws-enc-$hostname"
-echo "$vl_vw_link" >> "$HOME/agsbx/jh.txt"
-echo "$vl_vw_link"
-echo
-if [ -f "$HOME/agsbx/cdnym" ]; then
-echo "💣【 Vless-ws-enc-cdn 】支持ENC加密，节点信息如下："
-echo "注：默认地址 yg数字.ygkkk.dpdns.org 可自行更换优选IP域名，如是回源端口需手动修改443或者80系端口"
-vl_vw_cdn_link="vless://$uuid@$argodomain:$port_vw?encryption=$enkey&flow=xtls-rprx-vision&type=ws&host=$xvvmcdnym&path=$uuid-vw#${sxname}vl-ws-enc-cdn-$hostname"
 echo "$vl_vw_cdn_link" >> "$HOME/agsbx/jh.txt"
 echo "$vl_vw_cdn_link"
 echo
