@@ -531,12 +531,13 @@
   const CURL = 'bash <(curl -Ls https://raw.githubusercontent.com/zv201413/argosbx-new/main/argosbx.sh)';
   const WGET = 'bash <(wget -qO- https://raw.githubusercontent.com/zv201413/argosbx-new/main/argosbx.sh)';
   const protoKeys = ['sopt','vmpt','vlpt','xhpt','vxpt','vwpt','arpt','anpt','hypt','tupt','sspt'];
+  const optIds = ['warp','ippz','uuid','reym','cdnym','name', 'oap', 'novps'];
 
   const argoSelect = document.getElementById('argoSelect');
   const agn = document.getElementById('agn');
   const agk = document.getElementById('agk');
   const vmessWsCheckbox = document.querySelector('[data-proto="vmpt"]');
-  const vlessWsCheckbox = document.querySelector('[data-proto="vwpt"]');
+  const vlessWsVCheckbox = document.querySelector('[data-proto="vwpt"]');
   const vlessXhttpCheckbox = document.querySelector('[data-proto="vxpt"]');
   const cdnymInput = document.getElementById('cdnym');
   const output = document.getElementById('output');
@@ -596,7 +597,7 @@
   }
 
   function updateCdnymState() {
-      const isAnyProtocolChecked = vmessWsCheckbox.checked || vlessXhttpCheckbox.checked || vlessWsCheckbox.checked;
+      const isAnyProtocolChecked = vmessWsCheckbox.checked || vlessXhttpCheckbox.checked || vlessWsVCheckbox.checked;
       
       cdnymInput.disabled = !isAnyProtocolChecked;
       
@@ -613,7 +614,7 @@
     [agn, agk].forEach(i => i.disabled = !isEnabled);
 
     if (argoValue === 'vwpt') {
-        vlessWsCheckbox.checked = true;
+        vlessWsVCheckbox.checked = true;
     } else if (argoValue === 'vmpt') {
         vmessWsCheckbox.checked = true;
     } 
@@ -636,8 +637,8 @@
     render();
   });
   
-  vlessWsCheckbox.addEventListener('change', () => {
-      if (!vlessWsCheckbox.checked && argoSelect.value === 'vwpt') { 
+  vlessWsVCheckbox.addEventListener('change', () => {
+      if (!vlessWsVCheckbox.checked && argoSelect.value === 'vwpt') { 
          argoSelect.value = '';
          updateArgoState('');
       }
@@ -729,7 +730,7 @@
     const keys = Object.keys(m);
     const ordered = [];
     protoKeys.forEach(k => { if (keys.includes(k)) ordered.push(k); });
-    ['warp', 'uuid', 'reym', 'cdnym', 'name', 'ippz'].forEach(k => { if (keys.includes(k)) ordered.push(k); });
+    ['warp', 'uuid', 'reym', 'cdnym', 'name', 'ippz', 'novps'].forEach(k => { if (keys.includes(k)) ordered.push(k); });
     if (keys.includes('argo')) ordered.push('argo');
     if (keys.includes('agn')) ordered.push('agn');
     if (keys.includes('agk')) ordered.push('agk');
