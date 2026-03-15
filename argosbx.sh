@@ -42,10 +42,10 @@ export name=${name:-''}
 export oap=${oap:-''}
 [ -z "${novps+x}" ] || force_nohup=yes
 v46url="https://icanhazip.com"
-agsbxurl="https://raw.githubusercontent.com/zv201413/argosbx-new/main/argosbx.sh"
+agsbxurl="https://raw.githubusercontent.com/yonggekkk/argosbx/main/argosbx.sh"
 showmode(){
-echo "Argosbx-new脚本一键SSH命令生成器在线网址：https://zv201413.github.io/argosbx-new/"
-echo "主脚本：bash <(curl -Ls https://raw.githubusercontent.com/zv201413/argosbx-new/main/argosbx.sh) 或 bash <(wget -qO- https://raw.githubusercontent.com/zv201413/argosbx-new/main/argosbx.sh)"
+echo "Argosbx脚本一键SSH命令生器在线网址：https://yonggekkk.github.io/argosbx/"
+echo "主脚本：bash <(curl -Ls https://raw.githubusercontent.com/yonggekkk/argosbx/main/argosbx.sh) 或 bash <(wget -qO- https://raw.githubusercontent.com/yonggekkk/argosbx/main/argosbx.sh)"
 echo "显示节点信息命令：agsbx list 【或者】 主脚本 list"
 echo "重置变量组命令：自定义各种协议变量组 agsbx rep 【或者】 自定义各种协议变量组 主脚本 rep"
 echo "更新脚本命令：原已安装的自定义各种协议变量组 主脚本 rep"
@@ -340,7 +340,7 @@ fi
 cat >> "$HOME/agsbx/xr.json" <<EOF
     {
       "tag":"vless-ws",
-      "listen": "::",
+      "listen": "0.0.0.0",
       "port": ${port_vw},
       "protocol": "vless",
       "settings": {
@@ -1354,17 +1354,10 @@ echo "$vma_link12" >> "$HOME/agsbx/jh.txt"
 vma_link13="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vmess-ws-argo-$hostname-2095\", \"add\": \"[2400:cb00:2049::0]\", \"port\": \"2095\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$argodomain\", \"path\": \"/$uuid-vm\", \"tls\": \"\"}" | base64 -w0)"
 echo "$vma_link13" >> "$HOME/agsbx/jh.txt"
 elif [ "$vlvm" = "Vless" ]; then
-if [ "$force_nohup" = "yes" ]; then
 vwatls_link1="vless://$uuid@$argodomain:443?encryption=none&type=ws&host=$argodomain&path=/ws&security=tls&sni=$argodomain&fp=chrome&insecure=0&allowInsecure=0#${sxname}vless-ws-tls-argo-$hostname"
 echo "$vwatls_link1" >> "$HOME/agsbx/jh.txt"
 vwa_link2="vless://$uuid@$argodomain:80?encryption=none&type=ws&host=$argodomain&path=/ws&security=none#${sxname}vless-ws-argo-$hostname"
 echo "$vwa_link2" >> "$HOME/agsbx/jh.txt"
-else
-vwatls_link1="vless://$uuid@$argodomain:443?encryption=none&flow=xtls-rprx-vision&type=ws&host=$argodomain&path=$uuid-vw&security=tls&sni=$argodomain&fp=chrome&insecure=0&allowInsecure=0#${sxname}vless-ws-tls-argo-none-vision-$hostname"
-echo "$vwatls_link1" >> "$HOME/agsbx/jh.txt"
-vwa_link2="vless://$uuid@$argodomain:80?encryption=none&flow=xtls-rprx-vision&type=ws&host=$argodomain&path=$uuid-vw&security=none#${sxname}vless-ws-argo-enc-vision-$hostname"
-echo "$vwa_link2" >> "$HOME/agsbx/jh.txt"
-fi
 fi
 sbtk=$(cat "$HOME/agsbx/sbargotoken.log" 2>/dev/null)
 if [ -n "$sbtk" ]; then
