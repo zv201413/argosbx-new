@@ -15,26 +15,7 @@
 
 ----------------------------------------------------------
 
-## 一、自定义变量参数说明：
-
-
-## 二、SSH一键变量脚本模版说明：
-
-### 脚本以 ```变量名称="变量值"的单个或多个组合 + 主脚本``` 的形式运行
-
-* 默认主脚本curl：```bash <(curl -Ls https://raw.githubusercontent.com/zv201413/argosbx-new/main/argosbx.sh)```
-
-* 如报错curl not found 可换用主脚本wget：```bash <(wget -qO- https://raw.githubusercontent.com/zv201413/argosbx-new/main/argosbx.sh)```
-
-* 必选其一的协议端口变量：```vwpt=""```、```vmpt=""```、```vmpt="" argo="vmpt"```、```vwpt="" argo="vwpt"```、```vlpt=""```、```xhpt=""```、```anpt=""```、```arpt=""```、```hypt=""```、```tupt=""```、```sspt=""```、```vxpt=""```、```sopt=""```
-
-* 可选的功能类变量：```warp=""```、```uuid=""```、```reym=""```、```cdnym=""```、```argo=""```、```agn=""```、```agk=""```、```ippz=""```、```name=""```、```oap=""```、```novps=""```
-
-请参考```一、自定义变量参数说明```中变量的作用说明，变量值填写在```" "```之间，变量之间空一格，不用的变量可以删除
-
--------------------------------------------------------------
-
-* ### 模版：强制使用nohup模式（绕过systemd/openrc）
+## 新增nohup模式（绕过systemd/openrc）
 
 在无systemd权限的容器环境（如某些VPS容器、Docker等），可使用novps参数强制使用nohup后台运行：
 
@@ -54,6 +35,7 @@ novps=yes vlpt="" bash <(curl -Ls https://raw.githubusercontent.com/zv201413/arg
 ```
 
 > 注意：使用novps=yes时，脚本会自动生成简化配置的节点（无ENC加密），适用于不需要加密的轻量场景。
+
 
 ---------------------------------------------------------
 
