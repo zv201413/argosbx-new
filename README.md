@@ -10,7 +10,7 @@
 ✓ **容器友好**：适配Docker等非root容器环境
 ✓ **协议兼容**：vless去除enc加密，兼容性更强
 
-## 快速使用（ssh命令方式）
+## 极速使用（ssh命令方式）
 [zv201413/argosbx-网页端](https://zv201413.github.io/argosbx-new)
 
 ## 快速使用（Docker方式）
