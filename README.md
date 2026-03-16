@@ -4,13 +4,13 @@
 
 ## 本版本特色功能
 
-✓ **浏览器UA伪装**：WARP获取请求使用真实浏览器User-Agent，提高成功率  
 ✓ **国家代码显示**：自动查询服务器IP所属国家，节点名称显示国家代码（如US、DE、JP等）  
-✓ **WARP状态提示**：清晰的WARP获取进度和成功/失败提示  
 ✓ **路径修改**：所有配置和程序存放在用户目录`$HOME/agsbx`，而非`/root/agsbx`  
-✓ **systemd支持**：使用用户级systemd服务（`systemctl --user`）而非系统级  
 ✓ **兼容性**：自动检测运行权限，root用户和非root用户均可使用  
 ✓ **容器友好**：适配Docker等非root容器环境
+
+## 快速使用（ssh命令方式）
+[zv201413/argosbx-网页端](https://zv201413.github.io/argosbx-new)
 
 ## 快速使用（Docker方式）
 
@@ -50,13 +50,6 @@ vwpt="" warp="sx" novps="yes" argo="vwpt" bash ./argosbx.sh
 
 这方便用户快速识别节点服务器所在地区。
 
-## WARP获取状态提示
-
-脚本运行时会显示清晰的WARP获取进度：
-- `正在尝试获取 WARP 密钥...` - 正在获取
-- `✅ 自动获取成功，正在生成WARP配置` - 成功获取
-- `⚠️ 自动获取失败，应用指定的兜底配置...` - 获取失败使用备用
-
 ## 在普通用户环境下的安装步骤
 
 如果你已有普通用户账户（非root），直接运行：
@@ -77,22 +70,6 @@ warp="4" vwpt="24640" ./argosbx.sh
 ```
 
 生成的配置文件和用户数据将保存在`$HOME/agsbx/`目录下。
-
-## systemd用户级服务
-
-非root用户会自动使用systemd用户级服务：
-
-```bash
-# 查看服务状态（无需sudo）
-systemctl --user status xr  # 查看Xray服务
-systemctl --user status sb  # 查看Sing-box服务
-systemctl --user status argo  # 查看Argo隧道
-
-# 管理服务
-systemctl --user start xr
-systemctl --user stop xr
-systemctl --user restart xr
-```
 
 ## 支持的协议（配置方式不变）
 
