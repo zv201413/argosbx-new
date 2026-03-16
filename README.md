@@ -6,8 +6,9 @@
 
 ✓ **国家代码显示**：自动查询服务器IP所属国家，节点名称显示国家代码（如US、DE、JP等）  
 ✓ **路径修改**：所有配置和程序存放在用户目录`$HOME/agsbx`，而非`/root/agsbx`  
-✓ **兼容性**：自动检测运行权限，root用户和非root用户均可使用  
+✓ **兼容性**：自动检测运行权限，root用户和非root用户均可使用，新增**强制nohup模式**
 ✓ **容器友好**：适配Docker等非root容器环境
+✓ **协议兼容**：vless去除enc加密，兼容性更强
 
 ## 快速使用（ssh命令方式）
 [zv201413/argosbx-网页端](https://zv201413.github.io/argosbx-new)
@@ -71,28 +72,7 @@ warp="4" vwpt="24640" ./argosbx.sh
 
 生成的配置文件和用户数据将保存在`$HOME/agsbx/`目录下。
 
-## 支持的协议（配置方式不变）
-
-原版支持的所有协议都支持：
-
-**必选协议（至少选一个）：**
-- `vwpt` - VLESS-WS（支持CDN优选和Argo）
-- `vmpt` - VMESS-WS（支持CDN优选和Argo）
-- `vlpt` - VLESS-TCP-Reality
-- `xhpt` - VLESS-XHTTP-Reality
-- `vxpt` - VLESS-XHTTP
-- `arpt` - Any-Reality
-- `anpt` - AnyTLS
-- `sspt` - Shadowsocks-2022
-- `hypt` - Hysteria2
-- `tupt` - Tuic
-
-**可选功能：**
-- `warp` - 开启Warp出站（解锁流媒体，更换IP）
-- `argo` - 开启Argo隧道（填写"vmpt"或"vwpt"）
-- `uuid` - 自定义UUID（留空则随机生成）
-
-完整变量列表请查看原版README。
+**完整变量列表请查看原版README。**
 
 ## 持久化存储（Docker）
 
@@ -171,7 +151,3 @@ docker run -d \
 - 增强非root运行的兼容性
 
 原始项目： https://github.com/yonggekkk/argosbx
-
-## License
-
-与原始项目相同（GPL v3）
