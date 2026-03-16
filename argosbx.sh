@@ -42,10 +42,10 @@ export name=${name:-''}
 export oap=${oap:-''}
 [ -z "${novps+x}" ] || force_nohup=yes
 v46url="https://icanhazip.com"
-agsbxurl="https://raw.githubusercontent.com/yonggekkk/argosbx/main/argosbx.sh"
+agsbxurl="https://raw.githubusercontent.com/zv201413/argosbx-new/main/argosbx.sh"
 showmode(){
-echo "Argosbx脚本一键SSH命令生器在线网址：https://yonggekkk.github.io/argosbx/"
-echo "主脚本：bash <(curl -Ls https://raw.githubusercontent.com/yonggekkk/argosbx/main/argosbx.sh) 或 bash <(wget -qO- https://raw.githubusercontent.com/yonggekkk/argosbx/main/argosbx.sh)"
+echo "Argosbx脚本一键SSH命令生器在线网址：https://zv201413.github.io/argosbx-new/"
+echo "主脚本：bash <(curl -Ls https://raw.githubusercontent.com/zv201413/argosbx-new/main/argosbx.sh) 或 bash <(wget -qO- https://raw.githubusercontent.com/zv201413/argosbx-new/main/argosbx.sh)"
 echo "显示节点信息命令：agsbx list 【或者】 主脚本 list"
 echo "重置变量组命令：自定义各种协议变量组 agsbx rep 【或者】 自定义各种协议变量组 主脚本 rep"
 echo "更新脚本命令：原已安装的自定义各种协议变量组 主脚本 rep"
@@ -88,6 +88,7 @@ v6dq=$( (command -v curl >/dev/null 2>&1 && curl -s6m5 -k https://ip.fm | sed -n
 }
 warpsx(){
 UA_Browser="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
+echo "正在尝试获取 WARP 密钥..."
 warpurl=$( (command -v curl >/dev/null 2>&1 && curl -sm5 -k -A "$UA_Browser" https://warp.xijp.eu.org 2>/dev/null) || (command -v wget >/dev/null 2>&1 && timeout 3 wget --tries=2 -qO- https://warp.xijp.eu.org 2>/dev/null) )
 if echo "$warpurl" | grep -q html; then
 wpv6='2606:4700:110:8d8d:1845:c39f:2dd5:a03a'
@@ -99,9 +100,9 @@ wpv6=$(echo "$warpurl" | awk -F'：' '/IPV6/{print $2}' | xargs)
 res=$(echo "$warpurl" | awk -F'：' '/reserved/{print $2}' | xargs)
 fi
 if [ -n "$pvk" ] && [ -n "$wpv6" ]; then
-echo "Warp获取成功 ✓"
+echo "✅ 自动获取成功，正在生成WARP配置"
 else
-echo "Warp获取失败，使用备用方案"
+echo "⚠️ 自动获取失败，应用指定的兜底配置..."
 fi
 if [ -n "$name" ]; then
 sxname=$name-
