@@ -1,4 +1,4 @@
-# ArgoSBX 非root运行版 (zv修改版)
+# ArgoSBX 支持非root运行版 (zv修改版)
 
 这是一个改造自[yonggekkk/argosbx](https://github.com/yonggekkk/argosbx)的版本，**支持非root用户运行**，特别适配Docker容器环境。
 
