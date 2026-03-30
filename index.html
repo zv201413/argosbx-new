@@ -477,6 +477,7 @@
 <div class="row"><label>导出节点名称前缀 <span class="pill">name</span></label><input id="name" type="text" placeholder="留空则默认协议名前缀"/></div>
   <div class="row"><label>Argo优选IP/域名 <span class="pill">argoip</span></label><input id="argoip" type="text" placeholder="留空则默认使用yg数字.ygkkk.dpdns.org"/></div>
   <div class="row"><label>直连节点自定义地址 <span class="pill">nodeaddr</span></label><input id="nodeaddr" type="text" placeholder="hy2/tuic节点地址，留空则使用VPS IP"/></div>
+  <div class="row"><label>外部映射端口 <span class="pill">extport</span></label><input id="extport" type="text" placeholder="节点显示端口，留空则与内部端口一致"/></div>
   </section>
 
   <section class="card argo-tunnel">
@@ -535,7 +536,7 @@
   const CURL = 'bash <(curl -Ls https://raw.githubusercontent.com/zv201413/argosbx-new/main/argosbx.sh)';
   const WGET = 'bash <(wget -qO- https://raw.githubusercontent.com/zv201413/argosbx-new/main/argosbx.sh)';
   const protoKeys = ['sopt','vmpt','vlpt','xhpt','vxpt','vwpt','arpt','anpt','hypt','tupt','sspt'];
-  const optIds = ['warp','ippz','uuid','reym','cdnym','name', 'oap', 'novps', 'argoip', 'nodeaddr', 'gh_token', 'gh_gist_id'];
+  const optIds = ['warp','ippz','uuid','reym','cdnym','name', 'oap', 'novps', 'argoip', 'nodeaddr', 'gh_token', 'gh_gist_id', 'extport'];
 
   const argoSelect = document.getElementById('argoSelect');
   const agn = document.getElementById('agn');
@@ -599,6 +600,7 @@ document.getElementById('uuid').value = '';
   document.getElementById('nodeaddr').value = '';
   document.getElementById('gh_token').value = '';
   document.getElementById('gh_gist_id').value = '';
+  document.getElementById('extport').value = '';
   argoSelect.value = '';
     updateArgoState('');
     updateCdnymState();
@@ -738,7 +740,7 @@ document.getElementById('uuid').value = '';
     const keys = Object.keys(m);
     const ordered = [];
     protoKeys.forEach(k => { if (keys.includes(k)) ordered.push(k); });
-    ['warp', 'uuid', 'reym', 'cdnym', 'name', 'ippz', 'novps', 'argoip', 'nodeaddr', 'gh_token', 'gh_gist_id'].forEach(k => { if (keys.includes(k)) ordered.push(k); });
+    ['warp', 'uuid', 'reym', 'cdnym', 'name', 'ippz', 'novps', 'argoip', 'nodeaddr', 'gh_token', 'gh_gist_id', 'extport'].forEach(k => { if (keys.includes(k)) ordered.push(k); });
     if (keys.includes('argo')) ordered.push('argo');
     if (keys.includes('agn')) ordered.push('agn');
     if (keys.includes('agk')) ordered.push('agk');

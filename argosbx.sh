@@ -44,6 +44,7 @@ export argoip=${argoip:-''}
 export gh_token=${gh_token:-''}
 export gh_gist_id=${gh_gist_id:-''}
 export nodeaddr=${nodeaddr:-''}
+export extport=${extport:-''}
 [ -z "${novps+x}" ] || force_nohup=yes
 v46url="https://icanhazip.com"
 agsbxurl="https://raw.githubusercontent.com/yonggekkk/argosbx/main/argosbx.sh"
@@ -114,6 +115,10 @@ if [ -n "$name" ]; then
   if [ -n "$nodeaddr" ]; then
     echo "$nodeaddr" > "$HOME/agsbx/nodeaddr"
     echo "直连节点自定义地址：$nodeaddr"
+  fi
+  if [ -n "$extport" ]; then
+    echo "$extport" > "$HOME/agsbx/extport"
+    echo "外部映射端口：$extport"
   fi
   v4v6
 if echo "$v6" | grep -q '^2a09' || echo "$v4" | grep -q '^104.28'; then
@@ -1064,7 +1069,7 @@ mkdir -p "$HOME/bin"
 (command -v curl >/dev/null 2>&1 && curl -sL "$agsbxurl" -o "$SCRIPT_PATH") || (command -v wget >/dev/null 2>&1 && wget -qO "$SCRIPT_PATH" "$agsbxurl")
 chmod +x "$SCRIPT_PATH"
 if ! pidof systemd >/dev/null 2>&1 && ! command -v rc-service >/dev/null 2>&1; then
-echo "if ! find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null | grep -Eq 'agsbx/(s|x)' && ! pgrep -f 'agsbx/(s|x)' >/dev/null 2>&1; then echo '检测到系统可能中断过，或者变量格式错误？建议在SSH对话框输入 reboot 重启下服务器。现在自动执行Argosbx脚本的节点恢复操作，请稍等……'; sleep 6; export cdnym=\"${cdnym}\" name=\"${name}\" ippz=\"${ippz}\" argo=\"${argo}\" uuid=\"${uuid}\" $wap=\"${warp}\" $xhp=\"${port_xh}\" $vxp=\"${port_vx}\" $ssp=\"${port_ss}\" $sop=\"${port_so}\" $anp=\"${port_an}\" $arp=\"${port_ar}\" $vlp=\"${port_vl_re}\" $vwp=\"${port_vw}\" $vmp=\"${port_vm_ws}\" $hyp=\"${port_hy2}\" $tup=\"${port_tu}\" reym=\"${ym_vl_re}\" agn=\"${ARGO_DOMAIN}\" agk=\"${ARGO_AUTH}\" argoip=\"${argoip}\" gh_token=\"${gh_token}\" gh_gist_id=\"${gh_gist_id}\" nodeaddr=\"${nodeaddr}\"; bash \"$HOME/bin/agsbx\"; fi" >> ~/.bashrc
+echo "if ! find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null | grep -Eq 'agsbx/(s|x)' && ! pgrep -f 'agsbx/(s|x)' >/dev/null 2>&1; then echo '检测到系统可能中断过，或者变量格式错误？建议在SSH对话框输入 reboot 重启下服务器。现在自动执行Argosbx脚本的节点恢复操作，请稍等……'; sleep 6; export cdnym=\"${cdnym}\" name=\"${name}\" ippz=\"${ippz}\" argo=\"${argo}\" uuid=\"${uuid}\" $wap=\"${warp}\" $xhp=\"${port_xh}\" $vxp=\"${port_vx}\" $ssp=\"${port_ss}\" $sop=\"${port_so}\" $anp=\"${port_an}\" $arp=\"${port_ar}\" $vlp=\"${port_vl_re}\" $vwp=\"${port_vw}\" $vmp=\"${port_vm_ws}\" $hyp=\"${port_hy2}\" $tup=\"${port_tu}\" reym=\"${ym_vl_re}\" agn=\"${ARGO_DOMAIN}\" agk=\"${ARGO_AUTH}\" argoip=\"${argoip}\" gh_token=\"${gh_token}\" gh_gist_id=\"${gh_gist_id}\" nodeaddr=\"${nodeaddr}\" extport=\"${extport}\"; bash \"$HOME/bin/agsbx\"; fi" >> ~/.bashrc
 fi
 sed -i '/export PATH="\$HOME\/bin:\$PATH"/d' ~/.bashrc
 echo 'export PATH="$HOME/bin:$PATH"' >> "$HOME/.bashrc"
@@ -1184,6 +1189,7 @@ uuid=$(cat "$HOME/agsbx/uuid")
   xvvmcdnym=$(cat "$HOME/agsbx/cdnym" 2>/dev/null)
   argoip=$(cat "$HOME/agsbx/argoip" 2>/dev/null)
   nodeaddr=$(cat "$HOME/agsbx/nodeaddr" 2>/dev/null)
+  extport=$(cat "$HOME/agsbx/extport" 2>/dev/null)
 echo "*********************************************************"
 echo "*********************************************************"
 echo "Argosbx脚本输出节点配置如下："
@@ -1321,10 +1327,15 @@ if [ -n "$nodeaddr" ]; then
   else
     hy2_addr="$server_ip"
   fi
+  if [ -n "$extport" ]; then
+    hy2_port="$extport"
+  else
+    hy2_port="$port_hy2"
+  fi
   if grep hy2-sb "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
     echo "💣【 Hysteria2 】节点信息如下："
     port_hy2=$(cat "$HOME/agsbx/port_hy2")
-    hy2_link="hysteria2://$uuid@$hy2_addr:$port_hy2?security=tls&alpn=h3&insecure=1&sni=www.bing.com#${sxname}hy2-$hostname"
+    hy2_link="hysteria2://$uuid@$hy2_addr:$hy2_port?security=tls&alpn=h3&insecure=1&sni=www.bing.com#${sxname}hy2-$hostname"
     echo "$hy2_link" >> "$HOME/agsbx/jh.txt"
     echo "$hy2_link"
     echo
@@ -1334,10 +1345,15 @@ if [ -n "$nodeaddr" ]; then
   else
     tuic_addr="$server_ip"
   fi
+  if [ -n "$extport" ]; then
+    tuic_port="$extport"
+  else
+    tuic_port="$port_tu"
+  fi
   if grep tuic5-sb "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
     echo "💣【 Tuic 】节点信息如下："
     port_tu=$(cat "$HOME/agsbx/port_tu")
-    tuic5_link="tuic://$uuid:$uuid@$tuic_addr:$port_tu?congestion_control=bbr&udp_relay_mode=native&alpn=h3&sni=www.bing.com&allow_insecure=1&allowInsecure=1#${sxname}tuic-$hostname"
+    tuic5_link="tuic://$uuid:$uuid@$tuic_addr:$tuic_port?congestion_control=bbr&udp_relay_mode=native&alpn=h3&sni=www.bing.com&allow_insecure=1&allowInsecure=1#${sxname}tuic-$hostname"
     echo "$tuic5_link" >> "$HOME/agsbx/jh.txt"
     echo "$tuic5_link"
     echo
@@ -1507,7 +1523,7 @@ showmode
 exit
 elif [ "$1" = "rep" ]; then
 cleandel
-rm -rf "$HOME/agsbx"/{sb.json,xr.json,sbargoym.log,sbargotoken.log,argo.log,argoport.log,cdnym,name,argoip,nodeaddr}
+rm -rf "$HOME/agsbx"/{sb.json,xr.json,sbargoym.log,sbargotoken.log,argo.log,argoport.log,cdnym,name,argoip,nodeaddr,extport}
 echo "Argosbx重置协议完成，开始更新相关协议变量……" && sleep 2
 echo
 elif [ "$1" = "list" ]; then
