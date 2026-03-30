@@ -1283,44 +1283,64 @@ echo "$vl_link"
 echo
 fi
 if grep ss-2022 "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
-echo "💣【 Shadowsocks-2022 】节点信息如下："
-port_ss=$(cat "$HOME/agsbx/port_ss")
-ss_link="ss://$(echo -n "2022-blake3-aes-128-gcm:$sskey@$server_ip:$port_ss" | base64 -w0)#${sxname}Shadowsocks-2022-$hostname"
-echo "$ss_link" >> "$HOME/agsbx/jh.txt"
-echo "$ss_link"
-echo
+  echo "💣【 Shadowsocks-2022 】节点信息如下："
+  port_ss=$(cat "$HOME/agsbx/port_ss")
+  if [ -n "$extport" ]; then
+    ss_port="$extport"
+  else
+    ss_port="$port_ss"
+  fi
+  ss_link="ss://$(echo -n "2022-blake3-aes-128-gcm:$sskey@$server_ip:$ss_port" | base64 -w0)#${sxname}Shadowsocks-2022-$hostname"
+  echo "$ss_link" >> "$HOME/agsbx/jh.txt"
+  echo "$ss_link"
+  echo
 fi
 if grep vmess-xr "$HOME/agsbx/xr.json" >/dev/null 2>&1 || grep vmess-sb "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
-echo "💣【 Vmess-ws 】节点信息如下："
-port_vm_ws=$(cat "$HOME/agsbx/port_vm_ws")
-vm_link="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vm-ws-$hostname\", \"add\": \"$server_ip\", \"port\": \"$port_vm_ws\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"www.bing.com\", \"path\": \"/$uuid-vm\", \"tls\": \"\"}" | base64 -w0)"
-echo "$vm_link" >> "$HOME/agsbx/jh.txt"
-echo "$vm_link"
-echo
-if [ -f "$HOME/agsbx/cdnym" ]; then
-echo "💣【 Vmess-ws-cdn 】节点信息如下："
-echo "注：默认地址 yg数字.ygkkk.dpdns.org 可自行更换优选IP域名，如是回源端口需手动修改443或者80系端口"
-vm_cdn_link="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vm-ws-cdn-$hostname\", \"add\": \"$argodomain\", \"port\": \"$port_vm_ws\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$xvvmcdnym\", \"path\": \"/$uuid-vm\", \"tls\": \"\"}" | base64 -w0)"
-echo "$vm_cdn_link" >> "$HOME/agsbx/jh.txt"
-echo "$vm_cdn_link"
-echo
-fi
+  echo "💣【 Vmess-ws 】节点信息如下："
+  port_vm_ws=$(cat "$HOME/agsbx/port_vm_ws")
+  if [ -n "$extport" ]; then
+    vm_port="$extport"
+  else
+    vm_port="$port_vm_ws"
+  fi
+  vm_link="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vm-ws-$hostname\", \"add\": \"$server_ip\", \"port\": \"$vm_port\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"www.bing.com\", \"path\": \"/$uuid-vm\", \"tls\": \"\"}" | base64 -w0)"
+  echo "$vm_link" >> "$HOME/agsbx/jh.txt"
+  echo "$vm_link"
+  echo
+  if [ -f "$HOME/agsbx/cdnym" ]; then
+    echo "💣【 Vmess-ws-cdn 】节点信息如下："
+    echo "注：默认地址 yg数字.ygkkk.dpdns.org 可自行更换优选IP域名，如是回源端口需手动修改443或者80系端口"
+    vm_cdn_link="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vm-ws-cdn-$hostname\", \"add\": \"$argodomain\", \"port\": \"$vm_port\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$xvvmcdnym\", \"path\": \"/$uuid-vm\", \"tls\": \"\"}" | base64 -w0)"
+    echo "$vm_cdn_link" >> "$HOME/agsbx/jh.txt"
+    echo "$vm_cdn_link"
+    echo
+  fi
 fi
 if grep anytls-sb "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
-echo "💣【 AnyTLS 】节点信息如下："
-port_an=$(cat "$HOME/agsbx/port_an")
-an_link="anytls://$uuid@$server_ip:$port_an?insecure=1&allowInsecure=1#${sxname}anytls-$hostname"
-echo "$an_link" >> "$HOME/agsbx/jh.txt"
-echo "$an_link"
-echo
+  echo "💣【 AnyTLS 】节点信息如下："
+  port_an=$(cat "$HOME/agsbx/port_an")
+  if [ -n "$extport" ]; then
+    an_port="$extport"
+  else
+    an_port="$port_an"
+  fi
+  an_link="anytls://$uuid@$server_ip:$an_port?insecure=1&allowInsecure=1#${sxname}anytls-$hostname"
+  echo "$an_link" >> "$HOME/agsbx/jh.txt"
+  echo "$an_link"
+  echo
 fi
 if grep anyreality-sb "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
-echo "💣【 Any-Reality 】节点信息如下："
-port_ar=$(cat "$HOME/agsbx/port_ar")
-ar_link="anytls://$uuid@$server_ip:$port_ar?security=reality&sni=$ym_vl_re&fp=chrome&pbk=$public_key_s&sid=$short_id_s&type=tcp&headerType=none#${sxname}any-reality-$hostname"
-echo "$ar_link" >> "$HOME/agsbx/jh.txt"
-echo "$ar_link"
-echo
+  echo "💣【 Any-Reality 】节点信息如下："
+  port_ar=$(cat "$HOME/agsbx/port_ar")
+  if [ -n "$extport" ]; then
+    ar_port="$extport"
+  else
+    ar_port="$port_ar"
+  fi
+  ar_link="anytls://$uuid@$server_ip:$ar_port?security=reality&sni=$ym_vl_re&fp=chrome&pbk=$public_key_s&sid=$short_id_s&type=tcp&headerType=none#${sxname}any-reality-$hostname"
+  echo "$ar_link" >> "$HOME/agsbx/jh.txt"
+  echo "$ar_link"
+  echo
 fi
 if [ -n "$nodeaddr" ]; then
     hy2_addr="$nodeaddr"
@@ -1359,14 +1379,19 @@ if [ -n "$nodeaddr" ]; then
     echo
   fi
 if grep socks5-xr "$HOME/agsbx/xr.json" >/dev/null 2>&1 || grep socks5-sb "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
-echo "💣【 Socks5 】客户端信息如下："
-port_so=$(cat "$HOME/agsbx/port_so")
-echo "请配合其他应用内置代理使用，勿做节点直接使用"
-echo "客户端地址：$server_ip"
-echo "客户端端口：$port_so"
-echo "客户端用户名：$uuid"
-echo "客户端密码：$uuid"
-echo
+  echo "💣【 Socks5 】客户端信息如下："
+  port_so=$(cat "$HOME/agsbx/port_so")
+  if [ -n "$extport" ]; then
+    so_port="$extport"
+  else
+    so_port="$port_so"
+  fi
+  echo "请配合其他应用内置代理使用，勿做节点直接使用"
+  echo "客户端地址：$server_ip"
+  echo "客户端端口：$so_port"
+  echo "客户端用户名：$uuid"
+  echo "客户端密码：$uuid"
+  echo
 fi
 argodomain=$(cat "$HOME/agsbx/sbargoym.log" 2>/dev/null)
 [ -z "$argodomain" ] && argodomain=$(grep -a trycloudflare.com "$HOME/agsbx/argo.log" 2>/dev/null | awk 'NR==2{print}' | awk -F// '{print $2}' | awk '{print $1}')
