@@ -102,6 +102,24 @@ v6=$( (command -v curl >/dev/null 2>&1 && curl -s6m5 -k "$v46url" 2>/dev/null) |
 v4dq=$( (command -v curl >/dev/null 2>&1 && curl -s4m5 -k https://ip.fm | sed -n 's/.*Location: //p' 2>/dev/null) || (command -v wget >/dev/null 2>&1 && timeout 3 wget -4 --tries=2 -qO- https://ip.fm | grep '<span class="has-text-grey-light">Location:' | tail -n1 | sed -E 's/.*>Location: <\/span>([^<]+)<.*/\1/' 2>/dev/null) )
 v6dq=$( (command -v curl >/dev/null 2>&1 && curl -s6m5 -k https://ip.fm | sed -n 's/.*Location: //p' 2>/dev/null) || (command -v wget >/dev/null 2>&1 && timeout 3 wget -6 --tries=2 -qO- https://ip.fm | grep '<span class="has-text-grey-light">Location:' | tail -n1 | sed -E 's/.*>Location: <\/span>([^<]+)<.*/\1/' 2>/dev/null) )
 }
+get_country_code(){
+  local ip="$1"
+  local country_code=""
+  # 使用ip-api.com获取国家代码
+  if [ -n "$ip" ]; then
+    # 去掉IPv6的方括号
+    ip=$(echo "$ip" | sed 's/^\[//;s/\]$//')
+    country_code=$(curl -s "http://ip-api.com/json/$ip?fields=countryCode" 2>/dev/null | grep -o '"[A-Z][A-Z]"' | tr -d '"' | head -1)
+  fi
+  # 如果获取失败，使用通用代码
+  if [ -z "$country_code" ]; then
+    case "$ip" in
+      104.28.*|172.64.*|162.158.*|173.245.*|199.232.*|188.114.*|141.101.*|108.162.*|190.93.*|2400:cb00:*|2606:4700:*|2803:f800:*|2405:b500:*|2405:8100:*|2a06:98c0:*|2cb6:94c0:*) country_code="CF" ;;
+      *) country_code="XX" ;;
+    esac
+  fi
+  echo "$country_code"
+}
 warpsx(){
 warpurl=$( (command -v curl >/dev/null 2>&1 && curl -sm5 -k https://warp.xijp.eu.org 2>/dev/null) || (command -v wget >/dev/null 2>&1 && timeout 3 wget --tries=2 -qO- https://warp.xijp.eu.org 2>/dev/null) )
 if echo "$warpurl" | grep -q html; then
@@ -1201,6 +1219,11 @@ uuid=$(cat "$HOME/agsbx/uuid")
   argoip=$(cat "$HOME/agsbx/argoip" 2>/dev/null)
   nodeaddr=$(cat "$HOME/agsbx/nodeaddr" 2>/dev/null)
   extport=$(cat "$HOME/agsbx/extport" 2>/dev/null)
+  # 获取国家代码并添加到节点名称前缀
+  country_code=$(get_country_code "$server_ip")
+  if [ -n "$country_code" ]; then
+    sxname="${country_code}-${sxname}"
+  fi
 echo "*********************************************************"
 echo "*********************************************************"
 echo "Argosbx脚本输出节点配置如下："
@@ -1483,7 +1506,9 @@ echo "========================================================="
 push_gist(){
   if [ -f "$HOME/agsbx/jh.txt" ]; then
     gist_content=$(cat "$HOME/agsbx/jh.txt" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
-    gist_data="{\"description\":\"Argosbx节点信息\",\"public\":false,\"files\":{\"nodes.txt\":{\"content\":\"$gist_content\"}}}"
+    # 使用节点名称作为文件名
+    gist_filename="${sxname}${hostname}.txt"
+    gist_data="{\"description\":\"Argosbx节点信息\",\"public\":false,\"files\":{\"${gist_filename}\":{\"content\":\"$gist_content\"}}}"
     if [ -n "$gh_gist_id" ]; then
       result=$(curl -s -X PATCH -H "Authorization: token $gh_token" -H "Content-Type: application/json" -d "$gist_data" "https://api.github.com/gists/$gh_gist_id" 2>/dev/null)
       gist_url="https://gist.github.com/$gh_gist_id"
