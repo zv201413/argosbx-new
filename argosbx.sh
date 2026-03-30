@@ -21,16 +21,27 @@ else
 fi
 export uuid=${uuid:-''}
 export port_vl_re=${vlpt:-''}
+export port_vl_re_ext=${vlpt_ext:-''}
 export port_vm_ws=${vmpt:-''}
+export port_vm_ws_ext=${vmpt_ext:-''}
 export port_vw=${vwpt:-''}
+export port_vw_ext=${vwpt_ext:-''}
 export port_hy2=${hypt:-''}
+export port_hy2_ext=${hypt_ext:-''}
 export port_tu=${tupt:-''}
+export port_tu_ext=${tupt_ext:-''}
 export port_xh=${xhpt:-''}
+export port_xh_ext=${xhpt_ext:-''}
 export port_vx=${vxpt:-''}
+export port_vx_ext=${vxpt_ext:-''}
 export port_an=${anpt:-''}
+export port_an_ext=${anpt_ext:-''}
 export port_ar=${arpt:-''}
+export port_ar_ext=${arpt_ext:-''}
 export port_ss=${sspt:-''}
+export port_ss_ext=${sspt_ext:-''}
 export port_so=${sopt:-''}
+export port_so_ext=${sopt_ext:-''}
 export ym_vl_re=${reym:-''}
 export cdnym=${cdnym:-''}
 export argo=${argo:-''}
@@ -1285,8 +1296,8 @@ fi
 if grep ss-2022 "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
   echo "💣【 Shadowsocks-2022 】节点信息如下："
   port_ss=$(cat "$HOME/agsbx/port_ss")
-  if [ -n "$extport" ]; then
-    ss_port="$extport"
+  if [ -n "$port_ss_ext" ]; then
+    ss_port="$port_ss_ext"
   else
     ss_port="$port_ss"
   fi
@@ -1298,8 +1309,8 @@ fi
 if grep vmess-xr "$HOME/agsbx/xr.json" >/dev/null 2>&1 || grep vmess-sb "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
   echo "💣【 Vmess-ws 】节点信息如下："
   port_vm_ws=$(cat "$HOME/agsbx/port_vm_ws")
-  if [ -n "$extport" ]; then
-    vm_port="$extport"
+  if [ -n "$port_vm_ws_ext" ]; then
+    vm_port="$port_vm_ws_ext"
   else
     vm_port="$port_vm_ws"
   fi
@@ -1319,8 +1330,8 @@ fi
 if grep anytls-sb "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
   echo "💣【 AnyTLS 】节点信息如下："
   port_an=$(cat "$HOME/agsbx/port_an")
-  if [ -n "$extport" ]; then
-    an_port="$extport"
+  if [ -n "$port_an_ext" ]; then
+    an_port="$port_an_ext"
   else
     an_port="$port_an"
   fi
@@ -1332,8 +1343,8 @@ fi
 if grep anyreality-sb "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
   echo "💣【 Any-Reality 】节点信息如下："
   port_ar=$(cat "$HOME/agsbx/port_ar")
-  if [ -n "$extport" ]; then
-    ar_port="$extport"
+  if [ -n "$port_ar_ext" ]; then
+    ar_port="$port_ar_ext"
   else
     ar_port="$port_ar"
   fi
@@ -1347,8 +1358,8 @@ if [ -n "$nodeaddr" ]; then
   else
     hy2_addr="$server_ip"
   fi
-  if [ -n "$extport" ]; then
-    hy2_port="$extport"
+  if [ -n "$port_hy2_ext" ]; then
+    hy2_port="$port_hy2_ext"
   else
     hy2_port="$port_hy2"
   fi
@@ -1365,8 +1376,8 @@ if [ -n "$nodeaddr" ]; then
   else
     tuic_addr="$server_ip"
   fi
-  if [ -n "$extport" ]; then
-    tuic_port="$extport"
+  if [ -n "$port_tu_ext" ]; then
+    tuic_port="$port_tu_ext"
   else
     tuic_port="$port_tu"
   fi
@@ -1381,8 +1392,8 @@ if [ -n "$nodeaddr" ]; then
 if grep socks5-xr "$HOME/agsbx/xr.json" >/dev/null 2>&1 || grep socks5-sb "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
   echo "💣【 Socks5 】客户端信息如下："
   port_so=$(cat "$HOME/agsbx/port_so")
-  if [ -n "$extport" ]; then
-    so_port="$extport"
+  if [ -n "$port_so_ext" ]; then
+    so_port="$port_so_ext"
   else
     so_port="$port_so"
   fi
