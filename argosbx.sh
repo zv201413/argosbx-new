@@ -1299,14 +1299,14 @@ fi
 if grep vless-ws "$HOME/agsbx/xr.json" >/dev/null 2>&1; then
 port_vw=$(cat "$HOME/agsbx/port_vw")
 echo "💣【 Vless-ws 】节点信息如下："
-vl_vw_link="vless://$uuid@$server_ip:$port_vw?encryption=none&type=ws&path=/ws#${sxname}vl-ws-$hostname"
+vl_vw_link="vless://$uuid@$server_ip:$port_vw?encryption=none&type=ws&path=%2Fws#${sxname}vl-ws-$hostname"
 echo "$vl_vw_link" >> "$HOME/agsbx/jh.txt"
 echo "$vl_vw_link"
 echo
 if [ -f "$HOME/agsbx/cdnym" ]; then
 echo "💣【 Vless-ws-cdn 】节点信息如下："
 echo "注：默认地址 yg数字.ygkkk.dpdns.org 可自行更换优选IP域名，如是回源端口需手动修改443或者80系端口"
-vl_vw_cdn_link="vless://$uuid@$argodomain:$port_vw?encryption=none&type=ws&host=$xvvmcdnym&path=/ws#${sxname}vl-ws-cdn-$hostname"
+vl_vw_cdn_link="vless://$uuid@$argodomain:$port_vw?encryption=none&type=ws&host=$xvvmcdnym&path=%2Fws#${sxname}vl-ws-cdn-$hostname"
 echo "$vl_vw_cdn_link" >> "$HOME/agsbx/jh.txt"
 echo "$vl_vw_cdn_link"
 echo
@@ -1473,9 +1473,9 @@ elif [ "$vlvm" = "Vless" ]; then
     else
       argo_addr="$argodomain"
     fi
-    vwatls_link1="vless://$uuid@$argo_addr:443?encryption=none&type=ws&host=$argodomain&path=/ws&security=tls&sni=$argodomain&fp=chrome&insecure=0&allowInsecure=0#${sxname}vless-ws-tls-argo-$hostname"
+    vwatls_link1="vless://$uuid@$argo_addr:443?encryption=none&type=ws&host=$argodomain&path=%2Fws&security=tls&sni=$argodomain&fp=chrome&insecure=0&allowInsecure=0#${sxname}vless-ws-tls-argo-$hostname"
     echo "$vwatls_link1" >> "$HOME/agsbx/jh.txt"
-    vwa_link2="vless://$uuid@$argo_addr:80?encryption=none&type=ws&host=$argodomain&path=/ws&security=none#${sxname}vless-ws-argo-$hostname"
+    vwa_link2="vless://$uuid@$argo_addr:80?encryption=none&type=ws&host=$argodomain&path=%2Fws&security=none#${sxname}vless-ws-argo-$hostname"
     echo "$vwa_link2" >> "$HOME/agsbx/jh.txt"
   fi
 sbtk=$(cat "$HOME/agsbx/sbargotoken.log" 2>/dev/null)
