@@ -401,9 +401,9 @@
           <h3>Xray可选协议：</h3>
           <div class="protocol-grid">
             <label><input type="checkbox" data-proto="vlpt"> Vless-tcp-reality-vision <span class="pill">vlpt</span></label><input type="text" placeholder="留空则随机端口" data-port="vlpt">
-            <label><input type="checkbox" data-proto="xhpt"> Vless-xhttp-reality-enc <span class="pill">xhpt</span></label><input type="text" placeholder="留空则随机端口" data-port="xhpt">
-            <label><input type="checkbox" data-proto="vxpt"> Vless-xhttp-enc <span class="pill">vxpt</span></label><input type="text" placeholder="留空则随机端口（支持CDN优选）" data-port="vxpt">
-            <label><input type="checkbox" data-proto="vwpt"> Vless-ws-enc <span class="pill">vwpt</span></label><input type="text" placeholder="留空则随机端口（支持CDN优选，固定隧道必填URL端口）" data-port="vwpt">
+            <label><input type="checkbox" data-proto="xhpt"> Vless-xhttp-reality <span class="pill">xhpt</span></label><input type="text" placeholder="留空则随机端口" data-port="xhpt">
+            <label><input type="checkbox" data-proto="vxpt"> Vless-xhttp <span class="pill">vxpt</span></label><input type="text" placeholder="留空则随机端口（支持CDN优选）" data-port="vxpt">
+            <label><input type="checkbox" data-proto="vwpt"> Vless-ws <span class="pill">vwpt</span></label><input type="text" placeholder="留空则随机端口（支持CDN优选，固定隧道必填URL端口）" data-port="vwpt">
           </div>
         </div>
         <div class="protocol-group separator">
@@ -435,7 +435,7 @@
           </div>
         </div>
         <div class="row"><label>Reality 域名 <span class="pill">reym</span></label><input id="reym" type="text" placeholder="留空则默认apple.com"/></div>
-        <div class="row"><label>CF解析IP的域名<span class="pill">cdnym</span></label><input id="cdnym" type="text" placeholder="Vmess-ws、Vless-xhttp/ws-enc启用80、回源CDN时可用" disabled/></div>
+        <div class="row"><label>CF解析IP的域名<span class="pill">cdnym</span></label><input id="cdnym" type="text" placeholder="Vmess-ws、Vless-xhttp/ws启用80、回源CDN时可用" disabled/></div>
         <div class="row"><label>套WARP-IP出站 <span class="pill">warp</span></label>
           <select id="warp">
             <option value="">默认 服务器本地IP出站</option>
@@ -483,7 +483,7 @@
           <label>启用Argo隧道开关 <span class="pill">argo</span></label>
           <select id="argoSelect">
             <option value="">默认 关闭</option>
-            <option value="vwpt">启用Vless-ws-enc的Argo隧道 </option>
+            <option value="vwpt">启用Vless-ws的Argo隧道 </option>
             <option value="vmpt">启用Vmess-ws的Argo隧道 </option>
           </select>
         </div>
