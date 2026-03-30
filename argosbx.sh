@@ -1506,8 +1506,8 @@ echo "========================================================="
 push_gist(){
   if [ -f "$HOME/agsbx/jh.txt" ]; then
     gist_content=$(cat "$HOME/agsbx/jh.txt" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
-    # 使用节点名称作为文件名
-    gist_filename="${sxname}${hostname}.txt"
+    # 使用简单文件名，避免代理软件兼容性问题
+    gist_filename="sub.txt"
     gist_data="{\"description\":\"Argosbx节点信息\",\"public\":false,\"files\":{\"${gist_filename}\":{\"content\":\"$gist_content\"}}}"
     if [ -n "$gh_gist_id" ]; then
       result=$(curl -s -X PATCH -H "Authorization: token $gh_token" -H "Content-Type: application/json" -d "$gist_data" "https://api.github.com/gists/$gh_gist_id" 2>/dev/null)
