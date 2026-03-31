@@ -1231,7 +1231,6 @@ ipbest
 fi
 }
 ipchange
-rm -rf "$HOME/agsbx/jh.txt"
 uuid=$(cat "$HOME/agsbx/uuid")
   server_ip=$(cat "$HOME/agsbx/server_ip.log")
   sxname=$(cat "$HOME/agsbx/name" 2>/dev/null)
@@ -1276,7 +1275,6 @@ if grep xhttp-reality "$HOME/agsbx/xr.json" >/dev/null 2>&1; then
 echo "💣【 Vless-xhttp-reality 】节点信息如下："
 port_xh=$(cat "$HOME/agsbx/port_xh")
 vl_xh_link="vless://$uuid@$server_ip:$port_xh?security=reality&type=xhttp&path=/xhttp&mode=auto&sni=$ym_vl_re&fp=chrome&pbk=$public_key_x&sid=$short_id_x&encryption=none#${sxname}vl-xhttp-reality-$hostname"
-echo "$vl_xh_link" >> "$HOME/agsbx/jh.txt"
 echo "$vl_xh_link"
 echo
 fi
@@ -1284,14 +1282,12 @@ if grep vless-xhttp "$HOME/agsbx/xr.json" >/dev/null 2>&1; then
 echo "💣【 Vless-xhttp 】节点信息如下："
 port_vx=$(cat "$HOME/agsbx/port_vx")
 vl_vx_link="vless://$uuid@$server_ip:$port_vx?security=none&type=xhttp&path=/xhttp&mode=auto&encryption=none#${sxname}vl-xhttp-$hostname"
-echo "$vl_vx_link" >> "$HOME/agsbx/jh.txt"
 echo "$vl_vx_link"
 echo
 if [ -f "$HOME/agsbx/cdnym" ]; then
 echo "💣【 Vless-xhttp-cdn 】节点信息如下："
 echo "注：默认地址 yg数字.ygkkk.dpdns.org 可自行更换优选IP域名，如是回源端口需手动修改443或者80系端口"
 vl_vx_cdn_link="vless://$uuid@$argodomain:$port_vx?security=none&type=xhttp&path=/xhttp&mode=auto&host=$xvvmcdnym&encryption=none#${sxname}vl-xhttp-cdn-$hostname"
-echo "$vl_vx_cdn_link" >> "$HOME/agsbx/jh.txt"
 echo "$vl_vx_cdn_link"
 echo
 fi
@@ -1300,14 +1296,12 @@ if grep vless-xhttp "$HOME/agsbx/xr.json" >/dev/null 2>&1; then
 echo "💣【 Vless-xhttp 】节点信息如下："
 port_vx=$(cat "$HOME/agsbx/port_vx")
 vl_vx_link="vless://$uuid@$server_ip:$port_vx?encryption=none&type=xhttp&path=/xhttp&mode=auto#${sxname}vl-xhttp-$hostname"
-echo "$vl_vx_link" >> "$HOME/agsbx/jh.txt"
 echo "$vl_vx_link"
 echo
 if [ -f "$HOME/agsbx/cdnym" ]; then
 echo "💣【 Vless-xhttp-cdn 】节点信息如下："
 echo "注：默认地址 yg数字.ygkkk.dpdns.org 可自行更换优选IP域名，如是回源端口需手动修改443或者80系端口"
 vl_vx_cdn_link="vless://$uuid@$argodomain:$port_vx?encryption=none&type=xhttp&host=$xvvmcdnym&path=/xhttp&mode=auto#${sxname}vl-xhttp-cdn-$hostname"
-echo "$vl_vx_cdn_link" >> "$HOME/agsbx/jh.txt"
 echo "$vl_vx_cdn_link"
 echo
 fi
@@ -1316,14 +1310,12 @@ if grep vless-ws "$HOME/agsbx/xr.json" >/dev/null 2>&1; then
 port_vw=$(cat "$HOME/agsbx/port_vw")
 echo "💣【 Vless-ws 】节点信息如下："
 vl_vw_link="vless://$uuid@$server_ip:$port_vw?security=none&type=ws&path=%2Fws&encryption=none#${sxname}vl-ws-$hostname"
-echo "$vl_vw_link" >> "$HOME/agsbx/jh.txt"
 echo "$vl_vw_link"
 echo
 if [ -f "$HOME/agsbx/cdnym" ]; then
 echo "💣【 Vless-ws-cdn 】节点信息如下："
 echo "注：默认地址 yg数字.ygkkk.dpdns.org 可自行更换优选IP域名，如是回源端口需手动修改443或者80系端口"
 vl_vw_cdn_link="vless://$uuid@$argodomain:$port_vw?security=none&type=ws&path=%2Fws&host=$xvvmcdnym&encryption=none#${sxname}vl-ws-cdn-$hostname"
-echo "$vl_vw_cdn_link" >> "$HOME/agsbx/jh.txt"
 echo "$vl_vw_cdn_link"
 echo
 fi
@@ -1332,7 +1324,6 @@ if grep reality-vision "$HOME/agsbx/xr.json" >/dev/null 2>&1; then
 echo "💣【 Vless-tcp-reality-vision 】节点信息如下："
 port_vl_re=$(cat "$HOME/agsbx/port_vl_re")
 vl_link="vless://$uuid@$server_ip:$port_vl_re?security=reality&type=tcp&headerType=none&flow=xtls-rprx-vision&sni=$ym_vl_re&fp=chrome&pbk=$public_key_x&sid=$short_id_x&encryption=none#${sxname}vl-reality-vision-$hostname"
-echo "$vl_link" >> "$HOME/agsbx/jh.txt"
 echo "$vl_link"
 echo
 fi
@@ -1345,7 +1336,6 @@ if grep ss-2022 "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
     ss_port="$port_ss"
   fi
   ss_link="ss://$(echo -n "2022-blake3-aes-128-gcm:$sskey@$server_ip:$ss_port" | base64 -w0)#${sxname}Shadowsocks-2022-$hostname"
-  echo "$ss_link" >> "$HOME/agsbx/jh.txt"
   echo "$ss_link"
   echo
 fi
@@ -1358,14 +1348,12 @@ if grep vmess-xr "$HOME/agsbx/xr.json" >/dev/null 2>&1 || grep vmess-sb "$HOME/a
     vm_port="$port_vm_ws"
   fi
   vm_link="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vm-ws-$hostname\", \"add\": \"$server_ip\", \"port\": \"$vm_port\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"www.bing.com\", \"path\": \"/$uuid-vm\", \"tls\": \"\"}" | base64 -w0)"
-  echo "$vm_link" >> "$HOME/agsbx/jh.txt"
   echo "$vm_link"
   echo
   if [ -f "$HOME/agsbx/cdnym" ]; then
     echo "💣【 Vmess-ws-cdn 】节点信息如下："
     echo "注：默认地址 yg数字.ygkkk.dpdns.org 可自行更换优选IP域名，如是回源端口需手动修改443或者80系端口"
     vm_cdn_link="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vm-ws-cdn-$hostname\", \"add\": \"$argodomain\", \"port\": \"$vm_port\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$xvvmcdnym\", \"path\": \"/$uuid-vm\", \"tls\": \"\"}" | base64 -w0)"
-    echo "$vm_cdn_link" >> "$HOME/agsbx/jh.txt"
     echo "$vm_cdn_link"
     echo
   fi
@@ -1379,7 +1367,6 @@ if grep anytls-sb "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
     an_port="$port_an"
   fi
   an_link="anytls://$uuid@$server_ip:$an_port?insecure=1&allowInsecure=1#${sxname}anytls-$hostname"
-  echo "$an_link" >> "$HOME/agsbx/jh.txt"
   echo "$an_link"
   echo
 fi
@@ -1392,7 +1379,6 @@ if grep anyreality-sb "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
     ar_port="$port_ar"
   fi
   ar_link="anytls://$uuid@$server_ip:$ar_port?security=reality&sni=$ym_vl_re&fp=chrome&pbk=$public_key_s&sid=$short_id_s&type=tcp&headerType=none#${sxname}any-reality-$hostname"
-  echo "$ar_link" >> "$HOME/agsbx/jh.txt"
   echo "$ar_link"
   echo
 fi
@@ -1410,7 +1396,6 @@ if [ -n "$nodeaddr" ]; then
     echo "💣【 Hysteria2 】节点信息如下："
     port_hy2=$(cat "$HOME/agsbx/port_hy2")
     hy2_link="hysteria2://$uuid@$hy2_addr:$hy2_port?security=tls&alpn=h3&insecure=1&sni=www.bing.com#${sxname}hy2-$hostname"
-    echo "$hy2_link" >> "$HOME/agsbx/jh.txt"
     echo "$hy2_link"
     echo
   fi
@@ -1428,7 +1413,6 @@ if [ -n "$nodeaddr" ]; then
     echo "💣【 Tuic 】节点信息如下："
     port_tu=$(cat "$HOME/agsbx/port_tu")
     tuic5_link="tuic://$uuid:$uuid@$tuic_addr:$tuic_port?congestion_control=bbr&udp_relay_mode=native&alpn=h3&sni=www.bing.com&allow_insecure=1&allowInsecure=1#${sxname}tuic-$hostname"
-    echo "$tuic5_link" >> "$HOME/agsbx/jh.txt"
     echo "$tuic5_link"
     echo
   fi
@@ -1515,14 +1499,48 @@ echo "---------------------------------------------------------"
 echo "$argoshow"
 echo
 echo "---------------------------------------------------------"
-# 清理和格式化 jh.txt 文件
-if [ -f "$HOME/agsbx/jh.txt" ]; then
-  # 过滤空行、\r（回车符）、空字节，并转义 /ws 路径
-  cat "$HOME/agsbx/jh.txt" | tr -d '\0\r' | sed '/^$/d' | sed 's|path=/ws|path=%2Fws|g' > "$HOME/agsbx/jh.txt.tmp"
-  # 确保文件末尾有换行符
-  printf "%s\n" "$(cat "$HOME/agsbx/jh.txt.tmp")" > "$HOME/agsbx/jh.txt"
-  rm -f "$HOME/agsbx/jh.txt.tmp"
-fi
+# 定义输出路径
+JH_FILE="$HOME/agsbx/jh.txt"
+
+# 直接构建纯净的节点列表
+{
+    # Xray 协议节点
+    [ -n "$vl_xh_link" ] && echo "$vl_xh_link"
+    [ -n "$vl_vx_link" ] && echo "$vl_vx_link"
+    [ -n "$vl_vx_cdn_link" ] && echo "$vl_vx_cdn_link"
+    [ -n "$vl_vw_link" ] && echo "$vl_vw_link"
+    [ -n "$vl_vw_cdn_link" ] && echo "$vl_vw_cdn_link"
+    [ -n "$vl_link" ] && echo "$vl_link"
+    [ -n "$ss_link" ] && echo "$ss_link"
+    [ -n "$vm_link" ] && echo "$vm_link"
+    [ -n "$vm_cdn_link" ] && echo "$vm_cdn_link"
+    # Sing-box 协议节点
+    [ -n "$an_link" ] && echo "$an_link"
+    [ -n "$ar_link" ] && echo "$ar_link"
+    [ -n "$hy2_link" ] && echo "$hy2_link"
+    [ -n "$tuic5_link" ] && echo "$tuic5_link"
+    # Argo 隧道节点
+    [ -n "$vmatls_link1" ] && echo "$vmatls_link1"
+    [ -n "$vmatls_link2" ] && echo "$vmatls_link2"
+    [ -n "$vmatls_link3" ] && echo "$vmatls_link3"
+    [ -n "$vmatls_link4" ] && echo "$vmatls_link4"
+    [ -n "$vmatls_link5" ] && echo "$vmatls_link5"
+    [ -n "$vmatls_link6" ] && echo "$vmatls_link6"
+    [ -n "$vma_link7" ] && echo "$vma_link7"
+    [ -n "$vma_link8" ] && echo "$vma_link8"
+    [ -n "$vma_link9" ] && echo "$vma_link9"
+    [ -n "$vma_link10" ] && echo "$vma_link10"
+    [ -n "$vma_link11" ] && echo "$vma_link11"
+    [ -n "$vma_link12" ] && echo "$vma_link12"
+    [ -n "$vma_link13" ] && echo "$vma_link13"
+    [ -n "$vwatls_link1" ] && echo "$vwatls_link1"
+    [ -n "$vwa_link2" ] && echo "$vwa_link2"
+} | sed 's|path=\([^&#]*\)|path=%2F\1|g; s|path=%2F/|path=%2F|g' | \
+tr -d '\0\r' | sed '/^$/d' > "$JH_FILE"
+
+# 强制在文件末尾追加一个标准换行符
+sed -i '$a\' "$JH_FILE"
+
 echo "聚合节点信息，请进入 $HOME/agsbx/jh.txt 文件目录查看或者运行 cat $HOME/agsbx/jh.txt 查看"
 echo "========================================================="
   if [ -n "$gh_token" ]; then
@@ -1548,7 +1566,6 @@ push_gist(){
     fi
     if [ -n "$gh_gist_id" ]; then
       echo "节点信息已推送到Gist：$gist_url"
-      echo "$gist_url" >> "$HOME/agsbx/jh.txt"
     else
       echo "Gist推送失败，请检查GitHub Token是否正确"
     fi
