@@ -1232,10 +1232,6 @@ fi
 }
 ipchange
 rm -rf "$HOME/agsbx/jh.txt"
-# 添加订阅头部信息
-current_time=$(date "+%Y/%m/%d %H:%M:%S")
-echo "最后更新时间: $current_time" >> "$HOME/agsbx/jh.txt"
-echo "----------------------------" >> "$HOME/agsbx/jh.txt"
 uuid=$(cat "$HOME/agsbx/uuid")
   server_ip=$(cat "$HOME/agsbx/server_ip.log")
   sxname=$(cat "$HOME/agsbx/name" 2>/dev/null)
