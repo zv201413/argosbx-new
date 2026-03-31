@@ -1515,8 +1515,14 @@ echo "---------------------------------------------------------"
 echo "$argoshow"
 echo
 echo "---------------------------------------------------------"
-# 统一转义 ws 路径
-sed -i 's|path=/ws|path=%2Fws|g' "$HOME/agsbx/jh.txt"
+# 清理和格式化 jh.txt 文件
+if [ -f "$HOME/agsbx/jh.txt" ]; then
+  # 过滤空行、\r（回车符）、空字节，并转义 /ws 路径
+  cat "$HOME/agsbx/jh.txt" | tr -d '\0\r' | sed '/^$/d' | sed 's|path=/ws|path=%2Fws|g' > "$HOME/agsbx/jh.txt.tmp"
+  # 确保文件末尾有换行符
+  printf "%s\n" "$(cat "$HOME/agsbx/jh.txt.tmp")" > "$HOME/agsbx/jh.txt"
+  rm -f "$HOME/agsbx/jh.txt.tmp"
+fi
 echo "聚合节点信息，请进入 $HOME/agsbx/jh.txt 文件目录查看或者运行 cat $HOME/agsbx/jh.txt 查看"
 echo "========================================================="
   if [ -n "$gh_token" ]; then
