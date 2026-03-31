@@ -347,6 +347,19 @@
       white-space: nowrap;
       border-radius: 8px;
     }
+    .input-with-preview {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+    }
+    .name-preview {
+      margin-top: 5px;
+      padding: 5px 8px;
+      background: rgba(79, 124, 255, 0.1);
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--acc);
+    }
     .protocol-group {
       margin-bottom: 16px;
     }
@@ -488,7 +501,12 @@
             <option value="y">开启 执行一次即可关闭</option>
           </select>
         </div>
-<div class="row"><label>导出节点名称前缀 <span class="pill">name</span></label><input id="name" type="text" placeholder="留空则默认协议名前缀"/></div>
+<div class="row"><label>节点名称前缀 <span class="pill">name</span></label>
+          <div class="input-with-preview">
+            <input id="name" type="text" placeholder="留空则默认协议名前缀"/>
+            <div class="name-preview" id="namePreview" style="margin-top: 5px; font-size: 12px; color: var(--sub);"></div>
+          </div>
+        </div>
   <div class="row"><label>Argo优选IP/域名 <span class="pill">argoip</span></label><input id="argoip" type="text" placeholder="留空则默认使用yg数字.ygkkk.dpdns.org"/></div>
   <div class="row"><label>直连节点自定义地址 <span class="pill">nodeaddr</span></label><input id="nodeaddr" type="text" placeholder="hy2/tuic节点地址，留空则使用VPS IP"/></div>
   </section>
@@ -727,6 +745,22 @@ document.getElementById('uuid').value = '';
     uuidInput.value = crypto.randomUUID();
     render();
   });
+
+  // 节点名称前缀实时预览
+  const nameInput = document.getElementById('name');
+  const namePreview = document.getElementById('namePreview');
+  
+  function updateNamePreview() {
+    const prefix = nameInput.value.trim();
+    if (prefix) {
+      namePreview.textContent = `预览: ${prefix}-vl-ws, ${prefix}-hy2, ${prefix}-tuic...`;
+    } else {
+      namePreview.textContent = '预览: vl-ws, hy2, tuic... (无前缀)';
+    }
+  }
+  
+  nameInput.addEventListener('input', updateNamePreview);
+  updateNamePreview(); // 初始化预览
 
   commandTypeRadios.forEach(radio => {
     radio.addEventListener('change', render);
