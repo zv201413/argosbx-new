@@ -55,7 +55,7 @@ export argoip=${argoip:-''}
 export gh_token=${gh_token:-''}
 export gh_gist_id=${gh_gist_id:-''}
 export nodeaddr=${nodeaddr:-''}
-export extport=${extport:-''}
+export ippref=${ippref:-''}
 [ -z "${novps+x}" ] || force_nohup=yes
 v46url="https://icanhazip.com"
 agsbxurl="https://raw.githubusercontent.com/yonggekkk/argosbx/main/argosbx.sh"
@@ -145,9 +145,9 @@ if [ -n "$name" ]; then
     echo "$nodeaddr" > "$HOME/agsbx/nodeaddr"
     echo "直连节点自定义地址：$nodeaddr"
   fi
-  if [ -n "$extport" ]; then
-    echo "$extport" > "$HOME/agsbx/extport"
-    echo "外部映射端口：$extport"
+  if [ -n "$ippref" ]; then
+    echo "$ippref" > "$HOME/agsbx/ippref"
+    echo "优先IPv4/IPv6出站：$ippref"
   fi
   v4v6
 if echo "$v6" | grep -q '^2a09' || echo "$v4" | grep -q '^104.28'; then
@@ -177,7 +177,27 @@ xs6|s6x) s1outtag=warp-out; s2outtag=direct; x1outtag=warp-out; x2outtag=warp-ou
 esac
 fi
 fi
-case "$warp" in *x4*) wxryx='ForceIPv4' ;; *x6*) wxryx='ForceIPv6' ;; *) wxryx='ForceIPv6v4' ;; esac
+
+# 处理优先 IPv4/IPv6 出站设置
+if [ -n "$ippref" ]; then
+  case "$ippref" in
+    prefer_ipv6)
+      sbyx='prefer_ipv6'
+      xryx='ForceIPv6v4'
+      ;;
+    prefer_ipv4)
+      sbyx='prefer_ipv4'
+      xryx='ForceIPv4v6'
+      ;;
+    *)
+      # auto 或空值，使用原有逻辑
+      ;;
+  esac
+fi
+
+# 如果没有设置 ippref，使用原有逻辑
+if [ -z "$ippref" ]; then
+  case "$warp" in *x4*) wxryx='ForceIPv4' ;; *x6*) wxryx='ForceIPv6' ;; *) wxryx='ForceIPv6v4' ;; esac
 if command -v curl >/dev/null 2>&1; then
 curl -s4m5 -k "$v46url" >/dev/null 2>&1 && v4_ok=true
 elif command -v wget >/dev/null 2>&1; then
@@ -197,6 +217,7 @@ case "$warp" in *x4*) xryx='ForceIPv4' ;; *x*) xryx='ForceIPv6v4' ;; *) xryx='Fo
 elif [ "$v4_ok" != true ] && [ "$v6_ok" = true ]; then
 case "$warp" in *s6*) sbyx='ipv6_only' ;; *) sbyx='prefer_ipv4' ;; esac
 case "$warp" in *x6*) xryx='ForceIPv6' ;; *x*) xryx='ForceIPv4v6' ;; *) xryx='ForceIPv6v4' ;; esac
+fi
 fi
 }
 upxray(){
@@ -1098,7 +1119,7 @@ mkdir -p "$HOME/bin"
 (command -v curl >/dev/null 2>&1 && curl -sL "$agsbxurl" -o "$SCRIPT_PATH") || (command -v wget >/dev/null 2>&1 && wget -qO "$SCRIPT_PATH" "$agsbxurl")
 chmod +x "$SCRIPT_PATH"
 if ! pidof systemd >/dev/null 2>&1 && ! command -v rc-service >/dev/null 2>&1; then
-echo "if ! find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null | grep -Eq 'agsbx/(s|x)' && ! pgrep -f 'agsbx/(s|x)' >/dev/null 2>&1; then echo '检测到系统可能中断过，或者变量格式错误？建议在SSH对话框输入 reboot 重启下服务器。现在自动执行Argosbx脚本的节点恢复操作，请稍等……'; sleep 6; export cdnym=\"${cdnym}\" name=\"${name}\" ippz=\"${ippz}\" argo=\"${argo}\" uuid=\"${uuid}\" $wap=\"${warp}\" $xhp=\"${port_xh}\" $vxp=\"${port_vx}\" $ssp=\"${port_ss}\" $sop=\"${port_so}\" $anp=\"${port_an}\" $arp=\"${port_ar}\" $vlp=\"${port_vl_re}\" $vwp=\"${port_vw}\" $vmp=\"${port_vm_ws}\" $hyp=\"${port_hy2}\" $tup=\"${port_tu}\" reym=\"${ym_vl_re}\" agn=\"${ARGO_DOMAIN}\" agk=\"${ARGO_AUTH}\" argoip=\"${argoip}\" gh_token=\"${gh_token}\" gh_gist_id=\"${gh_gist_id}\" nodeaddr=\"${nodeaddr}\" extport=\"${extport}\"; bash \"$HOME/bin/agsbx\"; fi" >> ~/.bashrc
+echo "if ! find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null | grep -Eq 'agsbx/(s|x)' && ! pgrep -f 'agsbx/(s|x)' >/dev/null 2>&1; then echo '检测到系统可能中断过，或者变量格式错误？建议在SSH对话框输入 reboot 重启下服务器。现在自动执行Argosbx脚本的节点恢复操作，请稍等……'; sleep 6; export cdnym=\"${cdnym}\" name=\"${name}\" ippz=\"${ippz}\" ippref=\"${ippref}\" argo=\"${argo}\" uuid=\"${uuid}\" $wap=\"${warp}\" $xhp=\"${port_xh}\" $vxp=\"${port_vx}\" $ssp=\"${port_ss}\" $sop=\"${port_so}\" $anp=\"${port_an}\" $arp=\"${port_ar}\" $vlp=\"${port_vl_re}\" $vwp=\"${port_vw}\" $vmp=\"${port_vm_ws}\" $hyp=\"${port_hy2}\" $tup=\"${port_tu}\" reym=\"${ym_vl_re}\" agn=\"${ARGO_DOMAIN}\" agk=\"${ARGO_AUTH}\" argoip=\"${argoip}\" gh_token=\"${gh_token}\" gh_gist_id=\"${gh_gist_id}\" nodeaddr=\"${nodeaddr}\"; bash \"$HOME/bin/agsbx\"; fi" >> ~/.bashrc
 fi
 sed -i '/export PATH="\$HOME\/bin:\$PATH"/d' ~/.bashrc
 echo 'export PATH="$HOME/bin:$PATH"' >> "$HOME/.bashrc"
@@ -1222,7 +1243,7 @@ uuid=$(cat "$HOME/agsbx/uuid")
   xvvmcdnym=$(cat "$HOME/agsbx/cdnym" 2>/dev/null)
   argoip=$(cat "$HOME/agsbx/argoip" 2>/dev/null)
   nodeaddr=$(cat "$HOME/agsbx/nodeaddr" 2>/dev/null)
-  extport=$(cat "$HOME/agsbx/extport" 2>/dev/null)
+  ippref=$(cat "$HOME/agsbx/ippref" 2>/dev/null)
   # 获取国家代码并添加到节点名称前缀
   country_code=$(get_country_code "$server_ip")
   if [ -n "$country_code" ]; then
@@ -1591,7 +1612,7 @@ showmode
 exit
 elif [ "$1" = "rep" ]; then
 cleandel
-rm -rf "$HOME/agsbx"/{sb.json,xr.json,sbargoym.log,sbargotoken.log,argo.log,argoport.log,cdnym,name,argoip,nodeaddr,extport}
+rm -rf "$HOME/agsbx"/{sb.json,xr.json,sbargoym.log,sbargotoken.log,argo.log,argoport.log,cdnym,name,argoip,nodeaddr,ippref}
 echo "Argosbx重置协议完成，开始更新相关协议变量……" && sleep 2
 echo
 elif [ "$1" = "list" ]; then
