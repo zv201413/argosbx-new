@@ -1499,11 +1499,12 @@ echo "---------------------------------------------------------"
 echo "$argoshow"
 echo
 echo "---------------------------------------------------------"
+
 # 定义输出路径
 JH_FILE="$HOME/agsbx/jh.txt"
 
-# 直接构建纯净的节点列表
-{
+# 在内存中构建纯净的节点列表
+node_list=$({
     # Xray 协议节点
     [ -n "$vl_xh_link" ] && echo "$vl_xh_link"
     [ -n "$vl_vx_link" ] && echo "$vl_vx_link"
@@ -1535,40 +1536,58 @@ JH_FILE="$HOME/agsbx/jh.txt"
     [ -n "$vma_link13" ] && echo "$vma_link13"
     [ -n "$vwatls_link1" ] && echo "$vwatls_link1"
     [ -n "$vwa_link2" ] && echo "$vwa_link2"
-} | sed 's|path=/|path=%2F|g; s|path=%2F%2F|path=%2F|g' | \
-tr -d '\0\r' | sed '/^$/d' > "$JH_FILE"
+} | sed 's|path=/|path=%2F|g; s|path=%2F%2F|path=%2F|g' | tr -d '\0\r' | sed '/^$/d')
+
+# 先推送 Gist（在内存中处理，参考 PaperMC_WorldMagic 方式）
+if [ -n "$gh_token" ]; then
+  push_gist
+fi
+
+# 推送完成后再写入 jh.txt 文件
+printf "%s\n" "$node_list" > "$JH_FILE"
 
 # 强制在文件末尾追加一个标准换行符
 sed -i '$a\' "$JH_FILE"
 
 echo "聚合节点信息，请进入 $HOME/agsbx/jh.txt 文件目录查看或者运行 cat $HOME/agsbx/jh.txt 查看"
 echo "========================================================="
-  if [ -n "$gh_token" ]; then
-    push_gist
-  fi
 }
+
 push_gist(){
-  if [ -f "$HOME/agsbx/jh.txt" ]; then
-    # JSON 转义：将内容转换为 JSON 字符串格式
-    gist_content=$(cat "$HOME/agsbx/jh.txt" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
-    # 使用节点名称作为文件名，将-替换为_以提高兼容性
-    gist_filename="${sxname}${hostname}.txt"
-    gist_filename=$(echo "$gist_filename" | sed 's/-/_/g')
-    gist_data="{\"description\":\"Argosbx节点信息\",\"public\":false,\"files\":{\"${gist_filename}\":{\"content\":\"$gist_content\"}}}"
-    if [ -n "$gh_gist_id" ]; then
-      result=$(curl -s -X PATCH -H "Authorization: token $gh_token" -H "Content-Type: application/json" -d "$gist_data" "https://api.github.com/gists/$gh_gist_id" 2>/dev/null)
-      gist_url="https://gist.github.com/$gh_gist_id"
-    else
-      result=$(curl -s -X POST -H "Authorization: token $gh_token" -H "Content-Type: application/json" -d "$gist_data" "https://api.github.com/gists" 2>/dev/null)
-      gh_gist_id=$(echo "$result" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
-      echo "$gh_gist_id" > "$HOME/agsbx/gh_gist_id"
-      gist_url="https://gist.github.com/$gh_gist_id"
-    fi
-    if [ -n "$gh_gist_id" ]; then
-      echo "节点信息已推送到Gist：$gist_url"
-    else
-      echo "Gist推送失败，请检查GitHub Token是否正确"
-    fi
+  if [ -z "$node_list" ]; then
+    echo "Gist推送失败：未找到有效的节点链接"
+    return
+  fi
+  
+  # 添加时间戳头部（参考 PaperMC_WorldMagic 方式）
+  current_time=$(date "+%Y/%m/%d %H:%M:%S")
+  gist_full_content="最后更新时间: $current_time
+----------------------------
+$node_list"
+  
+  # JSON 转义：将内容转换为 JSON 字符串格式
+  gist_content=$(echo "$gist_full_content" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
+  
+  # 使用节点名称作为文件名，将-替换为_以提高兼容性
+  gist_filename="${sxname}${hostname}.txt"
+  gist_filename=$(echo "$gist_filename" | sed 's/-/_/g')
+  
+  gist_data="{\"description\":\"Argosbx节点信息\",\"public\":false,\"files\":{\"${gist_filename}\":{\"content\":\"$gist_content\"}}}"
+  
+  if [ -n "$gh_gist_id" ]; then
+    result=$(curl -s -X PATCH -H "Authorization: token $gh_token" -H "Content-Type: application/json" -d "$gist_data" "https://api.github.com/gists/$gh_gist_id" 2>/dev/null)
+    gist_url="https://gist.github.com/$gh_gist_id"
+  else
+    result=$(curl -s -X POST -H "Authorization: token $gh_token" -H "Content-Type: application/json" -d "$gist_data" "https://api.github.com/gists" 2>/dev/null)
+    gh_gist_id=$(echo "$result" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+    echo "$gh_gist_id" > "$HOME/agsbx/gh_gist_id"
+    gist_url="https://gist.github.com/$gh_gist_id"
+  fi
+  
+  if [ -n "$gh_gist_id" ]; then
+    echo "节点信息已推送到Gist：$gist_url"
+  else
+    echo "Gist推送失败，请检查GitHub Token是否正确"
   fi
 }
 cleandel(){
