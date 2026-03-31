@@ -1535,7 +1535,7 @@ JH_FILE="$HOME/agsbx/jh.txt"
     [ -n "$vma_link13" ] && echo "$vma_link13"
     [ -n "$vwatls_link1" ] && echo "$vwatls_link1"
     [ -n "$vwa_link2" ] && echo "$vwa_link2"
-} | sed 's|path=\([^&#]*\)|path=%2F\1|g; s|path=%2F/|path=%2F|g' | \
+} | sed 's|path=/|path=%2F|g; s|path=%2F%2F|path=%2F|g' | \
 tr -d '\0\r' | sed '/^$/d' > "$JH_FILE"
 
 # 强制在文件末尾追加一个标准换行符
