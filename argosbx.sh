@@ -1525,8 +1525,8 @@ echo "========================================================="
 }
 push_gist(){
   if [ -f "$HOME/agsbx/jh.txt" ]; then
-    # 将整个订阅内容（包括头部信息）进行 Base64 编码
-    gist_content=$(cat "$HOME/agsbx/jh.txt" | base64 -w0 2>/dev/null || cat "$HOME/agsbx/jh.txt" | base64 2>/dev/null)
+    # JSON 转义：将内容转换为 JSON 字符串格式
+    gist_content=$(cat "$HOME/agsbx/jh.txt" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
     # 使用节点名称作为文件名，将-替换为_以提高兼容性
     gist_filename="${sxname}${hostname}.txt"
     gist_filename=$(echo "$gist_filename" | sed 's/-/_/g')
