@@ -74,8 +74,7 @@ echo
 }
 echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 echo "Github项目 ：github.com/zv201413/argosbx-new"
-echo "Argosbx-new一键无交互脚本-zv修改版"
-echo "当前版本：V25.11.20-zv"
+echo "甬哥-Argosbx-new一键无交互脚本-zv修改版"
 echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 hostname=$(uname -a | awk '{print $2}')
 op=$(cat /etc/redhat-release 2>/dev/null || cat /etc/os-release 2>/dev/null | grep -i pretty_name | cut -d \" -f2)
@@ -1524,8 +1523,6 @@ echo "---------------------------------------------------------"
 sed -i 's|path=/ws|path=%2Fws|g' "$HOME/agsbx/jh.txt"
 echo "聚合节点信息，请进入 $HOME/agsbx/jh.txt 文件目录查看或者运行 cat $HOME/agsbx/jh.txt 查看"
 echo "========================================================="
-  echo "相关快捷方式如下：(首次安装成功后需重连SSH，agsbx快捷方式才可生效)"
-  showmode
   if [ -n "$gh_token" ]; then
     push_gist
   fi
@@ -1606,9 +1603,7 @@ if [ "$1" = "del" ]; then
 cleandel
 rm -rf sbx_update "$HOME/agsbx" "$HOME/agsb"
 echo "卸载完成"
-echo "欢迎继续使用zv修改版Argosbx-new一键无交互脚本" && sleep 2
 echo
-showmode
 exit
 elif [ "$1" = "rep" ]; then
 cleandel
