@@ -753,9 +753,9 @@ document.getElementById('uuid').value = '';
   function updateNamePreview() {
     const prefix = nameInput.value.trim();
     if (prefix) {
-      namePreview.textContent = `预览: ${prefix}-vl-ws, ${prefix}-hy2, ${prefix}-tuic...`;
+      namePreview.innerHTML = `预览: <b>US-${prefix}-vl-ws-hostname</b>, <b>SG-${prefix}-hy2-hostname</b>, <b>JP-${prefix}-tuic-hostname</b>...`;
     } else {
-      namePreview.textContent = '预览: vl-ws, hy2, tuic... (无前缀)';
+      namePreview.innerHTML = `预览: <b>US-vl-ws-hostname</b>, <b>SG-hy2-hostname</b>, <b>JP-tuic-hostname</b>...`;
     }
   }
   
