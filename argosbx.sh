@@ -1529,14 +1529,8 @@ echo "========================================================="
 }
 push_gist(){
   if [ -f "$HOME/agsbx/jh.txt" ]; then
-    # 只提取节点链接（去掉头部信息）
-    gist_nodes=$(grep -E '^(vmess|vless|trojan|ss|hysteria2|hy2|tuic|anytls|socks)://' "$HOME/agsbx/jh.txt" 2>/dev/null)
-    if [ -z "$gist_nodes" ]; then
-      echo "Gist推送失败：未找到有效的节点链接"
-      return
-    fi
-    # 将节点链接进行 Base64 编码
-    gist_content=$(echo "$gist_nodes" | base64 -w0 2>/dev/null || echo "$gist_nodes" | base64 2>/dev/null)
+    # 将整个订阅内容（包括头部信息）进行 Base64 编码
+    gist_content=$(cat "$HOME/agsbx/jh.txt" | base64 -w0 2>/dev/null || cat "$HOME/agsbx/jh.txt" | base64 2>/dev/null)
     # 使用节点名称作为文件名，将-替换为_以提高兼容性
     gist_filename="${sxname}${hostname}.txt"
     gist_filename=$(echo "$gist_filename" | sed 's/-/_/g')
