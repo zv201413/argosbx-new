@@ -1279,7 +1279,7 @@ fi
 if grep xhttp-reality "$HOME/agsbx/xr.json" >/dev/null 2>&1; then
 echo "💣【 Vless-xhttp-reality 】节点信息如下："
 port_xh=$(cat "$HOME/agsbx/port_xh")
-vl_xh_link="vless://$uuid@$server_ip:$port_xh?encryption=none&security=reality&sni=$ym_vl_re&fp=chrome&pbk=$public_key_x&sid=$short_id_x&type=xhttp&path=/xhttp&mode=auto#${sxname}vl-xhttp-reality-$hostname"
+vl_xh_link="vless://$uuid@$server_ip:$port_xh?security=reality&type=xhttp&path=/xhttp&mode=auto&sni=$ym_vl_re&fp=chrome&pbk=$public_key_x&sid=$short_id_x&encryption=none#${sxname}vl-xhttp-reality-$hostname"
 echo "$vl_xh_link" >> "$HOME/agsbx/jh.txt"
 echo "$vl_xh_link"
 echo
@@ -1287,14 +1287,14 @@ fi
 if grep vless-xhttp "$HOME/agsbx/xr.json" >/dev/null 2>&1; then
 echo "💣【 Vless-xhttp 】节点信息如下："
 port_vx=$(cat "$HOME/agsbx/port_vx")
-vl_vx_link="vless://$uuid@$server_ip:$port_vx?encryption=none&type=xhttp&path=/xhttp&mode=auto#${sxname}vl-xhttp-$hostname"
+vl_vx_link="vless://$uuid@$server_ip:$port_vx?security=none&type=xhttp&path=/xhttp&mode=auto&encryption=none#${sxname}vl-xhttp-$hostname"
 echo "$vl_vx_link" >> "$HOME/agsbx/jh.txt"
 echo "$vl_vx_link"
 echo
 if [ -f "$HOME/agsbx/cdnym" ]; then
 echo "💣【 Vless-xhttp-cdn 】节点信息如下："
 echo "注：默认地址 yg数字.ygkkk.dpdns.org 可自行更换优选IP域名，如是回源端口需手动修改443或者80系端口"
-vl_vx_cdn_link="vless://$uuid@$argodomain:$port_vx?encryption=none&type=xhttp&host=$xvvmcdnym&path=/xhttp&mode=auto#${sxname}vl-xhttp-cdn-$hostname"
+vl_vx_cdn_link="vless://$uuid@$argodomain:$port_vx?security=none&type=xhttp&path=/xhttp&mode=auto&host=$xvvmcdnym&encryption=none#${sxname}vl-xhttp-cdn-$hostname"
 echo "$vl_vx_cdn_link" >> "$HOME/agsbx/jh.txt"
 echo "$vl_vx_cdn_link"
 echo
@@ -1319,14 +1319,14 @@ fi
 if grep vless-ws "$HOME/agsbx/xr.json" >/dev/null 2>&1; then
 port_vw=$(cat "$HOME/agsbx/port_vw")
 echo "💣【 Vless-ws 】节点信息如下："
-vl_vw_link="vless://$uuid@$server_ip:$port_vw?encryption=none&type=ws&path=%2Fws#${sxname}vl-ws-$hostname"
+vl_vw_link="vless://$uuid@$server_ip:$port_vw?security=none&type=ws&path=%2Fws&encryption=none#${sxname}vl-ws-$hostname"
 echo "$vl_vw_link" >> "$HOME/agsbx/jh.txt"
 echo "$vl_vw_link"
 echo
 if [ -f "$HOME/agsbx/cdnym" ]; then
 echo "💣【 Vless-ws-cdn 】节点信息如下："
 echo "注：默认地址 yg数字.ygkkk.dpdns.org 可自行更换优选IP域名，如是回源端口需手动修改443或者80系端口"
-vl_vw_cdn_link="vless://$uuid@$argodomain:$port_vw?encryption=none&type=ws&host=$xvvmcdnym&path=%2Fws#${sxname}vl-ws-cdn-$hostname"
+vl_vw_cdn_link="vless://$uuid@$argodomain:$port_vw?security=none&type=ws&path=%2Fws&host=$xvvmcdnym&encryption=none#${sxname}vl-ws-cdn-$hostname"
 echo "$vl_vw_cdn_link" >> "$HOME/agsbx/jh.txt"
 echo "$vl_vw_cdn_link"
 echo
@@ -1335,7 +1335,7 @@ fi
 if grep reality-vision "$HOME/agsbx/xr.json" >/dev/null 2>&1; then
 echo "💣【 Vless-tcp-reality-vision 】节点信息如下："
 port_vl_re=$(cat "$HOME/agsbx/port_vl_re")
-vl_link="vless://$uuid@$server_ip:$port_vl_re?encryption=none&flow=xtls-rprx-vision&security=reality&sni=$ym_vl_re&fp=chrome&pbk=$public_key_x&sid=$short_id_x&type=tcp&headerType=none#${sxname}vl-reality-vision-$hostname"
+vl_link="vless://$uuid@$server_ip:$port_vl_re?security=reality&type=tcp&headerType=none&flow=xtls-rprx-vision&sni=$ym_vl_re&fp=chrome&pbk=$public_key_x&sid=$short_id_x&encryption=none#${sxname}vl-reality-vision-$hostname"
 echo "$vl_link" >> "$HOME/agsbx/jh.txt"
 echo "$vl_link"
 echo
@@ -1493,9 +1493,9 @@ elif [ "$vlvm" = "Vless" ]; then
     else
       argo_addr="$argodomain"
     fi
-    vwatls_link1="vless://$uuid@$argo_addr:443?encryption=none&type=ws&host=$argodomain&path=%2Fws&security=tls&sni=$argodomain&fp=chrome&insecure=0&allowInsecure=0#${sxname}vless-ws-tls-argo-$hostname"
+    vwatls_link1="vless://$uuid@$argo_addr:443?security=tls&type=ws&path=%2Fws&host=$argodomain&sni=$argodomain&fp=chrome&encryption=none&allowInsecure=0#${sxname}vless-ws-tls-argo-$hostname"
     echo "$vwatls_link1" >> "$HOME/agsbx/jh.txt"
-    vwa_link2="vless://$uuid@$argo_addr:80?encryption=none&type=ws&host=$argodomain&path=%2Fws&security=none#${sxname}vless-ws-argo-$hostname"
+    vwa_link2="vless://$uuid@$argo_addr:80?security=none&type=ws&path=%2Fws&host=$argodomain&encryption=none#${sxname}vless-ws-argo-$hostname"
     echo "$vwa_link2" >> "$HOME/agsbx/jh.txt"
   fi
 sbtk=$(cat "$HOME/agsbx/sbargotoken.log" 2>/dev/null)
