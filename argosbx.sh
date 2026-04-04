@@ -3,20 +3,21 @@ export LANG=en_US.UTF-8
 
 get_random_port() {
     if command -v shuf >/dev/null 2>&1; then
-        echo $(shuf -i 10000-65535 -n 1)
+        shuf -i 10000-65535 -n 1
     else
         echo $((RANDOM % 55535 + 10000))
     fi
 }
 
-for port_var in vlpt vmpt vwpt hypt tupt xhpt vxpt anpt sspt arpt sopt; do
-    eval "val=\$$port_var"
-    if [ -n "$(eval echo "\${$port_var+x}")" ] && [ -z "$val" ]; then
-        eval "$port_var=$(get_random_port)"
+mkdir -p "$HOME/agsbx"
+
+for p in vlpt vmpt vwpt hypt tupt xhpt vxpt anpt sspt arpt sopt; do
+    eval "val=\$$p"
+    if [ -n "$(eval echo "\${$p+x}")" ] && [ -z "$val" ]; then
+        random_p=$(get_random_port)
+        eval "$p=$random_p"
     fi
 done
-
-mkdir -p "$HOME/agsbx"
 
 [ -z "${vlpt+x}" ] || vlp=yes
 [ -z "${vmpt+x}" ] || { vmp=yes; vmag=yes; }
