@@ -759,33 +759,10 @@ document.getElementById('uuid').value = '';
     }
   }
   
-nameInput.addEventListener('input', updateNamePreview);
-updateNamePreview(); // 初始化预览
+  nameInput.addEventListener('input', updateNamePreview);
+  updateNamePreview(); // 初始化预览
 
-// WARP 和 ippref 联动逻辑
-const warpSelect = document.getElementById('warp');
-const ipprefSelect = document.getElementById('ippref');
-
-function updateIpprefState() {
-const warpValue = warpSelect.value;
-const ipprefIpv6Option = ipprefSelect.querySelector('option[value="prefer_ipv6"]');
-if (warpValue !== '') {
-ipprefIpv6Option.disabled = true;
-ipprefIpv6Option.textContent = 'ipv6 (优先) - 已套WARP不可选';
-if (ipprefSelect.value === 'prefer_ipv6') {
-ipprefSelect.value = '';
-}
-} else {
-ipprefIpv6Option.disabled = false;
-ipprefIpv6Option.textContent = 'ipv6 (优先)';
-}
-render();
-}
-
-warpSelect.addEventListener('change', updateIpprefState);
-updateIpprefState();
-
-commandTypeRadios.forEach(radio => {
+  commandTypeRadios.forEach(radio => {
     radio.addEventListener('change', render);
   });
 
