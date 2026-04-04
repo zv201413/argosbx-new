@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Argosbx-new一键SSH命令生成器</title>
+  <title>甬哥-ArgoSBX小钢炮💣一键SSH V2026——zv修改版</title>
   <style>
     :root {
       --bg:#0b1020;
@@ -162,6 +162,20 @@
       grid-template-columns: auto 1fr; 
       gap: 10px 16px;
       align-items: center;
+    }
+    .port-inputs {
+      display: flex;
+      gap: 8px;
+    }
+    .port-inputs input {
+      flex: 1;
+      min-width: 0;
+    }
+    .port-inputs input:first-child {
+      flex: 1;
+    }
+    .port-inputs input:last-child {
+      flex: 1;
     }
     .protocol-grid .protocol-item {
       margin: 0; 
@@ -333,6 +347,19 @@
       white-space: nowrap;
       border-radius: 8px;
     }
+    .input-with-preview {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+    }
+    .name-preview {
+      margin-top: 5px;
+      padding: 5px 8px;
+      background: rgba(79, 124, 255, 0.1);
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--acc);
+    }
     .protocol-group {
       margin-bottom: 16px;
     }
@@ -383,7 +410,7 @@
           </svg>
         </label>
       </div>
-      <h1>甬哥-Argosbx-new一键SSH命令生成器-zv修改版</h1>
+      <h1>甬哥-ArgoSBX小钢炮💣一键SSH V2026——zv修改版</h1>
       <p>
         Github项目：
         <a href="https://github.com/zv201413/argosbx-new" target="_blank">github.com/zv201413/argosbx-new</a>
@@ -396,27 +423,27 @@
         <div class="protocol-group separator">
           <h3>Xray可选协议：</h3>
           <div class="protocol-grid">
-            <label><input type="checkbox" data-proto="vlpt"> Vless-tcp-reality-vision <span class="pill">vlpt</span></label><input type="text" placeholder="留空则随机端口" data-port="vlpt">
-            <label><input type="checkbox" data-proto="xhpt"> Vless-xhttp-reality <span class="pill">xhpt</span></label><input type="text" placeholder="留空则随机端口" data-port="xhpt">
-            <label><input type="checkbox" data-proto="vxpt"> Vless-xhttp <span class="pill">vxpt</span></label><input type="text" placeholder="留空则随机端口（支持CDN优选）" data-port="vxpt">
-            <label><input type="checkbox" data-proto="vwpt"> Vless-ws <span class="pill">vwpt</span></label><input type="text" placeholder="留空则随机端口（支持CDN优选，固定隧道必填URL端口）" data-port="vwpt">
+            <label><input type="checkbox" data-proto="vlpt"> Vless-tcp-reality-vision <span class="pill">vlpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="vlpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="vlpt"></div>
+            <label><input type="checkbox" data-proto="xhpt"> Vless-xhttp-reality <span class="pill">xhpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="xhpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="xhpt"></div>
+            <label><input type="checkbox" data-proto="vxpt"> Vless-xhttp <span class="pill">vxpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="vxpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="vxpt"></div>
+            <label><input type="checkbox" data-proto="vwpt"> Vless-ws <span class="pill">vwpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="vwpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="vwpt"></div>
           </div>
         </div>
         <div class="protocol-group separator">
           <h3>Singbox可选协议：</h3>
           <div class="protocol-grid">
-            <label><input type="checkbox" data-proto="hypt"> Hysteria2 <span class="pill">hypt</span></label><input type="text" placeholder="留空则随机端口" data-port="hypt">
-            <label><input type="checkbox" data-proto="tupt"> Tuic <span class="pill">tupt</span></label><input type="text" placeholder="留空则随机端口" data-port="tupt">
-            <label><input type="checkbox" data-proto="anpt"> AnyTLS <span class="pill">anpt</span></label><input type="text" placeholder="留空则随机端口" data-port="anpt">
-            <label><input type="checkbox" data-proto="arpt"> Any-reality <span class="pill">arpt</span></label><input type="text" placeholder="留空则随机端口" data-port="arpt">
-            <label><input type="checkbox" data-proto="sspt"> Shadowsocks-2022 <span class="pill">sspt</span></label><input type="text" placeholder="留空则随机端口" data-port="sspt">
+            <label><input type="checkbox" data-proto="hypt"> Hysteria2 <span class="pill">hypt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="hypt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="hypt"></div>
+            <label><input type="checkbox" data-proto="tupt"> Tuic <span class="pill">tupt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="tupt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="tupt"></div>
+            <label><input type="checkbox" data-proto="anpt"> AnyTLS <span class="pill">anpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="anpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="anpt"></div>
+            <label><input type="checkbox" data-proto="arpt"> Any-reality <span class="pill">arpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="arpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="arpt"></div>
+            <label><input type="checkbox" data-proto="sspt"> Shadowsocks-2022 <span class="pill">sspt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="sspt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="sspt"></div>
           </div>
         </div>
         <div class="protocol-group separator">
           <h3>Xray/Singbox自动分配协议：</h3>
           <div class="protocol-grid">
-            <label><input type="checkbox" data-proto="sopt"> Socks5 <span class="pill">sopt</span></label><input type="text" placeholder="留空则随机端口" data-port="sopt">
-            <label><input type="checkbox" data-proto="vmpt"> Vmess-ws <span class="pill">vmpt</span></label><input type="text" placeholder="留空则随机端口（支持CDN优选，固定隧道必填URL端口）" data-port="vmpt">
+            <label><input type="checkbox" data-proto="sopt"> Socks5 <span class="pill">sopt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="sopt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="sopt"></div>
+            <label><input type="checkbox" data-proto="vmpt"> Vmess-ws <span class="pill">vmpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="vmpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="vmpt"></div>
           </div>
         </div>
       </section>
@@ -431,7 +458,7 @@
           </div>
         </div>
         <div class="row"><label>Reality 域名 <span class="pill">reym</span></label><input id="reym" type="text" placeholder="留空则默认apple.com"/></div>
-        <div class="row"><label>CF解析IP的域名<span class="pill">cdnym</span></label><input id="cdnym" type="text" placeholder="Vmess-ws、Vless-ws、Vless-xhttp启用CDN时可用" disabled/></div>
+        <div class="row"><label>CF解析IP的域名<span class="pill">cdnym</span></label><input id="cdnym" type="text" placeholder="Vmess-ws、Vless-xhttp/ws启用80、回源CDN时可用" disabled/></div>
         <div class="row"><label>套WARP-IP出站 <span class="pill">warp</span></label>
           <select id="warp">
             <option value="">默认 服务器本地IP出站</option>
@@ -460,6 +487,13 @@
             <option value="6">导出 IPv6</option>
           </select>
         </div>
+        <div class="row"><label>优先 IPv4/IPv6 出站 <span class="pill">ippref</span></label>
+          <select id="ippref">
+            <option value="">auto (默认)</option>
+            <option value="prefer_ipv6">ipv6 (优先)</option>
+            <option value="prefer_ipv4">ipv4 (优先)</option>
+          </select>
+        </div>
         <div class="row">
           <label>当前系统开放所有端口 <span class="pill">oap</span></label>
           <select id="oap">
@@ -467,17 +501,17 @@
             <option value="y">开启 执行一次即可关闭</option>
           </select>
         </div>
-        <div class="row">
-          <label>强制nohup模式 <span class="pill">novps</span></label>
-          <select id="novps">
-            <option value="">默认 使用systemd</option>
-            <option value="yes">强制 nohup 绕过systemd</option>
-          </select>
+<div class="row"><label>节点名称前缀 <span class="pill">name</span></label>
+          <div class="input-with-preview">
+            <input id="name" type="text" placeholder="留空则默认协议名前缀"/>
+            <div class="name-preview" id="namePreview" style="margin-top: 5px; font-size: 12px; color: var(--sub);"></div>
+          </div>
         </div>
-        <div class="row"><label>导出节点名称前缀 <span class="pill">name</span></label><input id="name" type="text" placeholder="留空则默认协议名前缀"/></div>
-      </section>
+  <div class="row"><label>Argo优选IP/域名 <span class="pill">argoip</span></label><input id="argoip" type="text" placeholder="留空则默认使用yg数字.ygkkk.dpdns.org"/></div>
+  <div class="row"><label>直连节点自定义地址 <span class="pill">nodeaddr</span></label><input id="nodeaddr" type="text" placeholder="hy2/tuic节点地址，留空则使用VPS IP"/></div>
+  </section>
 
-      <section class="card argo-tunnel">
+  <section class="card argo-tunnel">
         <h2>Argo临时/固定隧道CDN：</h2>
         <div class="row">
           <label>启用Argo隧道开关 <span class="pill">argo</span></label>
@@ -487,9 +521,11 @@
             <option value="vmpt">启用Vmess-ws的Argo隧道 </option>
           </select>
         </div>
-        <div class="row"><label>固定隧道CF域名 <span class="pill">agn</span></label><input id="agn" type="text" placeholder="Zero Trust已设置有子域名称的CF域名，留空则临时隧道" disabled></div>
-        <div class="row"><label>固定隧道Token <span class="pill">agk</span></label><input id="agk" type="text" placeholder="Zero Trust已提取ey开头的秘钥，留空则临时隧道" disabled></div>
-      </section>
+<div class="row"><label>固定隧道CF域名 <span class="pill">agn</span></label><input id="agn" type="text" placeholder="Zero Trust已设置有子域名称的CF域名，留空则临时隧道" disabled></div>
+  <div class="row"><label>固定隧道Token <span class="pill">agk</span></label><input id="agk" type="text" placeholder="Zero Trust已提取ey开头的秘钥，留空则临时隧道" disabled></div>
+  <div class="row"><label>Gist ID <span class="pill">gh_gist_id</span></label><input id="gh_gist_id" type="text" placeholder="已有Gist ID可填，留空则新建"/></div>
+  <div class="row"><label>GitHub Token <span class="pill">gh_token</span></label><input id="gh_token" type="text" placeholder="推送Gist用，留空则不推送"/></div>
+  </section>
 
       <section class="card shortcut-commands-card">
         <h2>如已安装脚本，可用以下快捷方式：</h2>
@@ -520,7 +556,7 @@
         <p style="margin-top: 10px;">相关细节说明，请参考Argosbx-new项目💣：<a href="https://github.com/zv201413/argosbx-new" target="_blank">github.com/zv201413/argosbx-new</a></p>
         安卓手机客户端推荐：<a href="https://github.com/starifly/NekoBoxForAndroid/releases" target="_blank">Nekobox-starifly版 (全协议支持)</a>、<a href="https://github.com/2dust/v2rayNG/releases" target="_blank">V2rayNG官方版</a><br>
         电脑win客户端推荐：<a href="https://github.com/2dust/v2rayN/releases" target="_blank">V2rayN官方版 (全协议支持)</a><br>
-        苹果IOS客户端推荐：Happ、OneXray、Streisand
+        苹果IOS客户端推荐：<a href="https://apps.apple.com/app/happ-proxy-utility/id1592899835" target="_blank">Happ</a>、<a href="https://apps.apple.com/app/one-xray/id1563857995" target="_blank">OneXray</a>、<a href="https://www.nsloon.app/" target="_blank">Loon</a>、<a href="https://apps.apple.com/app/shadowrocket/id932747118" target="_blank">Shadowrocket</a>
       </p>
       </section>
     </div>
@@ -528,10 +564,10 @@
 
 <script>
 (function(){
-  const CURL = 'bash <(curl -Ls https://raw.githubusercontent.com/zv201413/argosbx-new/main/argosbx.sh)';
-  const WGET = 'bash <(wget -qO- https://raw.githubusercontent.com/zv201413/argosbx-new/main/argosbx.sh)';
-  const protoKeys = ['sopt','vmpt','vlpt','xhpt','vxpt','vwpt','arpt','anpt','hypt','tupt','sspt'];
-  const optIds = ['warp','ippz','uuid','reym','cdnym','name', 'oap', 'novps'];
+  const CURL = 'bash <(curl -Ls https://raw.githubusercontent.com/zv201413/argosbx-new/feature-add-new-options-v2/argosbx.sh)';
+  const WGET = 'bash <(wget -qO- https://raw.githubusercontent.com/zv201413/argosbx-new/feature-add-new-options-v2/argosbx.sh)';
+const protoKeys = ['sopt','vmpt','vlpt','xhpt','vxpt','vwpt','arpt','anpt','hypt','tupt','sspt'];
+const optIds = ['warp','ippz','ippref','uuid','reym','cdnym','name', 'oap', 'argoip', 'nodeaddr', 'gh_token', 'gh_gist_id'];
 
   const argoSelect = document.getElementById('argoSelect');
   const agn = document.getElementById('agn');
@@ -588,10 +624,14 @@
         ippzSelect.value = '';
     }
     oapSelect.value = '';
-    document.getElementById('uuid').value = '';
-    document.getElementById('reym').value = '';
-    document.getElementById('name').value = '';
-    argoSelect.value = '';
+document.getElementById('uuid').value = '';
+  document.getElementById('reym').value = '';
+  document.getElementById('name').value = '';
+  document.getElementById('argoip').value = '';
+  document.getElementById('nodeaddr').value = '';
+  document.getElementById('gh_token').value = '';
+  document.getElementById('gh_gist_id').value = '';
+  argoSelect.value = '';
     updateArgoState('');
     updateCdnymState();
   }
@@ -668,17 +708,33 @@
     });
   });
 
+  document.querySelectorAll('[data-extport]').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const key = inp.getAttribute('data-extport');
+      const ck = document.querySelector(`[data-proto="${key}"]`);
+      if (!ck) return;
+      if (inp.value.trim() !== '' && !ck.checked) {
+        ck.checked = true;
+      }
+      render();
+    });
+  });
+
   document.querySelectorAll('[data-proto]').forEach(ck => {
     ck.addEventListener('change', () => {
       if (!ck.checked) {
         const key = ck.getAttribute('data-proto');
         const pt = document.querySelector(`[data-port="${key}"]`);
+        const extpt = document.querySelector(`[data-extport="${key}"]`);
         if (pt) {
           pt.value = '';
         }
+        if (extpt) {
+          extpt.value = '';
+        }
       }
 
-      if (ck.getAttribute('data-proto') === 'vmpt' || ck.getAttribute('data-proto') === 'vwpt' || ck.getAttribute('data-proto') === 'vxpt') {
+      if (ck.getAttribute('data-proto') === 'vmpt' || ck.getAttribute('data-proto') === 'vxpt' || ck.getAttribute('data-proto') === 'vwpt') {
           updateCdnymState();
       }
       render();
@@ -690,6 +746,22 @@
     render();
   });
 
+  // 节点名称前缀实时预览
+  const nameInput = document.getElementById('name');
+  const namePreview = document.getElementById('namePreview');
+  
+  function updateNamePreview() {
+    const prefix = nameInput.value.trim();
+    if (prefix) {
+      namePreview.innerHTML = `预览: <b>US-${prefix}-vl-ws-hostname</b>, <b>SG-${prefix}-hy2-hostname</b>, <b>JP-${prefix}-tuic-hostname</b>...`;
+    } else {
+      namePreview.innerHTML = `预览: <b>US-vl-ws-hostname</b>, <b>SG-hy2-hostname</b>, <b>JP-tuic-hostname</b>...`;
+    }
+  }
+  
+  nameInput.addEventListener('input', updateNamePreview);
+  updateNamePreview(); // 初始化预览
+
   commandTypeRadios.forEach(radio => {
     radio.addEventListener('change', render);
   });
@@ -699,9 +771,12 @@
     protoKeys.forEach(k => {
       const ck = document.querySelector(`[data-proto="${k}"]`);
       const pt = document.querySelector(`[data-port="${k}"]`);
+      const extpt = document.querySelector(`[data-extport="${k}"]`);
       if (ck && ck.checked) {
         const v = (pt.value || '').trim();
+        const ev = (extpt.value || '').trim();
         m[k] = v;
+        m[k + '_ext'] = ev;
       }
     });
     optIds.forEach(id => {
@@ -730,7 +805,7 @@
     const keys = Object.keys(m);
     const ordered = [];
     protoKeys.forEach(k => { if (keys.includes(k)) ordered.push(k); });
-    ['warp', 'uuid', 'reym', 'cdnym', 'name', 'ippz', 'novps'].forEach(k => { if (keys.includes(k)) ordered.push(k); });
+    ['warp', 'uuid', 'reym', 'cdnym', 'name', 'ippz', 'ippref', 'argoip', 'nodeaddr', 'gh_token', 'gh_gist_id'].forEach(k => { if (keys.includes(k)) ordered.push(k); });
     if (keys.includes('argo')) ordered.push('argo');
     if (keys.includes('agn')) ordered.push('agn');
     if (keys.includes('agk')) ordered.push('agk');
