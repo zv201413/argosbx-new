@@ -1,5 +1,8 @@
 #!/bin/sh
 export LANG=en_US.UTF-8
+
+mkdir -p "$HOME/agsbx"
+
 [ -z "${vlpt+x}" ] || vlp=yes
 [ -z "${vmpt+x}" ] || { vmp=yes; vmag=yes; }
 [ -z "${vwpt+x}" ] || { vwp=yes; vmag=yes; }
@@ -1087,7 +1090,7 @@ xrsbso
 warpsx
 xrsbout
 else
-installxray
+installsb
 xrsbvm
 xrsbso
 warpsx
@@ -1102,7 +1105,22 @@ echo "下载Cloudflared-argo最新正式版内核：$argocore"
 url="https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-$cpu"; out="$HOME/agsbx/cloudflared"; (command -v curl>/dev/null 2>&1 && curl -Lo "$out" -# --retry 2 "$url") || (command -v wget>/dev/null 2>&1 && timeout 3 wget -O "$out" --tries=2 "$url")
 chmod +x "$HOME/agsbx/cloudflared"
 fi
-if [ "$argo" = "vmpt" ]; then argoport=$(cat "$HOME/agsbx/port_vm_ws" 2>/dev/null); echo "Vmess" > "$HOME/agsbx/vlvm"; elif [ "$argo" = "vwpt" ]; then argoport=$(cat "$HOME/agsbx/port_vw" 2>/dev/null); echo "Vless" > "$HOME/agsbx/vlvm"; fi; echo "$argoport" > "$HOME/agsbx/argoport.log"
+if [ "$argo" = "vmpt" ]; then
+    if [ -z "$port_vm_ws" ] && [ ! -e "$HOME/agsbx/port_vm_ws" ]; then
+        port_vm_ws=$(shuf -i 10000-65535 -n 1)
+        echo "$port_vm_ws" > "$HOME/agsbx/port_vm_ws"
+    fi
+    argoport=$(cat "$HOME/agsbx/port_vm_ws" 2>/dev/null)
+    echo "Vmess" > "$HOME/agsbx/vlvm"
+elif [ "$argo" = "vwpt" ]; then
+    if [ -z "$port_vw" ] && [ ! -e "$HOME/agsbx/port_vw" ]; then
+        port_vw=$(shuf -i 10000-65535 -n 1)
+        echo "$port_vw" > "$HOME/agsbx/port_vw"
+    fi
+    argoport=$(cat "$HOME/agsbx/port_vw" 2>/dev/null)
+    echo "Vless" > "$HOME/agsbx/vlvm"
+fi
+echo "$argoport" > "$HOME/agsbx/argoport.log"
 if [ -n "${ARGO_DOMAIN}" ] && [ -n "${ARGO_AUTH}" ]; then
 argoname='固定'
 if [ "$force_nohup" != "yes" ] && pidof systemd >/dev/null 2>&1 && [ "$EUID" -eq 0 ]; then
@@ -1199,9 +1217,12 @@ fi
 fi
 crontab /tmp/crontab.tmp >/dev/null 2>&1
 rm /tmp/crontab.tmp
+echo "等待进程启动..." && sleep 3
+if find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null | grep -Eq 'agsbx/(s|x)' || pgrep -f 'agsbx/(s|x)' >/dev/null 2>&1 ; then
 echo "Argosbx脚本进程启动成功，安装完毕" && sleep 2
 else
-echo "Argosbx脚本进程未启动，安装失败" && exit
+echo "警告：未能检测到进程运行，请手动执行 ps aux | grep agsbx 查看状态"
+echo "如需强制启动，可尝试运行: nohup $HOME/agsbx/sing-box run -c $HOME/agsbx/sb.json >/dev/null 2>&1 &"
 fi
 }
 argosbxstatus(){
