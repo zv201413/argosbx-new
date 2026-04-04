@@ -1,6 +1,21 @@
 #!/bin/sh
 export LANG=en_US.UTF-8
 
+get_random_port() {
+    if command -v shuf >/dev/null 2>&1; then
+        echo $(shuf -i 10000-65535 -n 1)
+    else
+        echo $((RANDOM % 55535 + 10000))
+    fi
+}
+
+for port_var in vlpt vmpt vwpt hypt tupt xhpt vxpt anpt sspt arpt sopt; do
+    eval "val=\$$port_var"
+    if [ -n "$(eval echo "\${$port_var+x}")" ] && [ -z "$val" ]; then
+        eval "$port_var=$(get_random_port)"
+    fi
+done
+
 mkdir -p "$HOME/agsbx"
 
 [ -z "${vlpt+x}" ] || vlp=yes
@@ -914,6 +929,7 @@ fi
 fi
 sleep 5
 echo
+echo "等待进程启动..." && sleep 3
 if find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null | grep -Eq 'agsbx/(s|x)' || pgrep -f 'agsbx/(s|x)' >/dev/null 2>&1 ; then
 [ -f ~/.bashrc ] || touch ~/.bashrc
 sed -i '/agsbx/d' ~/.bashrc
@@ -951,9 +967,16 @@ fi
 fi
 crontab /tmp/crontab.tmp >/dev/null 2>&1
 rm /tmp/crontab.tmp
+echo "等待进程启动..." && sleep 3
+if find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null | grep -Eq 'agsbx/(s|x)' || pgrep -f 'agsbx/(s|x)' >/dev/null 2>&1 ; then
 echo "Argosbx脚本进程启动成功，安装完毕" && sleep 2
 else
-echo "Argosbx脚本进程未启动，安装失败" && exit
+if ! pgrep -f 'agsbx/(s|x|c)' >/dev/null 2>&1; then
+    if ! ps -ef | grep -v grep | grep -qE "agsbx/(s|x|c)"; then
+        echo "警告：未检测到后台进程。由于容器环境特殊，请尝试手动执行 'cd ~/agsbx && ./sing-box run -c sb.json' 确认。"
+    fi
+fi
+fi
 fi
 }
 argosbxstatus(){
