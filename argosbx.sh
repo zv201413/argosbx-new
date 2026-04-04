@@ -1551,10 +1551,13 @@ echo "========================================================="
 }
 push_gist(){
   if [ -f "$HOME/agsbx/jh.txt" ]; then
+    vps_name=$(hostname | tr -d ' ' | tr -cd 'a-zA-Z0-9_-')
+    gj=$(curl -s "http://ip-api.com/json/?fields=countryCode" | grep -o '"countryCode":"[^"]*"' | cut -d'"' -f4)
+    [ -z "$gj" ] && gj="XX"
+    node_name=$(cat "$HOME/agsbx/name" 2>/dev/null)
+    [ -z "$node_name" ] && node_name="vps"
+    gist_filename="${gj}_${node_name}_${vps_name}.txt"
     gist_content=$(cat "$HOME/agsbx/jh.txt" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
-    # 使用节点名称作为文件名，将-替换为_以提高兼容性
-    gist_filename="${sxname}${hostname}.txt"
-    gist_filename=$(echo "$gist_filename" | sed 's/-/_/g')
     gist_data="{\"description\":\"Argosbx节点信息\",\"public\":false,\"files\":{\"${gist_filename}\":{\"content\":\"$gist_content\"}}}"
     if [ -n "$gh_gist_id" ]; then
       result=$(curl -s -X PATCH -H "Authorization: token $gh_token" -H "Content-Type: application/json" -d "$gist_data" "https://api.github.com/gists/$gh_gist_id" 2>/dev/null)
@@ -1567,6 +1570,7 @@ push_gist(){
     fi
     if [ -n "$gh_gist_id" ]; then
       echo "节点信息已推送到Gist：$gist_url"
+      echo "Raw直连链接：https://gist.githubusercontent.com/zv201413/$gh_gist_id/raw/${gist_filename}"
       echo "$gist_url" >> "$HOME/agsbx/jh.txt"
     else
       echo "Gist推送失败，请检查GitHub Token是否正确"
