@@ -57,6 +57,31 @@ export gh_gist_id=${gh_gist_id:-''}
 export nodeaddr=${nodeaddr:-''}
 export ippref=${ippref:-''}
 [ -z "${novps+x}" ] || force_nohup=yes
+
+# --- 判定内核需求 ---
+need_s=no
+need_x=no
+
+# Xray 强依赖协议 (Reality系列 + xhttp)
+if [ -n "${vlpt+x}" ] || [ -n "${xhpt+x}" ] || [ -n "${vxpt+x}" ] || \
+   [ -n "${vlpt_ext+x}" ] || [ -n "${xhpt_ext+x}" ] || [ -n "${vxpt_ext+x}" ]; then
+    need_x=yes
+fi
+
+# Sing-box 强依赖协议 (Hy2/Tuic/AnyTLS/SS/AnyReality/Socks5)
+if [ -n "${hypt+x}" ] || [ -n "${tupt+x}" ] || [ -n "${anpt+x}" ] || \
+   [ -n "${sspt+x}" ] || [ -n "${arpt+x}" ] || [ -n "${sopt+x}" ]; then
+    need_s=yes
+fi
+
+# 共有协议 (vwpt/vmpt) - 跟随已选内核
+if [ -n "${vwpt+x}" ] || [ -n "${vmpt+x}" ] || \
+   [ -n "${vwpt_ext+x}" ] || [ -n "${vmpt_ext+x}" ]; then
+    if [ "$need_x" = "no" ]; then
+        need_s=yes
+    fi
+fi
+
 v46url="https://icanhazip.com"
 agsbxurl="https://raw.githubusercontent.com/yonggekkk/argosbx/main/argosbx.sh"
 showmode(){
@@ -403,6 +428,7 @@ if [ -n "$cdnym" ]; then
 echo "$cdnym" > "$HOME/agsbx/cdnym"
 echo "80系CDN或者回源CDN的host域名 (确保IP已解析在CF域名)：$cdnym"
 fi
+if [ "$need_x" = "yes" ]; then
 cat >> "$HOME/agsbx/xr.json" <<EOF
     {
       "tag":"vless-ws",
@@ -430,6 +456,7 @@ cat >> "$HOME/agsbx/xr.json" <<EOF
       }
     },
 EOF
+fi
 else
 vwp=vwptargo
 fi
@@ -504,6 +531,27 @@ command -v openssl >/dev/null 2>&1 && openssl req -new -x509 -days 36500 -key "$
 if [ ! -f "$HOME/agsbx/private.key" ]; then
 url="https://github.com/yonggekkk/argosbx/releases/download/argosbx/private.key"; out="$HOME/agsbx/private.key"; (command -v curl>/dev/null 2>&1 && curl -Ls -o "$out" --retry 2 "$url") || (command -v wget>/dev/null 2>&1 && timeout 3 wget -q -O "$out" --tries=2 "$url")
 url="https://github.com/yonggekkk/argosbx/releases/download/argosbx/cert.pem"; out="$HOME/agsbx/cert.pem"; (command -v curl>/dev/null 2>&1 && curl -Ls -o "$out" --retry 2 "$url") || (command -v wget>/dev/null 2>&1 && timeout 3 wget -q -O "$out" --tries=2 "$url")
+fi
+if [ -n "$vwp" ]; then
+port_vw=$(cat "$HOME/agsbx/port_vw")
+cat >> "$HOME/agsbx/sb.json" <<EOF
+    {
+      "type": "vless",
+      "tag": "vless-ws-sb",
+      "listen": "::",
+      "listen_port": ${port_vw},
+      "users": [
+        {
+          "id": "${uuid}",
+          "flow": "xtls-rprx-vision"
+        }
+      ],
+      "transport": {
+        "type": "ws",
+        "path": "/ws"
+      }
+    },
+EOF
 fi
 if [ -n "$hyp" ]; then
 hyp=hypt
@@ -711,7 +759,7 @@ if [ -n "$cdnym" ]; then
 echo "$cdnym" > "$HOME/agsbx/cdnym"
 echo "80系CDN或者回源CDN的host域名 (确保IP已解析在CF域名)：$cdnym"
 fi
-if [ -e "$HOME/agsbx/xr.json" ]; then
+if [ "$need_x" = "yes" ]; then
 cat >> "$HOME/agsbx/xr.json" <<EOF
         {
             "tag": "vmess-xr",
@@ -777,7 +825,7 @@ echo "$port_so" > "$HOME/agsbx/port_so"
 fi
 port_so=$(cat "$HOME/agsbx/port_so")
 echo "Socks5端口：$port_so"
-if [ -e "$HOME/agsbx/xr.json" ]; then
+if [ "$need_x" = "yes" ]; then
 cat >> "$HOME/agsbx/xr.json" <<EOF
         {
          "tag": "socks5-xr",
@@ -1019,22 +1067,26 @@ fi
 fi
 }
 ins(){
-if [ "$hyp" != yes ] && [ "$tup" != yes ] && [ "$anp" != yes ] && [ "$arp" != yes ] && [ "$ssp" != yes ]; then
+if [ "$need_x" = "yes" ] && [ "$need_s" = "no" ]; then
 installxray
 xrsbvm
 xrsbso
 warpsx
 xrsbout
-hyp="hyptargo"; tup="tuptargo"; anp="anptargo"; arp="arptargo"; ssp="ssptargo"
-elif [ "$xhp" != yes ] && [ "$vlp" != yes ] && [ "$vxp" != yes ] && [ "$vwp" != yes ]; then
+elif [ "$need_s" = "yes" ] && [ "$need_x" = "no" ]; then
 installsb
 xrsbvm
 xrsbso
 warpsx
 xrsbout
-xhp="xhptargo"; vlp="vlptargo"; vxp="vxptargo"; vwp="vwptargo"
-else
+elif [ "$need_s" = "yes" ] && [ "$need_x" = "yes" ]; then
 installsb
+installxray
+xrsbvm
+xrsbso
+warpsx
+xrsbout
+else
 installxray
 xrsbvm
 xrsbso
@@ -1320,7 +1372,7 @@ echo "$vl_vx_cdn_link"
 echo
 fi
 fi
-if grep vless-ws "$HOME/agsbx/xr.json" >/dev/null 2>&1; then
+if grep vless-ws "$HOME/agsbx/xr.json" >/dev/null 2>&1 || grep vless-ws-sb "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
 port_vw=$(cat "$HOME/agsbx/port_vw")
 echo "💣【 Vless-ws 】节点信息如下："
 vl_vw_link="vless://$uuid@$server_ip:$port_vw?encryption=none&type=ws&path=%2Fws#${sxname}vl-ws-$hostname"
