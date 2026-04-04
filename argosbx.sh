@@ -132,7 +132,7 @@ res=$(echo "$warpurl" | awk -F'：' '/reserved/{print $2}' | xargs)
 fi
 if [ -n "$name" ]; then
     sxname=$name- 
-    echo "$sxname" > "$HOME/agsbx/name"
+    echo "$name" > "$HOME/agsbx/name"
     echo
     echo "所有节点名称前缀：$name"
   fi
@@ -1544,15 +1544,12 @@ push_gist(){
   if [ -f "$HOME/agsbx/jh.txt" ]; then
     gist_content=$(cat "$HOME/agsbx/jh.txt" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
     
-    # 获取当前环境信息
-    cid=$(hostname)
-    gj=$(cat $HOME/agsbx/gj 2>/dev/null || echo "UN")
-    name=$(cat $HOME/agsbx/name 2>/dev/null || echo "proxy")
+    gj=$(cat "$HOME/agsbx/gj" 2>/dev/null || echo "UN")
+    name=$(cat "$HOME/agsbx/name" 2>/dev/null || echo "proxy")
+    vps_name=$(hostname | tr -cd '[:alnum:]_-')
+    gist_filename="${gj}_${name}_${vps_name}.txt"
     
-    # 拼接完整的文件名（带 .txt 后缀）
-    final_filename="${gj}_${name}_${cid}.txt"
-    
-    gist_data="{\"description\":\"Argosbx节点信息\",\"public\":false,\"files\":{\"${final_filename}\":{\"content\":\"$gist_content\"}}}"
+    gist_data="{\"description\":\"Argosbx节点信息\",\"public\":false,\"files\":{\"${gist_filename}\":{\"content\":\"$gist_content\"}}}"
     if [ -n "$gh_gist_id" ]; then
       result=$(curl -s -X PATCH -H "Authorization: token $gh_token" -H "Content-Type: application/json" -d "$gist_data" "https://api.github.com/gists/$gh_gist_id" 2>/dev/null)
       gist_url="https://gist.github.com/$gh_gist_id"
@@ -1564,7 +1561,7 @@ push_gist(){
     fi
     if [ -n "$gh_gist_id" ]; then
       echo -e "已推送，Gist链接：https://gist.github.com/$gh_gist_id"
-      echo -e "Raw直连链接：https://gist.githubusercontent.com/zv201413/$gh_gist_id/raw/$final_filename"
+      echo -e "Raw直连链接：https://gist.githubusercontent.com/zv201413/$gh_gist_id/raw/$gist_filename"
       echo "$gist_url" >> "$HOME/agsbx/jh.txt"
     else
       echo "Gist推送失败，请检查GitHub Token是否正确"
