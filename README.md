@@ -11,10 +11,9 @@
 
 ## 快速使用
 
-```bash
-# 使用网页生成器：https://zv201413.github.io/argosbx-new
+[网页生成器](https://zv201413.github.io/argosbx-new)
 
-# 或手动运行
+```bash
 bash <(curl -Ls https://raw.githubusercontent.com/zv201413/argosbx-new/main/argosbx.sh)
 ```
 
