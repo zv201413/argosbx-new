@@ -1,30 +1,69 @@
 #!/bin/sh
 export LANG=en_US.UTF-8
 
-# 1. 强制安装容器基础依赖 (适配 Docker 环境)
-apt update >/dev/null 2>&1 && apt install -y curl wget procps coreutils ca-certificates tar >/dev/null 2>&1
+# Intelligent Kernel Allocation Engine
+need_x="no"
+need_s="no"
 
-# 2. 定义随机端口函数
-get_random_port() {
-    if command -v shuf >/dev/null 2>&1; then
-        shuf -i 10000-65535 -n 1
-    else
-        echo $((RANDOM % 55535 + 10000))
+# Load existing ports from files if env var is UNSET
+load_port() {
+    local var_name=$1; local file_path=$2; local current_val
+    eval "current_val=\$$var_name"
+    if eval "[ -z \"\${$var_name+x}\" ]"; then
+        if [ -f "$file_path" ]; then eval "$var_name=\$(cat \"$file_path\")"; fi
     fi
 }
 
-# 3. 自动补全空端口变量并激活安装开关
-# 只要参数名出现在命令中但值为空，就赋予随机端口并强制设置对应的启用标志
-for p in vlpt vmpt vwpt hypt tupt xhpt vxpt anpt sspt arpt sopt; do
-    eval "val=\$$p"
-    if [ -n "$(eval echo "\${$p+x}")" ] && [ -z "$val" ]; then
-        random_p=$(get_random_port)
-        eval "$p=$random_p"
-    fi
-done
+load_port "vlpt" "$HOME/agsbx/port_vl_re"
+load_port "vmpt" "$HOME/agsbx/port_vm_ws"
+load_port "vwpt" "$HOME/agsbx/port_vw"
+load_port "hypt" "$HOME/agsbx/port_hy2"
+load_port "tupt" "$HOME/agsbx/port_tu"
+load_port "xhpt" "$HOME/agsbx/port_xh"
+load_port "vxpt" "$HOME/agsbx/port_vx"
+load_port "anpt" "$HOME/agsbx/port_an"
+load_port "arpt" "$HOME/agsbx/port_ar"
+load_port "sspt" "$HOME/agsbx/port_ss"
+load_port "sopt" "$HOME/agsbx/port_so"
 
-# 4. 强制初始化目录
-mkdir -p "$HOME/agsbx"
+# 1. Xray Exclusive Zone
+if [ -n "$vlpt" ]; then vlp=yes; need_x="yes"; fi
+if [ -n "$xhpt" ]; then xhp=yes; need_x="yes"; fi
+if [ -n "$vxpt" ]; then vxp=yes; need_x="yes"; fi
+
+# 2. Sing-box Exclusive Zone
+if [ -n "$hypt" ]; then hyp=yes; need_s="yes"; fi
+if [ -n "$tupt" ]; then tup=yes; need_s="yes"; fi
+if [ -n "$anpt" ]; then anp=yes; need_s="yes"; fi
+if [ -n "$sspt" ]; then ssp=yes; need_s="yes"; fi
+if [ -n "$arpt" ]; then arp=yes; need_s="yes"; fi
+if [ -n "$sopt" ]; then sop=yes; need_s="yes"; fi
+
+# 3. Shared Protocols Logic (WS)
+if [ -n "$vwpt" ]; then
+    vwp=yes
+    if [ "$need_x" = "no" ]; then need_s="yes"; fi
+fi
+if [ -n "$vmpt" ]; then
+    vmp=yes
+    if [ "$need_x" = "no" ]; then need_s="yes"; fi
+fi
+if [ -n "$vwpt" ] || [ -n "$vmpt" ]; then vmag=yes; fi
+
+# Exports for persistence
+export uuid=${uuid:-$(cat $HOME/agsbx/uuid 2>/dev/null)}
+export port_vl_re=$vlpt; export port_vm_ws=$vmpt; export port_vw=$vwpt
+export port_hy2=$hypt; export port_tu=$tupt; export port_xh=$xhpt
+export port_vx=$vxpt; export port_an=$anpt; export port_ar=$arpt
+export port_ss=$sspt; export port_so=$sopt
+export ym_vl_re=${reym:-$(cat $HOME/agsbx/ym_vl_re 2>/dev/null)}
+export cdnym=${cdnym:-$(cat $HOME/agsbx/cdnym 2>/dev/null)}
+export argo=${argo:-''}; export ARGO_DOMAIN=${agn:-''}; export ARGO_AUTH=${agk:-''}
+export name=${name:-$(cat $HOME/agsbx/name 2>/dev/null)}
+export argoip=${argoip:-$(cat $HOME/agsbx/argoip 2>/dev/null)}
+export nodeaddr=${nodeaddr:-$(cat $HOME/agsbx/nodeaddr 2>/dev/null)}
+export ippref=${ippref:-$(cat $HOME/agsbx/ippref 2>/dev/null)}
+
 showmode(){
 echo "Argosbx脚本一键SSH命令生器在线网址：https://yonggekkk.github.io/argosbx/"
 echo "主脚本：bash <(curl -Ls https://raw.githubusercontent.com/yonggekkk/argosbx/main/argosbx.sh) 或 bash <(wget -qO- https://raw.githubusercontent.com/yonggekkk/argosbx/main/argosbx.sh)"
@@ -149,10 +188,10 @@ installxray(){
 echo
 echo "=========启用xray内核========="
 mkdir -p "$HOME/agsbx/xrk"
-if [ ! -e "$HOME/agsbx/xray" ]; then
+if [ ! -e "$HOME/agsbx/x" ]; then
 upxray
 fi
-cat > "$HOME/agsbx/config.json" <<EOF
+cat > "$HOME/agsbx/xr.json" <<EOF
 {
   "log": {
   "loglevel": "none"
@@ -167,7 +206,7 @@ fi
 echo "$ym_vl_re" > "$HOME/agsbx/ym_vl_re"
 echo "Reality域名：$ym_vl_re"
 if [ ! -e "$HOME/agsbx/xrk/private_key" ]; then
-key_pair=$("$HOME/agsbx/xray" x25519)
+key_pair=$("$HOME/agsbx/x" x25519)
 private_key=$(echo "$key_pair" | grep "PrivateKey" | awk '{print $2}')
 public_key=$(echo "$key_pair" | grep "Password" | awk '{print $2}')
 short_id=$(date +%s%N | sha256sum | cut -c 1-8)
@@ -181,7 +220,7 @@ short_id_x=$(cat "$HOME/agsbx/xrk/short_id")
 fi
 if [ -n "$xhp" ] || [ -n "$vxp" ] || [ -n "$vwp" ]; then
 if [ ! -e "$HOME/agsbx/xrk/dekey" ]; then
-vlkey=$("$HOME/agsbx/xray" vlessenc)
+vlkey=$("$HOME/agsbx/x" vlessenc)
 dekey=$(echo "$vlkey" | grep '"decryption":' | sed -n '2p' | cut -d' ' -f2- | tr -d '"')
 enkey=$(echo "$vlkey" | grep '"encryption":' | sed -n '2p' | cut -d' ' -f2- | tr -d '"')
 echo "$dekey" > "$HOME/agsbx/xrk/dekey"
@@ -200,8 +239,8 @@ elif [ -n "$port_xh" ]; then
 echo "$port_xh" > "$HOME/agsbx/port_xh"
 fi
 port_xh=$(cat "$HOME/agsbx/port_xh")
-echo "Vless-xhttp-reality-enc端口：$port_xh"
-cat >> "$HOME/agsbx/config.json" <<EOF
+echo "Vless-xhttp-reality端口：$port_xh"
+cat >> "$HOME/agsbx/xr.json" <<EOF
     {
       "tag":"xhttp-reality",
       "listen": "::",
@@ -253,12 +292,12 @@ elif [ -n "$port_vx" ]; then
 echo "$port_vx" > "$HOME/agsbx/port_vx"
 fi
 port_vx=$(cat "$HOME/agsbx/port_vx")
-echo "Vless-xhttp-enc端口：$port_vx"
+echo "Vless-xhttp端口：$port_vx"
 if [ -n "$cdnym" ]; then
 echo "$cdnym" > "$HOME/agsbx/cdnym"
 echo "80系CDN或者回源CDN的host域名 (确保IP已解析在CF域名)：$cdnym"
 fi
-cat >> "$HOME/agsbx/config.json" <<EOF
+cat >> "$HOME/agsbx/xr.json" <<EOF
     {
       "tag":"vless-xhttp",
       "listen": "::",
@@ -291,7 +330,7 @@ EOF
 else
 vxp=vxptargo
 fi
-if [ -n "$vwp" ]; then
+if [ -n "$vwp" ] && [ "$need_x" = "yes" ]; then
 vwp=vwpt
 if [ -z "$port_vw" ] && [ ! -e "$HOME/agsbx/port_vw" ]; then
 port_vw=$(shuf -i 10000-65535 -n 1)
@@ -300,12 +339,12 @@ elif [ -n "$port_vw" ]; then
 echo "$port_vw" > "$HOME/agsbx/port_vw"
 fi
 port_vw=$(cat "$HOME/agsbx/port_vw")
-echo "Vless-ws-enc端口：$port_vw"
+echo "Vless-ws端口：$port_vw"
 if [ -n "$cdnym" ]; then
 echo "$cdnym" > "$HOME/agsbx/cdnym"
 echo "80系CDN或者回源CDN的host域名 (确保IP已解析在CF域名)：$cdnym"
 fi
-cat >> "$HOME/agsbx/config.json" <<EOF
+cat >> "$HOME/agsbx/xr.json" <<EOF
     {
       "tag":"vless-ws",
       "listen": "::",
@@ -346,9 +385,9 @@ echo "$port_vl_re" > "$HOME/agsbx/port_vl_re"
 fi
 port_vl_re=$(cat "$HOME/agsbx/port_vl_re")
 echo "Vless-tcp-reality-v端口：$port_vl_re"
-cat >> "$HOME/agsbx/config.json" <<EOF
+cat >> "$HOME/agsbx/xr.json" <<EOF
         {
-            "tag":"reality-vision-xr",
+            "tag":"reality-vision",
             "listen": "::",
             "port": $port_vl_re,
             "protocol": "vless",
@@ -614,8 +653,8 @@ if [ -n "$cdnym" ]; then
 echo "$cdnym" > "$HOME/agsbx/cdnym"
 echo "80系CDN或者回源CDN的host域名 (确保IP已解析在CF域名)：$cdnym"
 fi
-if [ -e "$HOME/agsbx/config.json" ]; then
-cat >> "$HOME/agsbx/config.json" <<EOF
+if [ -e "$HOME/agsbx/xr.json" ]; then
+cat >> "$HOME/agsbx/xr.json" <<EOF
         {
             "tag": "vmess-xr",
             "listen": "::",
@@ -680,8 +719,8 @@ echo "$port_so" > "$HOME/agsbx/port_so"
 fi
 port_so=$(cat "$HOME/agsbx/port_so")
 echo "Socks5端口：$port_so"
-if [ -e "$HOME/agsbx/config.json" ]; then
-cat >> "$HOME/agsbx/config.json" <<EOF
+if [ -e "$HOME/agsbx/xr.json" ]; then
+cat >> "$HOME/agsbx/xr.json" <<EOF
         {
          "tag": "socks5-xr",
          "port": ${port_so},
@@ -726,9 +765,9 @@ fi
 }
 
 xrsbout(){
-if [ -e "$HOME/agsbx/config.json" ]; then
-sed -i '${s/,\s*$//}' "$HOME/agsbx/config.json"
-cat >> "$HOME/agsbx/config.json" <<EOF
+if [ -e "$HOME/agsbx/xr.json" ]; then
+sed -i '${s/,\s*$//}' "$HOME/agsbx/xr.json"
+cat >> "$HOME/agsbx/xr.json" <<EOF
   ],
   "outbounds": [
     {
@@ -798,7 +837,7 @@ After=network.target
 Type=simple
 NoNewPrivileges=yes
 TimeoutStartSec=0
-ExecStart=/root/agsbx/xray run -c /root/agsbx/config.json
+ExecStart=/root/agsbx/xray run -c /root/agsbx/xr.json
 Restart=on-failure
 RestartSec=5s
 StandardOutput=journal
@@ -814,7 +853,7 @@ cat > /etc/init.d/xray <<EOF
 #!/sbin/openrc-run
 description="xr service"
 command="/root/agsbx/xray"
-command_args="run -c /root/agsbx/config.json"
+command_args="run -c /root/agsbx/xr.json"
 command_background=yes
 pidfile="/run/xray.pid"
 command_background="yes"
@@ -826,7 +865,7 @@ chmod +x /etc/init.d/xray >/dev/null 2>&1
 rc-update add xray default >/dev/null 2>&1
 rc-service xray start >/dev/null 2>&1
 else
-nohup "$HOME/agsbx/xray" run -c "$HOME/agsbx/config.json" >/dev/null 2>&1 &
+nohup "$HOME/agsbx/x" run -c "$HOME/agsbx/xr.json" >/dev/null 2>&1 &
 fi
 fi
 if [ -e "$HOME/agsbx/sb.json" ]; then
@@ -922,15 +961,9 @@ fi
 fi
 }
 ins(){
-  if [ "$use_sb" = "yes" ]; then
-    installsb
-  elif [ "$use_xr" = "yes" ]; then
-    installxray
-  fi
-  xrsbvm
-  xrsbso
-  warpsx
-  xrsbout
+  if [ "$need_s" = "yes" ]; then installsb; fi
+  if [ "$need_x" = "yes" ]; then installxray; fi
+  xrsbvm; xrsbso; warpsx; xrsbout
 }
 argosbxstatus(){
 echo "=========当前三大内核运行状态========="
@@ -1034,59 +1067,19 @@ cfip() {
       echo $((RANDOM % 13 + 1))
     fi
   }
-if [ -e "$HOME/agsbx/xray" ]; then
+if [ -e "$HOME/agsbx/x" ]; then
 private_key_x=$(cat "$HOME/agsbx/xrk/private_key" 2>/dev/null)
 public_key_x=$(cat "$HOME/agsbx/xrk/public_key" 2>/dev/null)
 short_id_x=$(cat "$HOME/agsbx/xrk/short_id" 2>/dev/null)
 enkey=$(cat "$HOME/agsbx/xrk/enkey" 2>/dev/null)
 fi
-if [ -e "$HOME/agsbx/sing-box" ]; then
+if [ -e "$HOME/agsbx/s" ]; then
 private_key_s=$(cat "$HOME/agsbx/sbk/private_key" 2>/dev/null)
 public_key_s=$(cat "$HOME/agsbx/sbk/public_key" 2>/dev/null)
 short_id_s=$(cat "$HOME/agsbx/sbk/short_id" 2>/dev/null)
 sskey=$(cat "$HOME/agsbx/sskey" 2>/dev/null)
 fi
-if grep xhttp-reality "$HOME/agsbx/xr.json" >/dev/null 2>&1; then
-echo "💣【 Vless-xhttp-reality-enc 】支持ENC加密，节点信息如下："
-port_xh=$(cat "$HOME/agsbx/port_xh")
-vl_xh_link="vless://$uuid@$server_ip:$port_xh?encryption=$enkey&flow=xtls-rprx-vision&security=reality&sni=$ym_vl_re&fp=chrome&pbk=$public_key_x&sid=$short_id_x&type=xhttp&path=$uuid-xh&mode=auto#${sxname}vl-xhttp-reality-enc-$hostname"
-echo "$vl_xh_link" >> "$HOME/agsbx/jh.txt"
-echo "$vl_xh_link"
-echo
-fi
-if grep vless-xhttp "$HOME/agsbx/xr.json" >/dev/null 2>&1; then
-echo "💣【 Vless-xhttp-enc 】支持ENC加密，节点信息如下："
-port_vx=$(cat "$HOME/agsbx/port_vx")
-vl_vx_link="vless://$uuid@$server_ip:$port_vx?encryption=$enkey&flow=xtls-rprx-vision&type=xhttp&path=$uuid-vx&mode=auto#${sxname}vl-xhttp-enc-$hostname"
-echo "$vl_vx_link" >> "$HOME/agsbx/jh.txt"
-echo "$vl_vx_link"
-echo
-if [ -f "$HOME/agsbx/cdnym" ]; then
-echo "💣【 Vless-xhttp-ecn-cdn 】支持ENC加密，节点信息如下："
-echo "注：默认地址 yg数字.ygkkk.dpdns.org 可自行更换优选IP域名，如是回源端口需手动修改443或者80系端口"
-vl_vx_cdn_link="vless://$uuid@yg$(cfip).ygkkk.dpdns.org:$port_vx?encryption=$enkey&flow=xtls-rprx-vision&type=xhttp&host=$xvvmcdnym&path=$uuid-vx&mode=auto#${sxname}vl-xhttp-enc-cdn-$hostname"
-echo "$vl_vx_cdn_link" >> "$HOME/agsbx/jh.txt"
-echo "$vl_vx_cdn_link"
-echo
-fi
-fi
-if grep vless-ws "$HOME/agsbx/xr.json" >/dev/null 2>&1; then
-echo "💣【 Vless-ws-enc 】支持ENC加密，节点信息如下："
-port_vw=$(cat "$HOME/agsbx/port_vw")
-vl_vw_link="vless://$uuid@$server_ip:$port_vw?encryption=$enkey&flow=xtls-rprx-vision&type=ws&path=$uuid-vw#${sxname}vl-ws-enc-$hostname"
-echo "$vl_vw_link" >> "$HOME/agsbx/jh.txt"
-echo "$vl_vw_link"
-echo
-if [ -f "$HOME/agsbx/cdnym" ]; then
-echo "💣【 Vless-ws-enc-cdn 】支持ENC加密，节点信息如下："
-echo "注：默认地址 yg数字.ygkkk.dpdns.org 可自行更换优选IP域名，如是回源端口需手动修改443或者80系端口"
-vl_vw_cdn_link="vless://$uuid@yg$(cfip).ygkkk.dpdns.org:$port_vw?encryption=$enkey&flow=xtls-rprx-vision&type=ws&host=$xvvmcdnym&path=$uuid-vw#${sxname}vl-ws-enc-cdn-$hostname"
-echo "$vl_vw_cdn_link" >> "$HOME/agsbx/jh.txt"
-echo "$vl_vw_cdn_link"
-echo
-fi
-fi
-if grep reality-vision "$HOME/agsbx/xr.json" >/dev/null 2>&1; then
+if [ -n "$port_vl_re" ] && grep reality-vision "$HOME/agsbx/xr.json" >/dev/null 2>&1; then
 echo "💣【 Vless-tcp-reality-vision 】节点信息如下："
 port_vl_re=$(cat "$HOME/agsbx/port_vl_re")
 vl_link="vless://$uuid@$server_ip:$port_vl_re?encryption=none&flow=xtls-rprx-vision&security=reality&sni=$ym_vl_re&fp=chrome&pbk=$public_key_x&sid=$short_id_x&type=tcp&headerType=none#${sxname}vl-reality-vision-$hostname"
@@ -1094,7 +1087,7 @@ echo "$vl_link" >> "$HOME/agsbx/jh.txt"
 echo "$vl_link"
 echo
 fi
-if grep ss-2022 "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
+if [ -n "$port_ss" ] && grep ss-2022 "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
 echo "💣【 Shadowsocks-2022 】节点信息如下："
 port_ss=$(cat "$HOME/agsbx/port_ss")
 ss_link="ss://$(echo -n "2022-blake3-aes-128-gcm:$sskey@$server_ip:$port_ss" | base64 -w0)#${sxname}Shadowsocks-2022-$hostname"
@@ -1118,7 +1111,7 @@ echo "$vm_cdn_link"
 echo
 fi
 fi
-if grep anytls-sb "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
+if [ -n "$port_an" ] && grep anytls-sb "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
 echo "💣【 AnyTLS 】节点信息如下："
 port_an=$(cat "$HOME/agsbx/port_an")
 an_link="anytls://$uuid@$server_ip:$port_an?insecure=1&allowInsecure=1#${sxname}anytls-$hostname"
@@ -1126,7 +1119,7 @@ echo "$an_link" >> "$HOME/agsbx/jh.txt"
 echo "$an_link"
 echo
 fi
-if grep anyreality-sb "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
+if [ -n "$port_ar" ] && grep anyreality-sb "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
 echo "💣【 Any-Reality 】节点信息如下："
 port_ar=$(cat "$HOME/agsbx/port_ar")
 ar_link="anytls://$uuid@$server_ip:$port_ar?security=reality&sni=$ym_vl_re&fp=chrome&pbk=$public_key_s&sid=$short_id_s&type=tcp&headerType=none#${sxname}any-reality-$hostname"
@@ -1139,7 +1132,7 @@ if [ -n "$nodeaddr" ]; then
   else
     hy2_addr="$server_ip"
   fi
-  if grep hy2-sb "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
+  if [ -n "$port_hy2" ] && grep hy2-sb "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
     echo "💣【 Hysteria2 】节点信息如下："
     port_hy2=$(cat "$HOME/agsbx/port_hy2")
     hy2_link="hysteria2://$uuid@$hy2_addr:$port_hy2?security=tls&alpn=h3&insecure=1&sni=www.bing.com#${sxname}hy2-$hostname"
@@ -1152,7 +1145,7 @@ if [ -n "$nodeaddr" ]; then
   else
     tuic_addr="$server_ip"
   fi
-  if grep tuic5-sb "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
+  if [ -n "$port_tu" ] && grep tuic5-sb "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
     echo "💣【 Tuic 】节点信息如下："
     port_tu=$(cat "$HOME/agsbx/port_tu")
     tuic5_link="tuic://$uuid:$uuid@$tuic_addr:$port_tu?congestion_control=bbr&udp_relay_mode=native&alpn=h3&sni=www.bing.com&allow_insecure=1&allowInsecure=1#${sxname}tuic-$hostname"
@@ -1160,7 +1153,7 @@ if [ -n "$nodeaddr" ]; then
     echo "$tuic5_link"
     echo
   fi
-if grep socks5-xr "$HOME/agsbx/xr.json" >/dev/null 2>&1 || grep socks5-sb "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
+if [ -n "$port_so" ] && grep socks5-xr "$HOME/agsbx/xr.json" >/dev/null 2>&1 || grep socks5-sb "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
 echo "💣【 Socks5 】客户端信息如下："
 port_so=$(cat "$HOME/agsbx/port_so")
 echo "请配合其他应用内置代理使用，勿做节点直接使用"
@@ -1202,9 +1195,9 @@ echo "$vma_link12" >> "$HOME/agsbx/jh.txt"
 vma_link13="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vmess-ws-argo-$hostname-2095\", \"add\": \"[2400:cb00:2049::0]\", \"port\": \"2095\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$argodomain\", \"path\": \"/$uuid-vm\", \"tls\": \"\"}" | base64 -w0)"
 echo "$vma_link13" >> "$HOME/agsbx/jh.txt"
 elif [ "$vlvm" = "Vless" ]; then
-vwatls_link1="vless://$uuid@yg$(cfip).ygkkk.dpdns.org:443?encryption=$enkey&flow=xtls-rprx-vision&type=ws&host=$argodomain&path=$uuid-vw&security=tls&sni=$argodomain&fp=chrome&insecure=0&allowInsecure=0#${sxname}vless-ws-tls-argo-enc-vision-$hostname"
+vwatls_link1="vless://$uuid@yg$(cfip).ygkkk.dpdns.org:443?encryption=$enkey&flow=xtls-rprx-vision&type=ws&host=$argodomain&path=$uuid-vw&security=tls&sni=$argodomain&fp=chrome&insecure=0&allowInsecure=0#${sxname}vless-ws-tls-argo-vision-$hostname"
 echo "$vwatls_link1" >> "$HOME/agsbx/jh.txt"
-vwa_link2="vless://$uuid@yg$(cfip).ygkkk.dpdns.org:80?encryption=$enkey&flow=xtls-rprx-vision&type=ws&host=$argodomain&path=$uuid-vw&security=none#${sxname}vless-ws-argo-enc-vision-$hostname"
+vwa_link2="vless://$uuid@yg$(cfip).ygkkk.dpdns.org:80?encryption=$enkey&flow=xtls-rprx-vision&type=ws&host=$argodomain&path=$uuid-vw&security=none#${sxname}vless-ws-argo-vision-$hostname"
 echo "$vwa_link2" >> "$HOME/agsbx/jh.txt"
 fi
 sbtk=$(cat "$HOME/agsbx/sbargotoken.log" 2>/dev/null)
@@ -1304,44 +1297,6 @@ push_gist(){
     fi
   fi
 }
-
-# 5. 内核优先级判定逻辑
-if [ -n "$vwpt" ] || [ -n "$vmpt" ] || [ -n "$hypt" ] || [ -n "$tupt" ] || [ -n "$anpt" ] || [ -n "$sspt" ] || [ -n "$arpt" ] || [ -n "$sopt" ]; then
-    use_sb=yes; use_xr=no; vmag=yes
-elif [ -n "$xhpt" ] || [ -n "$vlpt" ] || [ -n "$vxpt" ]; then
-    use_sb=no; use_xr=yes
-fi
-
-if ! pgrep -f 'agsbx/(s|x)' >/dev/null 2>&1; then
-[ "$1" = "del" ] || [ "$vmag" = yes ] || [ "$use_xr" = yes ] || { echo "提示：未安装argosbx脚本，请在脚本前至少设置一个协议变量哦，再见！💣"; exit; }
-fi
-export uuid=${uuid:-''}
-export port_vl_re=${vlpt:-''}
-export port_vm_ws=${vmpt:-''}
-export port_vw=${vwpt:-''}
-export port_hy2=${hypt:-''}
-export port_tu=${tupt:-''}
-export port_xh=${xhpt:-''}
-export port_vx=${vxpt:-''}
-export port_an=${anpt:-''}
-export port_ar=${arpt:-''}
-export port_ss=${sspt:-''}
-export port_so=${sopt:-''}
-export ym_vl_re=${reym:-''}
-export cdnym=${cdnym:-''}
-export argo=${argo:-''}
-export ARGO_DOMAIN=${agn:-''}
-export ARGO_AUTH=${agk:-''}
-export ippz=${ippz:-''}
-export warp=${warp:-''}
-export name=${name:-''}
-export oap=${oap:-''}
-export argoip=${argoip:-''}
-export gh_token=${gh_token:-''}
-export gh_gist_id=${gh_gist_id:-''}
-export nodeaddr=${nodeaddr:-''}
-v46url="https://icanhazip.com"
-agsbxurl="https://raw.githubusercontent.com/yonggekkk/argosbx/main/argosbx.sh"
 echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 echo "甬哥Github项目 ：github.com/yonggekkk"
 echo "甬哥Blogger博客 ：ygkkk.blogspot.com"
@@ -1380,7 +1335,7 @@ showmode
 exit
 elif [ "$1" = "rep" ]; then
   cleandel
-  rm -rf "$HOME/agsbx"/{config.json,config.json,sbargoym.log,sbargotoken.log,argo.log,argoport.log,cdnym,name,argoip,nodeaddr}
+  rm -rf "$HOME/agsbx"/{sb.json,xr.json,sbargoym.log,sbargotoken.log,argo.log,argoport.log,cdnym}
   echo "Argosbx重置协议完成，开始更新相关协议变量……" && sleep 2
   echo
 elif [ "$1" = "list" ]; then
@@ -1470,16 +1425,16 @@ showmode
 exit
 fi
 
-# 6. 启动前清理旧进程
+# 6. Startup Sequence
 kill -9 $(pgrep -f 'agsbx/(s|x)') >/dev/null 2>&1
-
-# 7. 根据判定结果只启动一个内核
-if [ "$use_sb" = "yes" ]; then
-    cd "$HOME/agsbx" && ./s run -c config.json >/dev/null 2>&1 &
-elif [ "$use_xr" = "yes" ]; then
-    cd "$HOME/agsbx" && ./x run -c config.json >/dev/null 2>&1 &
+if [ "$need_s" = "yes" ]; then
+    cd "$HOME/agsbx" && ./s run -c sb.json >/dev/null 2>&1 &
 fi
+if [ "$need_x" = "yes" ]; then
+    cd "$HOME/agsbx" && ./x run -c xr.json >/dev/null 2>&1 &
+fi
+# Argo Tunnel Port Mapping
+if [ "$need_x" = "no" ] && [ -n "$vwpt" ]; then echo "$port_vw" > "$HOME/agsbx/argoport.log"; fi
 
-# 8. 延迟检测
 sleep 5
-if ! pgrep -f 'agsbx/(s|x)' >/dev/null 2>&1; then echo "提示：进程启动较慢，请稍后检查。"; fi
+pgrep -f 'agsbx/(s|x)' >/dev/null 2>&1 || echo "提示：进程启动中，请稍后手动检查状态。"
