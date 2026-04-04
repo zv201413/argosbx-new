@@ -389,50 +389,6 @@ EOF
 else
 vxp=vxptargo
 fi
-if [ -n "$vwp" ]; then
-vwp=vwpt
-if [ -z "$port_vw" ] && [ ! -e "$HOME/agsbx/port_vw" ]; then
-port_vw=$(shuf -i 10000-65535 -n 1)
-echo "$port_vw" > "$HOME/agsbx/port_vw"
-elif [ -n "$port_vw" ]; then
-echo "$port_vw" > "$HOME/agsbx/port_vw"
-fi
-port_vw=$(cat "$HOME/agsbx/port_vw")
-echo "Vless-ws端口：$port_vw"
-if [ -n "$cdnym" ]; then
-echo "$cdnym" > "$HOME/agsbx/cdnym"
-echo "80系CDN或者回源CDN的host域名 (确保IP已解析在CF域名)：$cdnym"
-fi
-cat >> "$HOME/agsbx/xr.json" <<EOF
-    {
-      "tag":"vless-ws",
-      "listen": "0.0.0.0",
-      "port": ${port_vw},
-      "protocol": "vless",
-      "settings": {
-        "clients": [
-          {
-            "id": "${uuid}"
-          }
-        ],
-        "decryption": "none"
-      },
-      "streamSettings": {
-        "network": "ws",
-        "wsSettings": {
-          "path": "/ws"
-        }
-      },
-        "sniffing": {
-        "enabled": true,
-        "destOverride": ["http", "tls", "quic"],
-        "metadataOnly": false
-      }
-    },
-EOF
-else
-vwp=vwptargo
-fi
 if [ -n "$vlp" ]; then
 vlp=vlpt
 if [ -z "$port_vl_re" ] && [ ! -e "$HOME/agsbx/port_vl_re" ]; then
@@ -696,6 +652,74 @@ ssp=ssptargo
 fi
 }
 
+xrsbvw(){
+if [ -n "$vwp" ]; then
+vwp=vwpt
+if [ -z "$port_vw" ] && [ ! -e "$HOME/agsbx/port_vw" ]; then
+port_vw=$(shuf -i 10000-65535 -n 1)
+echo "$port_vw" > "$HOME/agsbx/port_vw"
+elif [ -n "$port_vw" ]; then
+echo "$port_vw" > "$HOME/agsbx/port_vw"
+fi
+port_vw=$(cat "$HOME/agsbx/port_vw")
+if [ -z "$port_vw_ext" ]; then port_vw_ext=$port_vw; fi
+echo "Vless-ws端口：$port_vw"
+if [ -n "$cdnym" ]; then
+echo "$cdnym" > "$HOME/agsbx/cdnym"
+echo "80系CDN或者回源CDN的host域名 (确保IP已解析在CF域名)：$cdnym"
+fi
+if [ -e "$HOME/agsbx/xr.json" ]; then
+cat >> "$HOME/agsbx/xr.json" <<EOF
+    {
+      "tag":"vless-ws",
+      "listen": "::",
+      "port": ${port_vw},
+      "protocol": "vless",
+      "settings": {
+        "clients": [
+          {
+            "id": "${uuid}"
+          }
+        ],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "ws",
+        "wsSettings": {
+          "path": "/ws"
+        }
+      },
+        "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls", "quic"],
+        "metadataOnly": false
+      }
+    },
+EOF
+else
+cat >> "$HOME/agsbx/sb.json" <<EOF
+    {
+      "type": "vless",
+      "tag": "vless-ws",
+      "listen": "::",
+      "listen_port": ${port_vw},
+      "users": [
+        {
+          "uuid": "${uuid}"
+        }
+      ],
+      "transport": {
+        "type": "ws",
+        "path": "/ws"
+      }
+    },
+EOF
+fi
+else
+vwp=vwptargo
+fi
+}
+
 xrsbvm(){
 if [ -n "$vmp" ]; then
 vmp=vmpt
@@ -706,6 +730,7 @@ elif [ -n "$port_vm_ws" ]; then
 echo "$port_vm_ws" > "$HOME/agsbx/port_vm_ws"
 fi
 port_vm_ws=$(cat "$HOME/agsbx/port_vm_ws")
+if [ -z "$port_vm_ws_ext" ]; then port_vm_ws_ext=$port_vm_ws; fi
 echo "Vmess-ws端口：$port_vm_ws"
 if [ -n "$cdnym" ]; then
 echo "$cdnym" > "$HOME/agsbx/cdnym"
@@ -776,6 +801,7 @@ elif [ -n "$port_so" ]; then
 echo "$port_so" > "$HOME/agsbx/port_so"
 fi
 port_so=$(cat "$HOME/agsbx/port_so")
+if [ -z "$port_so_ext" ]; then port_so_ext=$port_so; fi
 echo "Socks5端口：$port_so"
 if [ -e "$HOME/agsbx/xr.json" ]; then
 cat >> "$HOME/agsbx/xr.json" <<EOF
@@ -1019,28 +1045,19 @@ fi
 fi
 }
 ins(){
-if [ "$hyp" != yes ] && [ "$tup" != yes ] && [ "$anp" != yes ] && [ "$arp" != yes ] && [ "$ssp" != yes ]; then
-installxray
-xrsbvm
-xrsbso
-warpsx
-xrsbout
-hyp="hyptargo"; tup="tuptargo"; anp="anptargo"; arp="arptargo"; ssp="ssptargo"
-elif [ "$xhp" != yes ] && [ "$vlp" != yes ] && [ "$vxp" != yes ] && [ "$vwp" != yes ]; then
-installsb
-xrsbvm
-xrsbso
-warpsx
-xrsbout
-xhp="xhptargo"; vlp="vlptargo"; vxp="vxptargo"; vwp="vwptargo"
-else
-installsb
-installxray
-xrsbvm
-xrsbso
-warpsx
-xrsbout
+if [ "$hyp" = yes ] || [ "$tup" = yes ] || [ "$anp" = yes ] || [ "$arp" = yes ] || [ "$ssp" = yes ]; then
+  installsb
+elif [ "$xhp" != yes ] && [ "$vlp" != yes ] && [ "$vxp" != yes ] && { [ "$vwp" = yes ] || [ "$vmp" = yes ] || [ "$sop" = yes ]; }; then
+  installsb
 fi
+if [ "$xhp" = yes ] || [ "$vlp" = yes ] || [ "$vxp" = yes ]; then
+  installxray
+fi
+xrsbvw
+xrsbvm
+xrsbso
+warpsx
+xrsbout
 if [ -n "$argo" ] && [ -n "$vmag" ]; then
 echo
 echo "=========启用Cloudflared-argo内核========="
@@ -1320,17 +1337,18 @@ echo "$vl_vx_cdn_link"
 echo
 fi
 fi
-if grep vless-ws "$HOME/agsbx/xr.json" >/dev/null 2>&1; then
+if grep vless-ws "$HOME/agsbx/xr.json" >/dev/null 2>&1 || grep vless-ws "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
 port_vw=$(cat "$HOME/agsbx/port_vw")
+if [ -n "$port_vw_ext" ]; then vw_port="$port_vw_ext"; else vw_port="$port_vw"; fi
 echo "💣【 Vless-ws 】节点信息如下："
-vl_vw_link="vless://$uuid@$server_ip:$port_vw?encryption=none&type=ws&path=%2Fws#${sxname}vl-ws-$hostname"
+vl_vw_link="vless://$uuid@$server_ip:$vw_port?encryption=none&type=ws&path=%2Fws#${sxname}vl-ws-$hostname"
 echo "$vl_vw_link" >> "$HOME/agsbx/jh.txt"
 echo "$vl_vw_link"
 echo
 if [ -f "$HOME/agsbx/cdnym" ]; then
 echo "💣【 Vless-ws-cdn 】节点信息如下："
 echo "注：默认地址 yg数字.ygkkk.dpdns.org 可自行更换优选IP域名，如是回源端口需手动修改443或者80系端口"
-vl_vw_cdn_link="vless://$uuid@$argodomain:$port_vw?encryption=none&type=ws&host=$xvvmcdnym&path=%2Fws#${sxname}vl-ws-cdn-$hostname"
+vl_vw_cdn_link="vless://$uuid@$argodomain:$vw_port?encryption=none&type=ws&host=$xvvmcdnym&path=%2Fws#${sxname}vl-ws-cdn-$hostname"
 echo "$vl_vw_cdn_link" >> "$HOME/agsbx/jh.txt"
 echo "$vl_vw_cdn_link"
 echo
