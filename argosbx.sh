@@ -1096,12 +1096,20 @@ argoname='临时'
 nohup "$HOME/agsbx/cloudflared" tunnel --url http://localhost:$(cat $HOME/agsbx/argoport.log) --edge-ip-version auto --no-autoupdate --protocol http2 > $HOME/agsbx/argo.log 2>&1 &
 fi
 echo "申请Argo$argoname隧道中……请稍等"
-sleep 8
-if [ -n "${ARGO_DOMAIN}" ] && [ -n "${ARGO_AUTH}" ]; then
-argodomain=$(cat "$HOME/agsbx/sbargoym.log" 2>/dev/null)
-else
-argodomain=$(grep -a trycloudflare.com "$HOME/agsbx/argo.log" 2>/dev/null | awk 'NR==2{print}' | awk -F// '{print $2}' | awk '{print $1}')
-fi
+max_retries=15
+retry_count=0
+while [ $retry_count -lt $max_retries ]; do
+  if [ -n "${ARGO_DOMAIN}" ] && [ -n "${ARGO_AUTH}" ]; then
+    argodomain=$(cat "$HOME/agsbx/sbargoym.log" 2>/dev/null)
+  else
+    argodomain=$(grep -a trycloudflare.com "$HOME/agsbx/argo.log" 2>/dev/null | awk 'NR==2{print}' | awk -F// '{print $2}' | awk '{print $1}')
+  fi
+  if [ -n "${argodomain}" ]; then
+    break
+  fi
+  retry_count=$((retry_count + 1))
+  sleep 1
+done
 if [ -n "${argodomain}" ]; then
 echo "Argo$argoname隧道申请成功"
 else
