@@ -825,6 +825,12 @@ fi
 xrsbout(){
 if [ -e "$HOME/agsbx/xr.json" ]; then
 sed -i '${s/,\s*$//}' "$HOME/agsbx/xr.json"
+private_key_x=$(cat "$HOME/agsbx/xrk/private_key" 2>/dev/null || echo "")
+public_key_x=$(cat "$HOME/agsbx/xrk/public_key" 2>/dev/null || echo "")
+short_id_x=$(cat "$HOME/agsbx/xrk/short_id" 2>/dev/null || echo "")
+[ -z "$private_key_x" ] && private_key_x="placeholder"
+[ -z "$public_key_x" ] && public_key_x="placeholder"
+[ -z "$short_id_x" ] && short_id_x="00000000"
 cat >> "$HOME/agsbx/xr.json" <<EOF
   ],
   "outbounds": [
