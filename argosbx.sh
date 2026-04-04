@@ -1,24 +1,5 @@
 #!/bin/sh
 export LANG=en_US.UTF-8
-
-get_random_port() {
-    if command -v shuf >/dev/null 2>&1; then
-        shuf -i 10000-65535 -n 1
-    else
-        echo $((RANDOM % 55535 + 10000))
-    fi
-}
-
-mkdir -p "$HOME/agsbx"
-
-for p in vlpt vmpt vwpt hypt tupt xhpt vxpt anpt sspt arpt sopt; do
-    eval "val=\$$p"
-    if [ -n "$(eval echo "\${$p+x}")" ] && [ -z "$val" ]; then
-        random_p=$(get_random_port)
-        eval "$p=$random_p"
-    fi
-done
-
 [ -z "${vlpt+x}" ] || vlp=yes
 [ -z "${vmpt+x}" ] || { vmp=yes; vmag=yes; }
 [ -z "${vwpt+x}" ] || { vwp=yes; vmag=yes; }
@@ -76,27 +57,6 @@ export gh_gist_id=${gh_gist_id:-''}
 export nodeaddr=${nodeaddr:-''}
 export ippref=${ippref:-''}
 [ -z "${novps+x}" ] || force_nohup=yes
-
-need_s=no
-need_x=no
-
-if [ -n "${vlpt+x}" ] || [ -n "${xhpt+x}" ] || [ -n "${vxpt+x}" ] || \
-   [ -n "${vlpt_ext+x}" ] || [ -n "${xhpt_ext+x}" ] || [ -n "${vxpt_ext+x}" ]; then
-    need_x=yes
-fi
-
-if [ -n "${hypt+x}" ] || [ -n "${tupt+x}" ] || [ -n "${anpt+x}" ] || \
-   [ -n "${sspt+x}" ] || [ -n "${arpt+x}" ] || [ -n "${sopt+x}" ]; then
-    need_s=yes
-fi
-
-if [ -n "${vwpt+x}" ] || [ -n "${vmpt+x}" ] || \
-   [ -n "${vwpt_ext+x}" ] || [ -n "${vmpt_ext+x}" ]; then
-    if [ "$need_x" = "no" ]; then
-        need_s=yes
-    fi
-fi
-
 v46url="https://icanhazip.com"
 agsbxurl="https://raw.githubusercontent.com/yonggekkk/argosbx/main/argosbx.sh"
 showmode(){
@@ -300,26 +260,250 @@ cat > "$HOME/agsbx/xr.json" <<EOF
   "inbounds": [
 EOF
 insuuid
-if [ -n "$vwp" ]; then
-port_vw=$(cat "$HOME/agsbx/port_vw")
-cat >> "$HOME/agsbx/sb.json" <<EOF
+if [ -n "$xhp" ] || [ -n "$vlp" ]; then
+if [ -z "$ym_vl_re" ]; then
+ym_vl_re=apple.com
+fi
+echo "$ym_vl_re" > "$HOME/agsbx/ym_vl_re"
+echo "Reality域名：$ym_vl_re"
+if [ ! -e "$HOME/agsbx/xrk/private_key" ]; then
+key_pair=$("$HOME/agsbx/xray" x25519)
+private_key=$(echo "$key_pair" | grep "PrivateKey" | awk '{print $2}')
+public_key=$(echo "$key_pair" | grep "Password" | awk '{print $2}')
+short_id=$(date +%s%N | sha256sum | cut -c 1-8)
+echo "$private_key" > "$HOME/agsbx/xrk/private_key"
+echo "$public_key" > "$HOME/agsbx/xrk/public_key"
+echo "$short_id" > "$HOME/agsbx/xrk/short_id"
+fi
+private_key_x=$(cat "$HOME/agsbx/xrk/private_key")
+public_key_x=$(cat "$HOME/agsbx/xrk/public_key")
+short_id_x=$(cat "$HOME/agsbx/xrk/short_id")
+fi
+if [ -n "$xhp" ] || [ -n "$vxp" ] || [ -n "$vwp" ]; then
+if [ ! -e "$HOME/agsbx/xrk/dekey" ]; then
+vlkey=$("$HOME/agsbx/xray" vlessenc)
+dekey=$(echo "$vlkey" | grep '"decryption":' | sed -n '2p' | cut -d' ' -f2- | tr -d '"')
+enkey=$(echo "$vlkey" | grep '"encryption":' | sed -n '2p' | cut -d' ' -f2- | tr -d '"')
+echo "$dekey" > "$HOME/agsbx/xrk/dekey"
+echo "$enkey" > "$HOME/agsbx/xrk/enkey"
+fi
+dekey=$(cat "$HOME/agsbx/xrk/dekey")
+enkey=$(cat "$HOME/agsbx/xrk/enkey")
+fi
+
+if [ -n "$xhp" ]; then
+xhp=xhpt
+if [ -z "$port_xh" ] && [ ! -e "$HOME/agsbx/port_xh" ]; then
+port_xh=$(shuf -i 10000-65535 -n 1)
+echo "$port_xh" > "$HOME/agsbx/port_xh"
+elif [ -n "$port_xh" ]; then
+echo "$port_xh" > "$HOME/agsbx/port_xh"
+fi
+port_xh=$(cat "$HOME/agsbx/port_xh")
+echo "Vless-xhttp-reality端口：$port_xh"
+cat >> "$HOME/agsbx/xr.json" <<EOF
     {
-      "type": "vless",
-      "tag": "vless-ws-sb",
+      "tag":"xhttp-reality",
       "listen": "::",
-      "listen_port": ${port_vw},
-      "users": [
-        {
-          "id": "${uuid}",
-          "flow": "xtls-rprx-vision"
+      "port": ${port_xh},
+      "protocol": "vless",
+      "settings": {
+        "clients": [
+          {
+            "id": "${uuid}"
+          }
+        ],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "xhttp",
+        "security": "reality",
+        "realitySettings": {
+          "fingerprint": "chrome",
+          "target": "${ym_vl_re}:443",
+          "serverNames": [
+            "${ym_vl_re}"
+          ],
+          "privateKey": "$private_key_x",
+          "shortIds": ["$short_id_x"]
+        },
+        "xhttpSettings": {
+          "host": "",
+          "path": "/xhttp",
+          "mode": "auto"
         }
-      ],
-      "transport": {
-        "type": "ws",
-        "path": "/ws"
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls", "quic"],
+        "metadataOnly": false
       }
     },
 EOF
+else
+xhp=xhptargo
+fi
+if [ -n "$vxp" ]; then
+vxp=vxpt
+if [ -z "$port_vx" ] && [ ! -e "$HOME/agsbx/port_vx" ]; then
+port_vx=$(shuf -i 10000-65535 -n 1)
+echo "$port_vx" > "$HOME/agsbx/port_vx"
+elif [ -n "$port_vx" ]; then
+echo "$port_vx" > "$HOME/agsbx/port_vx"
+fi
+port_vx=$(cat "$HOME/agsbx/port_vx")
+echo "Vless-xhttp端口：$port_vx"
+if [ -n "$cdnym" ]; then
+echo "$cdnym" > "$HOME/agsbx/cdnym"
+echo "80系CDN或者回源CDN的host域名 (确保IP已解析在CF域名)：$cdnym"
+fi
+cat >> "$HOME/agsbx/xr.json" <<EOF
+    {
+      "tag":"vless-xhttp",
+      "listen": "::",
+      "port": ${port_vx},
+      "protocol": "vless",
+      "settings": {
+        "clients": [
+          {
+            "id": "${uuid}"
+          }
+        ],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "xhttp",
+        "xhttpSettings": {
+          "host": "",
+          "path": "/xhttp",
+          "mode": "auto"
+        }
+      },
+        "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls", "quic"],
+        "metadataOnly": false
+      }
+    },
+EOF
+else
+vxp=vxptargo
+fi
+if [ -n "$vwp" ]; then
+vwp=vwpt
+if [ -z "$port_vw" ] && [ ! -e "$HOME/agsbx/port_vw" ]; then
+port_vw=$(shuf -i 10000-65535 -n 1)
+echo "$port_vw" > "$HOME/agsbx/port_vw"
+elif [ -n "$port_vw" ]; then
+echo "$port_vw" > "$HOME/agsbx/port_vw"
+fi
+port_vw=$(cat "$HOME/agsbx/port_vw")
+echo "Vless-ws端口：$port_vw"
+if [ -n "$cdnym" ]; then
+echo "$cdnym" > "$HOME/agsbx/cdnym"
+echo "80系CDN或者回源CDN的host域名 (确保IP已解析在CF域名)：$cdnym"
+fi
+cat >> "$HOME/agsbx/xr.json" <<EOF
+    {
+      "tag":"vless-ws",
+      "listen": "0.0.0.0",
+      "port": ${port_vw},
+      "protocol": "vless",
+      "settings": {
+        "clients": [
+          {
+            "id": "${uuid}"
+          }
+        ],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "ws",
+        "wsSettings": {
+          "path": "/ws"
+        }
+      },
+        "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls", "quic"],
+        "metadataOnly": false
+      }
+    },
+EOF
+else
+vwp=vwptargo
+fi
+if [ -n "$vlp" ]; then
+vlp=vlpt
+if [ -z "$port_vl_re" ] && [ ! -e "$HOME/agsbx/port_vl_re" ]; then
+port_vl_re=$(shuf -i 10000-65535 -n 1)
+echo "$port_vl_re" > "$HOME/agsbx/port_vl_re"
+elif [ -n "$port_vl_re" ]; then
+echo "$port_vl_re" > "$HOME/agsbx/port_vl_re"
+fi
+port_vl_re=$(cat "$HOME/agsbx/port_vl_re")
+echo "Vless-tcp-reality-v端口：$port_vl_re"
+cat >> "$HOME/agsbx/xr.json" <<EOF
+        {
+            "tag":"reality-vision",
+            "listen": "::",
+            "port": $port_vl_re,
+            "protocol": "vless",
+            "settings": {
+                "clients": [
+                    {
+                        "id": "${uuid}",
+                        "flow": "xtls-rprx-vision"
+                    }
+                ],
+                "decryption": "none"
+            },
+            "streamSettings": {
+                "network": "tcp",
+                "security": "reality",
+                "realitySettings": {
+                    "fingerprint": "chrome",
+                    "dest": "${ym_vl_re}:443",
+                    "serverNames": [
+                      "${ym_vl_re}"
+                    ],
+                    "privateKey": "$private_key_x",
+                    "shortIds": ["$short_id_x"]
+                }
+            },
+          "sniffing": {
+          "enabled": true,
+          "destOverride": ["http", "tls", "quic"],
+          "metadataOnly": false
+      }
+    },  
+EOF
+else
+vlp=vlptargo
+fi
+}
+
+installsb(){
+echo
+echo "=========启用Sing-box内核========="
+if [ ! -e "$HOME/agsbx/sing-box" ]; then
+upsingbox
+fi
+cat > "$HOME/agsbx/sb.json" <<EOF
+{
+"log": {
+    "disabled": false,
+    "level": "info",
+    "timestamp": true
+  },
+  "inbounds": [
+EOF
+insuuid
+command -v openssl >/dev/null 2>&1 && openssl ecparam -genkey -name prime256v1 -out "$HOME/agsbx/private.key" >/dev/null 2>&1
+command -v openssl >/dev/null 2>&1 && openssl req -new -x509 -days 36500 -key "$HOME/agsbx/private.key" -out "$HOME/agsbx/cert.pem" -subj "/CN=www.bing.com" >/dev/null 2>&1
+if [ ! -f "$HOME/agsbx/private.key" ]; then
+url="https://github.com/yonggekkk/argosbx/releases/download/argosbx/private.key"; out="$HOME/agsbx/private.key"; (command -v curl>/dev/null 2>&1 && curl -Ls -o "$out" --retry 2 "$url") || (command -v wget>/dev/null 2>&1 && timeout 3 wget -q -O "$out" --tries=2 "$url")
+url="https://github.com/yonggekkk/argosbx/releases/download/argosbx/cert.pem"; out="$HOME/agsbx/cert.pem"; (command -v curl>/dev/null 2>&1 && curl -Ls -o "$out" --retry 2 "$url") || (command -v wget>/dev/null 2>&1 && timeout 3 wget -q -O "$out" --tries=2 "$url")
 fi
 if [ -n "$hyp" ]; then
 hyp=hypt
@@ -527,7 +711,7 @@ if [ -n "$cdnym" ]; then
 echo "$cdnym" > "$HOME/agsbx/cdnym"
 echo "80系CDN或者回源CDN的host域名 (确保IP已解析在CF域名)：$cdnym"
 fi
-if [ "$need_x" = "yes" ]; then
+if [ -e "$HOME/agsbx/xr.json" ]; then
 cat >> "$HOME/agsbx/xr.json" <<EOF
         {
             "tag": "vmess-xr",
@@ -593,7 +777,7 @@ echo "$port_so" > "$HOME/agsbx/port_so"
 fi
 port_so=$(cat "$HOME/agsbx/port_so")
 echo "Socks5端口：$port_so"
-if [ "$need_x" = "yes" ]; then
+if [ -e "$HOME/agsbx/xr.json" ]; then
 cat >> "$HOME/agsbx/xr.json" <<EOF
         {
          "tag": "socks5-xr",
@@ -835,27 +1019,23 @@ fi
 fi
 }
 ins(){
-if [ "$need_x" = "yes" ] && [ "$need_s" = "no" ]; then
+if [ "$hyp" != yes ] && [ "$tup" != yes ] && [ "$anp" != yes ] && [ "$arp" != yes ] && [ "$ssp" != yes ]; then
 installxray
 xrsbvm
 xrsbso
 warpsx
 xrsbout
-elif [ "$need_s" = "yes" ] && [ "$need_x" = "no" ]; then
+hyp="hyptargo"; tup="tuptargo"; anp="anptargo"; arp="arptargo"; ssp="ssptargo"
+elif [ "$xhp" != yes ] && [ "$vlp" != yes ] && [ "$vxp" != yes ] && [ "$vwp" != yes ]; then
 installsb
 xrsbvm
 xrsbso
 warpsx
 xrsbout
-elif [ "$need_s" = "yes" ] && [ "$need_x" = "yes" ]; then
-installsb
-installxray
-xrsbvm
-xrsbso
-warpsx
-xrsbout
+xhp="xhptargo"; vlp="vlptargo"; vxp="vxptargo"; vwp="vwptargo"
 else
 installsb
+installxray
 xrsbvm
 xrsbso
 warpsx
@@ -930,7 +1110,6 @@ fi
 fi
 sleep 5
 echo
-echo "等待进程启动..." && sleep 3
 if find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null | grep -Eq 'agsbx/(s|x)' || pgrep -f 'agsbx/(s|x)' >/dev/null 2>&1 ; then
 [ -f ~/.bashrc ] || touch ~/.bashrc
 sed -i '/agsbx/d' ~/.bashrc
@@ -968,16 +1147,9 @@ fi
 fi
 crontab /tmp/crontab.tmp >/dev/null 2>&1
 rm /tmp/crontab.tmp
-echo "等待进程启动..." && sleep 3
-if find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null | grep -Eq 'agsbx/(s|x)' || pgrep -f 'agsbx/(s|x)' >/dev/null 2>&1 ; then
 echo "Argosbx脚本进程启动成功，安装完毕" && sleep 2
 else
-if ! pgrep -f 'agsbx/(s|x|c)' >/dev/null 2>&1; then
-    if ! ps -ef | grep -v grep | grep -qE "agsbx/(s|x|c)"; then
-        echo "警告：未检测到后台进程。由于容器环境特殊，请尝试手动执行 'cd ~/agsbx && ./sing-box run -c sb.json' 确认。"
-    fi
-fi
-fi
+echo "Argosbx脚本进程未启动，安装失败" && exit
 fi
 }
 argosbxstatus(){
@@ -1148,7 +1320,7 @@ echo "$vl_vx_cdn_link"
 echo
 fi
 fi
-if grep vless-ws "$HOME/agsbx/xr.json" >/dev/null 2>&1 || grep vless-ws-sb "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
+if grep vless-ws "$HOME/agsbx/xr.json" >/dev/null 2>&1; then
 port_vw=$(cat "$HOME/agsbx/port_vw")
 echo "💣【 Vless-ws 】节点信息如下："
 vl_vw_link="vless://$uuid@$server_ip:$port_vw?encryption=none&type=ws&path=%2Fws#${sxname}vl-ws-$hostname"
