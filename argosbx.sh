@@ -456,36 +456,38 @@ upsingbox
 fi
 cat > "$HOME/agsbx/sb.json" <<EOF
 {
-"log": {
+  "log": {
     "disabled": false,
     "level": "info",
     "timestamp": true
   },
   "outbounds": [
     { "type": "direct", "tag": "direct" }
+  ],
 EOF
 if [ "$wap" = warp ]; then
+sed -i '$ s/$/,/' "$HOME/agsbx/sb.json"
 cat >> "$HOME/agsbx/sb.json" <<EOF
-,
+  "endpoints": [
     {
       "type": "wireguard",
       "tag": "warp-out",
-      "local_address": [ "172.16.0.2/32", "${wpv6}/128" ],
+      "address": [ "172.16.0.2/32", "${wpv6}/128" ],
       "private_key": "${pvk}",
       "peers": [
         {
           "server": "${sendip}",
           "server_port": 2408,
-          "peer_public_key": "bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo="
+          "public_key": "bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo="
         }
       ],
-      "reserved": ${res},
       "mtu": 1280
     }
+  ],
 EOF
 fi
+sed -i '$ s/$/,/' "$HOME/agsbx/sb.json"
 cat >> "$HOME/agsbx/sb.json" <<EOF
-  ],
   "route": {
     "rules": [
        {
