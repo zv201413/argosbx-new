@@ -2,14 +2,26 @@
 export LANG=en_US.UTF-8
 sed -i '/argosbx/d' /home/zv/.bashrc 2>/dev/null
 sed -i '/zv201413/d' /home/zv/.bashrc 2>/dev/null
+
+if [ -n "${vwpt+x}" ]; then
+    vwp=yes
+    vmp=no
+    hyp=no
+    vmag=yes
+    vwp_port=${vwpt:-$(shuf -i 10000-65535 -n 1)}
+fi
+
+if [ -n "${anpt+x}" ]; then
+    anp=yes
+    anp_port=${anpt}
+fi
+
 [ -z "${vlpt+x}" ] || vlp=yes
-[ -z "${vmpt+x}" ] || { vmp=yes; vmag=yes; }
-[ -z "${vwpt+x}" ] || { vwp=yes; vmp=no; vmag=yes; }
-[ -z "${hypt+x}" ] || hyp=yes
+[ -z "${vmpt+x}" ] || { if [ "$vmp" != no ]; then vmp=yes; vmag=yes; fi; }
+[ -z "${hypt+x}" ] || { if [ "$hyp" != no ]; then hyp=yes; fi; }
 [ -z "${tupt+x}" ] || tup=yes
 [ -z "${xhpt+x}" ] || xhp=yes
 [ -z "${vxpt+x}" ] || vxp=yes
-[ -z "${anpt+x}" ] || anp=yes
 [ -z "${sspt+x}" ] || ssp=yes
 [ -z "${arpt+x}" ] || arp=yes
 [ -z "${sopt+x}" ] || sop=yes
@@ -456,26 +468,31 @@ upsingbox
 fi
 insuuid
 if [ -z "$port_hy2" ] && [ ! -e "$HOME/agsbx/port_hy2" ]; then
-  port_hy2=$(shuf -i 10000-65535 -n 1)
-  echo "$port_hy2" > "$HOME/agsbx/port_hy2"
+  port_hy2=$(shuf -i 10000-65535 -n 1); echo "$port_hy2" > "$HOME/agsbx/port_hy2"
 elif [ -n "$port_hy2" ]; then
   echo "$port_hy2" > "$HOME/agsbx/port_hy2"
 fi
 port_hy2=$(cat "$HOME/agsbx/port_hy2")
 if [ -z "$port_vw" ] && [ ! -e "$HOME/agsbx/port_vw" ]; then
-  port_vw=$(shuf -i 10000-65535 -n 1)
-  echo "$port_vw" > "$HOME/agsbx/port_vw"
+  port_vw=$(shuf -i 10000-65535 -n 1); echo "$port_vw" > "$HOME/agsbx/port_vw"
 elif [ -n "$port_vw" ]; then
   echo "$port_vw" > "$HOME/agsbx/port_vw"
 fi
+port_vw=$(cat "$HOME/agsbx/port_vw")
 if [ -z "$port_vm_ws" ] && [ ! -e "$HOME/agsbx/port_vm_ws" ]; then
-  port_vm_ws=$(shuf -i 10000-65535 -n 1)
-  echo "$port_vm_ws" > "$HOME/agsbx/port_vm_ws"
+  port_vm_ws=$(shuf -i 10000-65535 -n 1); echo "$port_vm_ws" > "$HOME/agsbx/port_vm_ws"
 elif [ -n "$port_vm_ws" ]; then
   echo "$port_vm_ws" > "$HOME/agsbx/port_vm_ws"
 fi
 port_vm_ws=$(cat "$HOME/agsbx/port_vm_ws")
-hypt=$port_hy2; vpt=$port_vm_ws; vwpt=$port_vw; vpath_vm="${uuid}-vm"; vpath_vl="/${uuid}-vl"
+if [ -z "$port_an" ] && [ ! -e "$HOME/agsbx/port_an" ]; then
+  port_an=$(shuf -i 10000-65535 -n 1); echo "$port_an" > "$HOME/agsbx/port_an"
+elif [ -n "$port_an" ]; then
+  echo "$port_an" > "$HOME/agsbx/port_an"
+fi
+port_an=$(cat "$HOME/agsbx/port_an")
+if [ -n "$anp_port" ]; then port_an=$anp_port; fi
+hypt=$port_hy2; vpt=$port_vm_ws; vwpt=$port_vw; anpt=$port_an; vpath_vm="${uuid}-vm"; vpath_vl="/${uuid}-vl"
 command -v openssl >/dev/null 2>&1 && openssl ecparam -genkey -name prime256v1 -out "$HOME/agsbx/private.key" >/dev/null 2>&1
 command -v openssl >/dev/null 2>&1 && openssl req -new -x509 -days 36500 -key "$HOME/agsbx/private.key" -out "$HOME/agsbx/cert.pem" -subj "/CN=www.bing.com" >/dev/null 2>&1
 if [ ! -f "$HOME/agsbx/private.key" ]; then
@@ -491,6 +508,7 @@ cat <<EOF > $HOME/agsbx/sb.json
     "timestamp": true
   },
   "inbounds": [
+$( [ "$hyp" = "yes" ] && cat <<EE
     {
       "type": "hysteria2",
       "tag": "hy2-sb",
@@ -505,6 +523,8 @@ cat <<EOF > $HOME/agsbx/sb.json
         "key_path": "$HOME/agsbx/private.key"
       }
     },
+EE
+)$( [ "$vmp" = "yes" ] && cat <<EE
     {
       "type": "vmess",
       "tag": "vmess-sb",
@@ -518,6 +538,8 @@ cat <<EOF > $HOME/agsbx/sb.json
         "early_data_header_name": "Sec-WebSocket-Protocol"
       }
     },
+EE
+)$( [ "$vwp" = "yes" ] && cat <<EE
     {
       "type": "vless",
       "tag": "vless-sb",
@@ -530,7 +552,29 @@ cat <<EOF > $HOME/agsbx/sb.json
         "max_early_data": 2048,
         "early_data_header_name": "Sec-WebSocket-Protocol"
       }
-    }
+    },
+EE
+)$( [ "$anp" = "yes" ] && cat <<EE
+    {
+        "type":"anytls",
+        "tag":"anytls-sb",
+        "listen":"::",
+        "listen_port":$anpt,
+        "users":[
+            {
+              "password":"$uuid"
+            }
+        ],
+        "padding_scheme":[],
+        "tls":{
+            "enabled": true,
+            "certificate_path": "$HOME/agsbx/cert.pem",
+            "key_path": "$HOME/agsbx/private.key"
+        }
+    },
+EE
+)
+    { "type": "direct", "tag": "dummy-in" }
   ],
   "outbounds": [
     { "type": "direct", "tag": "direct" }
@@ -571,6 +615,8 @@ cat <<EOF > $HOME/agsbx/sb.json
   }
 }
 EOF
+sed -i '/dummy-in/d' "$HOME/agsbx/sb.json"
+sed -i '${s/,\s*$//}' "$HOME/agsbx/sb.json"
 }
 
 xrsbvm(){
@@ -1199,7 +1245,7 @@ public_key_s=$(cat "$HOME/agsbx/sbk/public_key" 2>/dev/null)
 short_id_s=$(cat "$HOME/agsbx/sbk/short_id" 2>/dev/null)
 sskey=$(cat "$HOME/agsbx/sskey" 2>/dev/null)
 fi
-if grep xhttp-reality "$HOME/agsbx/xr.json" >/dev/null 2>&1; then
+if [ "$xhp" = "yes" ]; then
 echo "💣【 Vless-xhttp-reality 】节点信息如下："
 port_xh=$(cat "$HOME/agsbx/port_xh")
 vl_xh_link="vless://$uuid@$server_ip:$port_xh?encryption=none&security=reality&sni=$ym_vl_re&fp=chrome&pbk=$public_key_x&sid=$short_id_x&type=xhttp&path=/xhttp&mode=auto#${sxname}vl-xhttp-reality-$hostname"
@@ -1207,7 +1253,7 @@ echo "$vl_xh_link" >> "$HOME/agsbx/jh.txt"
 echo "$vl_xh_link"
 echo
 fi
-if grep vless-xhttp "$HOME/agsbx/xr.json" >/dev/null 2>&1; then
+if [ "$vxp" = "yes" ]; then
 echo "💣【 Vless-xhttp 】节点信息如下："
 port_vx=$(cat "$HOME/agsbx/port_vx")
 vl_vx_link="vless://$uuid@$server_ip:$port_vx?encryption=none&type=xhttp&path=/xhttp&mode=auto#${sxname}vl-xhttp-$hostname"
@@ -1223,37 +1269,21 @@ echo "$vl_vx_cdn_link"
 echo
 fi
 fi
-if grep vless-xhttp "$HOME/agsbx/xr.json" >/dev/null 2>&1; then
-echo "💣【 Vless-xhttp 】节点信息如下："
-port_vx=$(cat "$HOME/agsbx/port_vx")
-vl_vx_link="vless://$uuid@$server_ip:$port_vx?encryption=none&type=xhttp&path=/xhttp&mode=auto#${sxname}vl-xhttp-$hostname"
-echo "$vl_vx_link" >> "$HOME/agsbx/jh.txt"
-echo "$vl_vx_link"
-echo
-if [ -f "$HOME/agsbx/cdnym" ]; then
-echo "💣【 Vless-xhttp-cdn 】节点信息如下："
-echo "注：默认地址 yg数字.ygkkk.dpdns.org 可自行更换优选IP域名，如是回源端口需手动修改443或者80系端口"
-vl_vx_cdn_link="vless://$uuid@$argodomain:$port_vx?encryption=none&type=xhttp&host=$xvvmcdnym&path=/xhttp&mode=auto#${sxname}vl-xhttp-cdn-$hostname"
-echo "$vl_vx_cdn_link" >> "$HOME/agsbx/jh.txt"
-echo "$vl_vx_cdn_link"
-echo
-fi
-fi
-if grep vless-ws "$HOME/agsbx/xr.json" >/dev/null 2>&1 || grep vless-sb "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
-port_vw=$(cat "$HOME/agsbx/port_vw")
-echo "💣【 Vless-ws 】节点信息如下："
-vl_vw_link="vless://$uuid@$server_ip:$port_vw?encryption=none&security=none&type=ws&host=www.bing.com&path=/${uuid}-vl#${sxname}vl-ws-$hostname"
-echo "$vl_vw_link" >> "$HOME/agsbx/jh.txt"
-echo "$vl_vw_link"
-echo
-if [ -f "$HOME/agsbx/cdnym" ]; then
-echo "💣【 Vless-ws-cdn 】节点信息如下："
-echo "注：默认地址 yg数字.ygkkk.dpdns.org 可自行更换优选IP域名，如是回源端口需手动修改443或者80系端口"
-vl_vw_cdn_link="vless://$uuid@$argodomain:$port_vw?encryption=none&security=none&type=ws&host=$xvvmcdnym&path=/${uuid}-vl#${sxname}vl-ws-cdn-$hostname"
-echo "$vl_vw_cdn_link" >> "$HOME/agsbx/jh.txt"
-echo "$vl_vw_cdn_link"
-echo
-fi
+if [ "$vwp" = "yes" ]; then
+    port_vw=$(cat "$HOME/agsbx/port_vw")
+    echo "💣【 Vless-ws 】节点信息如下："
+    vl_vw_link="vless://$uuid@$server_ip:$port_vw?encryption=none&security=none&type=ws&host=www.bing.com&path=/$uuid-vl#${sxname}vl-ws-$hostname"
+    echo "$vl_vw_link" >> "$HOME/agsbx/jh.txt"
+    echo "$vl_vw_link"
+    echo
+    if [ -f "$HOME/agsbx/cdnym" ]; then
+        echo "💣【 Vless-ws-cdn 】节点信息如下："
+        echo "注：默认地址 yg数字.ygkkk.dpdns.org 可自行更换优选IP域名，如是回源端口需手动修改443或者80系端口"
+        vl_vw_cdn_link="vless://$uuid@$argodomain:$port_vw?encryption=none&security=none&type=ws&host=$xvvmcdnym&path=/$uuid-vl#${sxname}vl-ws-cdn-$hostname"
+        echo "$vl_vw_cdn_link" >> "$HOME/agsbx/jh.txt"
+        echo "$vl_vw_cdn_link"
+        echo
+    fi
 fi
 if grep reality-vision "$HOME/agsbx/xr.json" >/dev/null 2>&1; then
 echo "💣【 Vless-tcp-reality-vision 】节点信息如下："
@@ -1276,7 +1306,7 @@ if grep ss-2022 "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
   echo "$ss_link"
   echo
 fi
-if grep vmess-xr "$HOME/agsbx/xr.json" >/dev/null 2>&1 || grep vmess-sb "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
+if [ "$vmp" = "yes" ]; then
   echo "💣【 Vmess-ws 】节点信息如下："
   port_vm_ws=$(cat "$HOME/agsbx/port_vm_ws")
   if [ -n "$port_vm_ws_ext" ]; then
@@ -1297,7 +1327,7 @@ if grep vmess-xr "$HOME/agsbx/xr.json" >/dev/null 2>&1 || grep vmess-sb "$HOME/a
     echo
   fi
 fi
-if grep anytls-sb "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
+if [ "$anp" = "yes" ]; then
   echo "💣【 AnyTLS 】节点信息如下："
   port_an=$(cat "$HOME/agsbx/port_an")
   if [ -n "$port_an_ext" ]; then
