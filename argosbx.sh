@@ -966,29 +966,20 @@ cat >> "$HOME/agsbx/sb.json" <<EOF
     {
       "type": "direct",
       "tag": "direct"
-    }
-  ],
-  "endpoints": [
+    },
     {
       "type": "wireguard",
       "tag": "warp-out",
-      "address": [
+      "server": "${sendip}",
+      "server_port": 2408,
+      "local_address": [
         "172.16.0.2/32",
         "${wpv6}/128"
       ],
       "private_key": "${pvk}",
-      "peers": [
-        {
-          "address": "${sendip}",
-          "port": 2408,
-          "public_key": "bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo=",
-          "allowed_ips": [
-            "0.0.0.0/0",
-            "::/0"
-          ],
-          "reserved": $res
-        }
-      ]
+      "peer_public_key": "bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo=",
+      "reserved": $res,
+      "mtu": 1280
     }
   ],
   "route": {
