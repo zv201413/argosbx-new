@@ -475,7 +475,7 @@ elif [ -n "$port_vm_ws" ]; then
   echo "$port_vm_ws" > "$HOME/agsbx/port_vm_ws"
 fi
 port_vm_ws=$(cat "$HOME/agsbx/port_vm_ws")
-hypt=$port_hy2; vpt=$port_vm_ws; vpath="${uuid}-vm"
+hypt=$port_hy2; vpt=$port_vm_ws; vwpt=$port_vw; vpath_vm="${uuid}-vm"; vpath_vl="${uuid}-vl"
 command -v openssl >/dev/null 2>&1 && openssl ecparam -genkey -name prime256v1 -out "$HOME/agsbx/private.key" >/dev/null 2>&1
 command -v openssl >/dev/null 2>&1 && openssl req -new -x509 -days 36500 -key "$HOME/agsbx/private.key" -out "$HOME/agsbx/cert.pem" -subj "/CN=www.bing.com" >/dev/null 2>&1
 if [ ! -f "$HOME/agsbx/private.key" ]; then
@@ -513,7 +513,20 @@ cat <<EOF > $HOME/agsbx/sb.json
       "users": [ { "uuid": "$uuid", "alterId": 0 } ],
       "transport": {
         "type": "ws",
-        "path": "$vpath",
+        "path": "$vpath_vm",
+        "max_early_data": 2048,
+        "early_data_header_name": "Sec-WebSocket-Protocol"
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "vless-sb",
+      "listen": "::",
+      "listen_port": $vwpt,
+      "users": [ { "uuid": "$uuid", "flow": "" } ],
+      "transport": {
+        "type": "ws",
+        "path": "$vpath_vl",
         "max_early_data": 2048,
         "early_data_header_name": "Sec-WebSocket-Protocol"
       }
@@ -536,11 +549,16 @@ cat <<EOF > $HOME/agsbx/sb.json
           "allowed_ips": [ "0.0.0.0/0", "::/0" ],
           "reserved": $res
         }
-      ]
+      ],
+      "mtu": 1280
     }
   ],
   "route": {
     "rules": [
+      {
+        "ip_cidr": ["$sendip/$(if echo "$sendip" | grep -q ":"; then echo 128; else echo 32; fi)"],
+        "outbound": "direct"
+      },
       { "action": "sniff" },
       { "action": "resolve", "strategy": "prefer_ipv6" },
       { "ip_cidr": [ "::/0", "0.0.0.0/0" ], "outbound": "warp-out" }
