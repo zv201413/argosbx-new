@@ -84,6 +84,13 @@ arm64|aarch64) cpu=arm64;;
 amd64|x86_64) cpu=amd64;;
 *) echo "目前脚本不支持$(uname -m)架构" && exit
 esac
+if [ -n "$( (command -v curl >/dev/null 2>&1 && curl -s6m5 -k "$v46url" 2>/dev/null) || (command -v wget >/dev/null 2>&1 && timeout 3 wget -6 -qO- --tries=2 "$v46url" 2>/dev/null) )" ]; then
+sendip="2606:4700:d0::a29f:c001"
+xendip="[2606:4700:d0::a29f:c001]"
+else
+sendip="162.159.192.1"
+xendip="162.159.192.1"
+fi
 mkdir -p "$HOME/agsbx"
 if [ ! -f sbx_update ]; then
 echo "执行脚本中，请稍后"
@@ -451,6 +458,40 @@ cat > "$HOME/agsbx/sb.json" <<EOF
     "disabled": false,
     "level": "info",
     "timestamp": true
+  },
+  "outbounds": [
+    {
+      "type": "wireguard",
+      "tag": "warp-out",
+      "local_address": [ "172.16.0.2/32", "${wpv6}/128" ],
+      "private_key": "${pvk}",
+      "peers": [
+        {
+          "server": "${sendip}",
+          "server_port": 2408,
+          "public_key": "bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo="
+        }
+      ],
+      "reserved": ${res},
+      "mtu": 1280
+    },
+    { "type": "direct", "tag": "direct" }
+  ],
+  "route": {
+    "rules": [
+       {
+          "action": "sniff"
+        },
+       {
+        "action": "resolve",
+         "strategy": "${sbyx}"
+       },
+      {
+        "ip_cidr": [ ${sip} ],         
+        "outbound": "${s1outtag}"
+      }
+    ],
+    "final": "${s2outtag}"
   },
   "inbounds": [
 EOF
@@ -961,43 +1002,7 @@ fi
 if [ -e "$HOME/agsbx/sb.json" ]; then
 sed -i '${s/,\s*$//}' "$HOME/agsbx/sb.json"
 cat >> "$HOME/agsbx/sb.json" <<EOF
-  ],
-  "outbounds": [
-    {
-      "type": "direct",
-      "tag": "direct"
-    },
-    {
-      "type": "wireguard",
-      "tag": "warp-out",
-      "server": "${sendip}",
-      "server_port": 2408,
-      "local_address": [
-        "172.16.0.2/32",
-        "${wpv6}/128"
-      ],
-      "private_key": "${pvk}",
-      "peer_public_key": "bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo=",
-      "reserved": $res,
-      "mtu": 1280
-    }
-  ],
-  "route": {
-    "rules": [
-       {
-          "action": "sniff"
-        },
-       {
-        "action": "resolve",
-         "strategy": "${sbyx}"
-       },
-      {
-        "ip_cidr": [ ${sip} ],         
-        "outbound": "${s1outtag}"
-      }
-    ],
-    "final": "${s2outtag}"
-  }
+  ]
 }
 EOF
 if [ "$force_nohup" != "yes" ] && pidof systemd >/dev/null 2>&1 && [ "$EUID" -eq 0 ]; then
@@ -1042,6 +1047,7 @@ fi
 fi
 }
 ins(){
+warpsx
 need_x=no
 need_s=no
 if [ "$xhp" = yes ] || [ "$vlp" = yes ] || [ "$vxp" = yes ]; then
@@ -1068,7 +1074,6 @@ fi
 xrsbvm
 xrsbvw
 xrsbso
-warpsx
 xrsbout
 if [ -n "$argo" ] && [ -n "$vmag" ]; then
 echo
@@ -1709,13 +1714,6 @@ for P in /proc/[0-9]*; do if [ -L "$P/exe" ]; then TARGET=$(readlink -f "$P/exe"
 kill -15 $(pgrep -f 'agsbx/s' 2>/dev/null) $(pgrep -f 'agsbx/c' 2>/dev/null) $(pgrep -f 'agsbx/x' 2>/dev/null) >/dev/null 2>&1
 if [ -z "$( (command -v curl >/dev/null 2>&1 && curl -s4m5 -k "$v46url" 2>/dev/null) || (command -v wget >/dev/null 2>&1 && timeout 3 wget -4 -qO- --tries=2 "$v46url" 2>/dev/null) )" ]; then
 echo -e "nameserver 2a00:1098:2b::1\nnameserver 2a00:1098:2c::1" > /etc/resolv.conf
-fi
-if [ -n "$( (command -v curl >/dev/null 2>&1 && curl -s6m5 -k "$v46url" 2>/dev/null) || (command -v wget >/dev/null 2>&1 && timeout 3 wget -6 -qO- --tries=2 "$v46url" 2>/dev/null) )" ]; then
-sendip="2606:4700:d0::a29f:c001"
-xendip="[2606:4700:d0::a29f:c001]"
-else
-sendip="162.159.192.1"
-xendip="162.159.192.1"
 fi
 echo "VPS系统：$op"
 echo "CPU架构：$cpu"
