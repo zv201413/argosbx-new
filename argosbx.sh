@@ -1,10 +1,10 @@
 #!/bin/sh
 export LANG=en_US.UTF-8
 sed -i '/argosbx/d' /home/zv/.bashrc 2>/dev/null
-sed -i '/yonggekkk/d' /home/zv/.bashrc 2>/dev/null
+sed -i '/zv201413/d' /home/zv/.bashrc 2>/dev/null
 [ -z "${vlpt+x}" ] || vlp=yes
 [ -z "${vmpt+x}" ] || { vmp=yes; vmag=yes; }
-[ -z "${vwpt+x}" ] || { vwp=yes; vmag=yes; }
+[ -z "${vwpt+x}" ] || { vwp=yes; vmp=no; vmag=yes; }
 [ -z "${hypt+x}" ] || hyp=yes
 [ -z "${tupt+x}" ] || tup=yes
 [ -z "${xhpt+x}" ] || xhp=yes
@@ -60,10 +60,10 @@ export nodeaddr=${nodeaddr:-''}
 export ippref=${ippref:-''}
 [ -z "${novps+x}" ] || force_nohup=yes
 v46url="https://icanhazip.com"
-agsbxurl="https://raw.githubusercontent.com/yonggekkk/argosbx/main/argosbx.sh"
+agsbxurl="https://raw.githubusercontent.com/zv201413/argosbx-new/feature-add-new-options-v2/argosbx.sh"
 showmode(){
-echo "Argosbx脚本一键SSH命令生器在线网址：https://yonggekkk.github.io/argosbx/"
-echo "主脚本：bash <(curl -Ls https://raw.githubusercontent.com/yonggekkk/argosbx/main/argosbx.sh) 或 bash <(wget -qO- https://raw.githubusercontent.com/yonggekkk/argosbx/main/argosbx.sh)"
+echo "Argosbx脚本一键SSH命令生器在线网址：https://zv201413.github.io/argosbx-new/"
+echo "主脚本：bash <(curl -Ls https://raw.githubusercontent.com/zv201413/argosbx-new/feature-add-new-options-v2/argosbx.sh) 或 bash <(wget -qO- https://raw.githubusercontent.com/zv201413/argosbx-new/feature-add-new-options-v2/argosbx.sh)"
 echo "显示节点信息命令：agsbx list 【或者】 主脚本 list"
 echo "重置变量组命令：自定义各种协议变量组 agsbx rep 【或者】 自定义各种协议变量组 主脚本 rep"
 echo "更新脚本命令：原已安装的自定义各种协议变量组 主脚本 rep"
@@ -475,7 +475,7 @@ elif [ -n "$port_vm_ws" ]; then
   echo "$port_vm_ws" > "$HOME/agsbx/port_vm_ws"
 fi
 port_vm_ws=$(cat "$HOME/agsbx/port_vm_ws")
-hypt=$port_hy2; vpt=$port_vm_ws; vwpt=$port_vw; vpath_vm="${uuid}-vm"; vpath_vl="${uuid}-vl"
+hypt=$port_hy2; vpt=$port_vm_ws; vwpt=$port_vw; vpath_vm="${uuid}-vm"; vpath_vl="/${uuid}-vl"
 command -v openssl >/dev/null 2>&1 && openssl ecparam -genkey -name prime256v1 -out "$HOME/agsbx/private.key" >/dev/null 2>&1
 command -v openssl >/dev/null 2>&1 && openssl req -new -x509 -days 36500 -key "$HOME/agsbx/private.key" -out "$HOME/agsbx/cert.pem" -subj "/CN=www.bing.com" >/dev/null 2>&1
 if [ ! -f "$HOME/agsbx/private.key" ]; then
@@ -555,6 +555,10 @@ cat <<EOF > $HOME/agsbx/sb.json
   ],
   "route": {
     "rules": [
+      {
+        "domain_suffix": [ "trycloudflare.com", "cloudflare.com", "argotunnel.com" ],
+        "outbound": "direct"
+      },
       {
         "ip_cidr": ["$sendip/$(if echo "$sendip" | grep -q ":"; then echo 128; else echo 32; fi)"],
         "outbound": "direct"
@@ -1238,14 +1242,14 @@ fi
 if grep vless-ws "$HOME/agsbx/xr.json" >/dev/null 2>&1 || grep vless-sb "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
 port_vw=$(cat "$HOME/agsbx/port_vw")
 echo "💣【 Vless-ws 】节点信息如下："
-vl_vw_link="vless://$uuid@$server_ip:$port_vw?encryption=none&type=ws&path=%2Fws#${sxname}vl-ws-$hostname"
+vl_vw_link="vless://$uuid@$server_ip:$port_vw?encryption=none&security=none&type=ws&host=www.bing.com&path=/${uuid}-vl#${sxname}vl-ws-$hostname"
 echo "$vl_vw_link" >> "$HOME/agsbx/jh.txt"
 echo "$vl_vw_link"
 echo
 if [ -f "$HOME/agsbx/cdnym" ]; then
 echo "💣【 Vless-ws-cdn 】节点信息如下："
 echo "注：默认地址 yg数字.ygkkk.dpdns.org 可自行更换优选IP域名，如是回源端口需手动修改443或者80系端口"
-vl_vw_cdn_link="vless://$uuid@$argodomain:$port_vw?encryption=none&type=ws&host=$xvvmcdnym&path=%2Fws#${sxname}vl-ws-cdn-$hostname"
+vl_vw_cdn_link="vless://$uuid@$argodomain:$port_vw?encryption=none&security=none&type=ws&host=$xvvmcdnym&path=/${uuid}-vl#${sxname}vl-ws-cdn-$hostname"
 echo "$vl_vw_cdn_link" >> "$HOME/agsbx/jh.txt"
 echo "$vl_vw_cdn_link"
 echo
@@ -1412,9 +1416,9 @@ elif [ "$vlvm" = "Vless" ]; then
     else
       argo_addr="$argodomain"
     fi
-    vwatls_link1="vless://$uuid@$argo_addr:443?encryption=none&type=ws&host=$argodomain&path=%2Fws&security=tls&sni=$argodomain&fp=chrome&insecure=0&allowInsecure=0#${sxname}vless-ws-tls-argo-$hostname"
+    vwatls_link1="vless://$uuid@$argo_addr:443?encryption=none&security=tls&sni=$argodomain&type=ws&host=$argodomain&path=/${uuid}-vl&fp=chrome&insecure=0&allowInsecure=0#${sxname}vless-ws-tls-argo-$hostname"
     echo "$vwatls_link1" >> "$HOME/agsbx/jh.txt"
-    vwa_link2="vless://$uuid@$argo_addr:80?encryption=none&type=ws&host=$argodomain&path=%2Fws&security=none#${sxname}vless-ws-argo-$hostname"
+    vwa_link2="vless://$uuid@$argo_addr:80?encryption=none&security=none&type=ws&host=$argodomain&path=/${uuid}-vl#${sxname}vless-ws-argo-$hostname"
     echo "$vwa_link2" >> "$HOME/agsbx/jh.txt"
   fi
 sbtk=$(cat "$HOME/agsbx/sbargotoken.log" 2>/dev/null)
@@ -1438,8 +1442,6 @@ echo "---------------------------------------------------------"
 echo "$argoshow"
 echo
 echo "---------------------------------------------------------"
-# 统一转义 ws 路径
-sed -i 's|path=/ws|path=%2Fws|g' "$HOME/agsbx/jh.txt"
 echo "聚合节点信息，请进入 $HOME/agsbx/jh.txt 文件目录查看或者运行 cat $HOME/agsbx/jh.txt 查看"
 echo "========================================================="
   if [ -n "$gh_token" ]; then
