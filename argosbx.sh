@@ -454,7 +454,25 @@ echo "=========启用Sing-box内核========="
 if [ ! -e "$HOME/agsbx/sing-box" ]; then
 upsingbox
 fi
-cat > "$HOME/agsbx/sb.json" <<EOF
+insuuid
+if [ -z "$port_hy2" ] && [ ! -e "$HOME/agsbx/port_hy2" ]; then
+port_hy2=$(shuf -i 10000-65535 -n 1)
+echo "$port_hy2" > "$HOME/agsbx/port_hy2"
+fi
+port_hy2=$(cat "$HOME/agsbx/port_hy2")
+if [ -z "$port_vw" ] && [ ! -e "$HOME/agsbx/port_vw" ]; then
+port_vw=$(shuf -i 10000-65535 -n 1)
+echo "$port_vw" > "$HOME/agsbx/port_vw"
+fi
+port_vw=$(cat "$HOME/agsbx/port_vw")
+command -v openssl >/dev/null 2>&1 && openssl ecparam -genkey -name prime256v1 -out "$HOME/agsbx/private.key" >/dev/null 2>&1
+command -v openssl >/dev/null 2>&1 && openssl req -new -x509 -days 36500 -key "$HOME/agsbx/private.key" -out "$HOME/agsbx/cert.pem" -subj "/CN=www.bing.com" >/dev/null 2>&1
+if [ ! -f "$HOME/agsbx/private.key" ]; then
+url="https://github.com/yonggekkk/argosbx/releases/download/argosbx/private.key"; out="$HOME/agsbx/private.key"; (command -v curl>/dev/null 2>&1 && curl -Ls -o "$out" --retry 2 "$url") || (command -v wget>/dev/null 2>&1 && timeout 3 wget -q -O "$out" --tries=2 "$url")
+url="https://github.com/yonggekkk/argosbx/releases/download/argosbx/cert.pem"; out="$HOME/agsbx/cert.pem"; (command -v curl>/dev/null 2>&1 && curl -Ls -o "$out" --retry 2 "$url") || (command -v wget>/dev/null 2>&1 && timeout 3 wget -q -O "$out" --tries=2 "$url")
+fi
+# 按照副本脚本成功的逻辑一次性写入，避免拼接产生双逗号
+cat <<EOF > $HOME/agsbx/sb.json
 {
   "log": {
     "disabled": false,
@@ -464,19 +482,15 @@ cat > "$HOME/agsbx/sb.json" <<EOF
   "outbounds": [
     { "type": "direct", "tag": "direct" }
   ],
-EOF
-if [ "$wap" = warp ]; then
-sed -i '$ s/$/,/' "$HOME/agsbx/sb.json"
-cat >> "$HOME/agsbx/sb.json" <<EOF
   "endpoints": [
     {
       "type": "wireguard",
       "tag": "warp-out",
-      "address": [ "172.16.0.2/32", "${wpv6}/128" ],
-      "private_key": "${pvk}",
+      "address": [ "172.16.0.2/32", "$wpv6/128" ],
+      "private_key": "$pvk",
       "peers": [
         {
-          "server": "${sendip}",
+          "server": "$sendip",
           "server_port": 2408,
           "public_key": "bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo="
         }
@@ -484,224 +498,45 @@ cat >> "$HOME/agsbx/sb.json" <<EOF
       "mtu": 1280
     }
   ],
-EOF
-fi
-sed -i '$ s/$/,/' "$HOME/agsbx/sb.json"
-cat >> "$HOME/agsbx/sb.json" <<EOF
   "route": {
     "rules": [
-       {
-          "action": "sniff"
-        },
-       {
-        "action": "resolve",
-         "strategy": "${sbyx}"
-       },
-      {
-        "ip_cidr": [ ${sip} ],         
-        "outbound": "${s1outtag}"
-      }
+      { "action": "sniff" },
+      { "action": "resolve", "strategy": "prefer_ipv6" },
+      { "ip_cidr": [ "::/0", "0.0.0.0/0" ], "outbound": "warp-out" }
     ],
-    "final": "${s2outtag}"
+    "final": "warp-out"
   },
   "inbounds": [
-EOF
-insuuid
-command -v openssl >/dev/null 2>&1 && openssl ecparam -genkey -name prime256v1 -out "$HOME/agsbx/private.key" >/dev/null 2>&1
-command -v openssl >/dev/null 2>&1 && openssl req -new -x509 -days 36500 -key "$HOME/agsbx/private.key" -out "$HOME/agsbx/cert.pem" -subj "/CN=www.bing.com" >/dev/null 2>&1
-if [ ! -f "$HOME/agsbx/private.key" ]; then
-url="https://github.com/yonggekkk/argosbx/releases/download/argosbx/private.key"; out="$HOME/agsbx/private.key"; (command -v curl>/dev/null 2>&1 && curl -Ls -o "$out" --retry 2 "$url") || (command -v wget>/dev/null 2>&1 && timeout 3 wget -q -O "$out" --tries=2 "$url")
-url="https://github.com/yonggekkk/argosbx/releases/download/argosbx/cert.pem"; out="$HOME/agsbx/cert.pem"; (command -v curl>/dev/null 2>&1 && curl -Ls -o "$out" --retry 2 "$url") || (command -v wget>/dev/null 2>&1 && timeout 3 wget -q -O "$out" --tries=2 "$url")
-fi
-if [ -n "$hyp" ]; then
-hyp=hypt
-if [ -z "$port_hy2" ] && [ ! -e "$HOME/agsbx/port_hy2" ]; then
-port_hy2=$(shuf -i 10000-65535 -n 1)
-echo "$port_hy2" > "$HOME/agsbx/port_hy2"
-elif [ -n "$port_hy2" ]; then
-echo "$port_hy2" > "$HOME/agsbx/port_hy2"
-fi
-port_hy2=$(cat "$HOME/agsbx/port_hy2")
-echo "Hysteria2端口：$port_hy2"
-cat >> "$HOME/agsbx/sb.json" <<EOF
     {
         "type": "hysteria2",
         "tag": "hy2-sb",
         "listen": "::",
-        "listen_port": ${port_hy2},
-        "users": [
-            {
-                "password": "${uuid}"
-            }
-        ],
-        "ignore_client_bandwidth":false,
+        "listen_port": $port_hy2,
+        "users": [ { "password": "$uuid" } ],
+        "ignore_client_bandwidth": false,
         "tls": {
             "enabled": true,
-            "alpn": [
-                "h3"
-            ],
+            "alpn": [ "h3" ],
             "certificate_path": "$HOME/agsbx/cert.pem",
             "key_path": "$HOME/agsbx/private.key"
         }
     },
+    {
+        "type": "vless",
+        "tag": "vless-sb",
+        "listen": "0.0.0.0",
+        "listen_port": $port_vw,
+        "users": [ { "uuid": "$uuid", "flow": "" } ],
+        "transport": {
+            "type": "ws",
+            "path": "/ws",
+            "max_early_data": 2048,
+            "early_data_header_name": "Sec-WebSocket-Protocol"
+        }
+    }
+  ]
+}
 EOF
-else
-hyp=hyptargo
-fi
-if [ -n "$tup" ]; then
-tup=tupt
-if [ -z "$port_tu" ] && [ ! -e "$HOME/agsbx/port_tu" ]; then
-port_tu=$(shuf -i 10000-65535 -n 1)
-echo "$port_tu" > "$HOME/agsbx/port_tu"
-elif [ -n "$port_tu" ]; then
-echo "$port_tu" > "$HOME/agsbx/port_tu"
-fi
-port_tu=$(cat "$HOME/agsbx/port_tu")
-echo "Tuic端口：$port_tu"
-cat >> "$HOME/agsbx/sb.json" <<EOF
-        {
-            "type":"tuic",
-            "tag": "tuic5-sb",
-            "listen": "::",
-            "listen_port": ${port_tu},
-            "users": [
-                {
-                    "uuid": "${uuid}",
-                    "password": "${uuid}"
-                }
-            ],
-            "congestion_control": "bbr",
-            "tls":{
-                "enabled": true,
-                "alpn": [
-                    "h3"
-                ],
-                "certificate_path": "$HOME/agsbx/cert.pem",
-                "key_path": "$HOME/agsbx/private.key"
-            }
-        },
-EOF
-else
-tup=tuptargo
-fi
-if [ -n "$anp" ]; then
-anp=anpt
-if [ -z "$port_an" ] && [ ! -e "$HOME/agsbx/port_an" ]; then
-port_an=$(shuf -i 10000-65535 -n 1)
-echo "$port_an" > "$HOME/agsbx/port_an"
-elif [ -n "$port_an" ]; then
-echo "$port_an" > "$HOME/agsbx/port_an"
-fi
-port_an=$(cat "$HOME/agsbx/port_an")
-echo "Anytls端口：$port_an"
-cat >> "$HOME/agsbx/sb.json" <<EOF
-        {
-            "type":"anytls",
-            "tag":"anytls-sb",
-            "listen":"::",
-            "listen_port":${port_an},
-            "users":[
-                {
-                  "password":"${uuid}"
-                }
-            ],
-            "padding_scheme":[],
-            "tls":{
-                "enabled": true,
-                "certificate_path": "$HOME/agsbx/cert.pem",
-                "key_path": "$HOME/agsbx/private.key"
-            }
-        },
-EOF
-else
-anp=anptargo
-fi
-if [ -n "$arp" ]; then
-arp=arpt
-if [ -z "$ym_vl_re" ]; then
-ym_vl_re=apple.com
-fi
-echo "$ym_vl_re" > "$HOME/agsbx/ym_vl_re"
-echo "Reality域名：$ym_vl_re"
-mkdir -p "$HOME/agsbx/sbk"
-if [ ! -e "$HOME/agsbx/sbk/private_key" ]; then
-key_pair=$("$HOME/agsbx/sing-box" generate reality-keypair)
-private_key=$(echo "$key_pair" | awk '/PrivateKey/ {print $2}' | tr -d '"')
-public_key=$(echo "$key_pair" | awk '/PublicKey/ {print $2}' | tr -d '"')
-short_id=$("$HOME/agsbx/sing-box" generate rand --hex 4)
-echo "$private_key" > "$HOME/agsbx/sbk/private_key"
-echo "$public_key" > "$HOME/agsbx/sbk/public_key"
-echo "$short_id" > "$HOME/agsbx/sbk/short_id"
-fi
-private_key_s=$(cat "$HOME/agsbx/sbk/private_key")
-public_key_s=$(cat "$HOME/agsbx/sbk/public_key")
-short_id_s=$(cat "$HOME/agsbx/sbk/short_id")
-if [ -z "$port_ar" ] && [ ! -e "$HOME/agsbx/port_ar" ]; then
-port_ar=$(shuf -i 10000-65535 -n 1)
-echo "$port_ar" > "$HOME/agsbx/port_ar"
-elif [ -n "$port_ar" ]; then
-echo "$port_ar" > "$HOME/agsbx/port_ar"
-fi
-port_ar=$(cat "$HOME/agsbx/port_ar")
-echo "Any-Reality端口：$port_ar"
-cat >> "$HOME/agsbx/sb.json" <<EOF
-        {
-            "type":"anytls",
-            "tag":"anyreality-sb",
-            "listen":"::",
-            "listen_port":${port_ar},
-            "users":[
-                {
-                  "password":"${uuid}"
-                }
-            ],
-            "padding_scheme":[],
-            "tls": {
-            "enabled": true,
-            "server_name": "${ym_vl_re}",
-             "reality": {
-              "enabled": true,
-              "handshake": {
-              "server": "${ym_vl_re}",
-              "server_port": 443
-             },
-             "private_key": "$private_key_s",
-             "short_id": ["$short_id_s"]
-            }
-          }
-        },
-EOF
-else
-arp=arptargo
-fi
-if [ -n "$ssp" ]; then
-ssp=sspt
-if [ ! -e "$HOME/agsbx/sskey" ]; then
-sskey=$("$HOME/agsbx/sing-box" generate rand 16 --base64)
-echo "$sskey" > "$HOME/agsbx/sskey"
-fi
-if [ -z "$port_ss" ] && [ ! -e "$HOME/agsbx/port_ss" ]; then
-port_ss=$(shuf -i 10000-65535 -n 1)
-echo "$port_ss" > "$HOME/agsbx/port_ss"
-elif [ -n "$port_ss" ]; then
-echo "$port_ss" > "$HOME/agsbx/port_ss"
-fi
-sskey=$(cat "$HOME/agsbx/sskey")
-port_ss=$(cat "$HOME/agsbx/port_ss")
-echo "Shadowsocks-2022端口：$port_ss"
-cat >> "$HOME/agsbx/sb.json" <<EOF
-        {
-            "type": "shadowsocks",
-            "tag":"ss-2022",
-            "listen": "::",
-            "listen_port": $port_ss,
-            "method": "2022-blake3-aes-128-gcm",
-            "password": "$sskey"
-    },  
-EOF
-else
-ssp=ssptargo
-fi
 }
 
 xrsbvm(){
@@ -1011,11 +846,6 @@ nohup "$HOME/agsbx/xray" run -c "$HOME/agsbx/xr.json" >/dev/null 2>&1 &
 fi
 fi
 if [ -e "$HOME/agsbx/sb.json" ]; then
-sed -i '${s/,\s*$//}' "$HOME/agsbx/sb.json"
-cat >> "$HOME/agsbx/sb.json" <<EOF
-  ]
-}
-EOF
 if [ "$force_nohup" != "yes" ] && pidof systemd >/dev/null 2>&1 && [ "$EUID" -eq 0 ]; then
 cat > /etc/systemd/system/sb.service <<EOF
 [Unit]
@@ -1074,6 +904,9 @@ fi
 fi
 if [ "$need_x" = yes ]; then
 installxray
+xrsbvm
+xrsbvw
+xrsbso
 else
 xhp="xhptargo"; vlp="vlptargo"; vxp="vxptargo"
 fi
@@ -1082,9 +915,7 @@ installsb
 else
 hyp="hyptargo"; tup="tuptargo"; anp="anptargo"; arp="arptargo"; ssp="ssptargo"
 fi
-xrsbvm
-xrsbvw
-xrsbso
+warpsx
 xrsbout
 if [ -n "$argo" ] && [ -n "$vmag" ]; then
 echo
