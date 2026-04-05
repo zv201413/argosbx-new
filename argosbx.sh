@@ -3,12 +3,17 @@ export LANG=en_US.UTF-8
 sed -i '/argosbx/d' /home/zv/.bashrc 2>/dev/null
 sed -i '/zv201413/d' /home/zv/.bashrc 2>/dev/null
 
+vmp=no; vwp=no; hyp=no; anp=no; vmag=no
+
 if [ -n "${vwpt+x}" ]; then
     vwp=yes
-    vmp=no
-    hyp=no
     vmag=yes
     vwp_port=${vwpt:-$(shuf -i 10000-65535 -n 1)}
+fi
+
+if [ -n "${hypt+x}" ]; then
+    hyp=yes
+    hy_port=${hypt:-10443}
 fi
 
 if [ -n "${anpt+x}" ]; then
@@ -18,7 +23,6 @@ fi
 
 [ -z "${vlpt+x}" ] || vlp=yes
 [ -z "${vmpt+x}" ] || { if [ "$vmp" != no ]; then vmp=yes; vmag=yes; fi; }
-[ -z "${hypt+x}" ] || { if [ "$hyp" != no ]; then hyp=yes; fi; }
 [ -z "${tupt+x}" ] || tup=yes
 [ -z "${xhpt+x}" ] || xhp=yes
 [ -z "${vxpt+x}" ] || vxp=yes
@@ -467,12 +471,20 @@ if [ ! -e "$HOME/agsbx/sing-box" ]; then
 upsingbox
 fi
 insuuid
+if [ -n "$hy_port" ]; then
+  port_hy2=$hy_port
+  echo "$port_hy2" > "$HOME/agsbx/port_hy2"
+fi
 if [ -z "$port_hy2" ] && [ ! -e "$HOME/agsbx/port_hy2" ]; then
   port_hy2=$(shuf -i 10000-65535 -n 1); echo "$port_hy2" > "$HOME/agsbx/port_hy2"
 elif [ -n "$port_hy2" ]; then
   echo "$port_hy2" > "$HOME/agsbx/port_hy2"
 fi
 port_hy2=$(cat "$HOME/agsbx/port_hy2")
+if [ -n "$vwp_port" ]; then
+  port_vw=$vwp_port
+  echo "$port_vw" > "$HOME/agsbx/port_vw"
+fi
 if [ -z "$port_vw" ] && [ ! -e "$HOME/agsbx/port_vw" ]; then
   port_vw=$(shuf -i 10000-65535 -n 1); echo "$port_vw" > "$HOME/agsbx/port_vw"
 elif [ -n "$port_vw" ]; then
@@ -1293,7 +1305,7 @@ echo "$vl_link" >> "$HOME/agsbx/jh.txt"
 echo "$vl_link"
 echo
 fi
-if grep ss-2022 "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
+if [ "$ssp" = "yes" ]; then
   echo "💣【 Shadowsocks-2022 】节点信息如下："
   port_ss=$(cat "$HOME/agsbx/port_ss")
   if [ -n "$port_ss_ext" ]; then
@@ -1340,7 +1352,7 @@ if [ "$anp" = "yes" ]; then
   echo "$an_link"
   echo
 fi
-if grep anyreality-sb "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
+if [ "$arp" = "yes" ]; then
   echo "💣【 Any-Reality 】节点信息如下："
   port_ar=$(cat "$HOME/agsbx/port_ar")
   if [ -n "$port_ar_ext" ]; then
@@ -1363,9 +1375,8 @@ if [ -n "$nodeaddr" ]; then
   else
     hy2_port="$port_hy2"
   fi
-  if grep hy2-sb "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
+  if [ "$hyp" = "yes" ]; then
     echo "💣【 Hysteria2 】节点信息如下："
-    port_hy2=$(cat "$HOME/agsbx/port_hy2")
     hy2_link="hysteria2://$uuid@$hy2_addr:$hy2_port?security=tls&alpn=h3&insecure=1&sni=www.bing.com#${sxname}hy2-$hostname"
     echo "$hy2_link" >> "$HOME/agsbx/jh.txt"
     echo "$hy2_link"
@@ -1381,7 +1392,7 @@ if [ -n "$nodeaddr" ]; then
   else
     tuic_port="$port_tu"
   fi
-  if grep tuic5-sb "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
+  if [ "$tup" = "yes" ]; then
     echo "💣【 Tuic 】节点信息如下："
     port_tu=$(cat "$HOME/agsbx/port_tu")
     tuic5_link="tuic://$uuid:$uuid@$tuic_addr:$tuic_port?congestion_control=bbr&udp_relay_mode=native&alpn=h3&sni=www.bing.com&allow_insecure=1&allowInsecure=1#${sxname}tuic-$hostname"
@@ -1389,7 +1400,7 @@ if [ -n "$nodeaddr" ]; then
     echo "$tuic5_link"
     echo
   fi
-if grep socks5-xr "$HOME/agsbx/xr.json" >/dev/null 2>&1 || grep socks5-sb "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
+if [ "$sop" = "yes" ]; then
   echo "💣【 Socks5 】客户端信息如下："
   port_so=$(cat "$HOME/agsbx/port_so")
   if [ -n "$port_so_ext" ]; then
