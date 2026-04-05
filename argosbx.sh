@@ -1025,28 +1025,33 @@ fi
 fi
 }
 ins(){
-if [ "$hyp" != yes ] && [ "$tup" != yes ] && [ "$anp" != yes ] && [ "$arp" != yes ] && [ "$ssp" != yes ]; then
-installxray
-xrsbvm
-xrsbso
-warpsx
-xrsbout
-hyp="hyptargo"; tup="tuptargo"; anp="anptargo"; arp="arptargo"; ssp="ssptargo"
-elif [ "$xhp" != yes ] && [ "$vlp" != yes ] && [ "$vxp" != yes ] && [ "$vwp" != yes ]; then
-installsb
-xrsbvm
-xrsbso
-warpsx
-xrsbout
-xhp="xhptargo"; vlp="vlptargo"; vxp="vxptargo"; vwp="vwptargo"
-else
-installsb
-installxray
-xrsbvm
-xrsbso
-warpsx
-xrsbout
+need_x=no
+need_s=no
+if [ "$xhp" = yes ] || [ "$vlp" = yes ] || [ "$vxp" = yes ] || [ "$vwp" = yes ]; then
+need_x=yes
 fi
+if [ "$hyp" = yes ] || [ "$tup" = yes ] || [ "$anp" = yes ] || [ "$arp" = yes ] || [ "$ssp" = yes ]; then
+need_s=yes
+fi
+if [ "$need_x" = no ] && [ "$need_s" = no ]; then
+if [ "$vmp" = yes ] || [ "$sop" = yes ]; then
+need_x=yes
+fi
+fi
+if [ "$need_x" = yes ]; then
+installxray
+else
+xhp="xhptargo"; vlp="vlptargo"; vxp="vxptargo"; vwp="vwptargo"
+fi
+if [ "$need_s" = yes ]; then
+installsb
+else
+hyp="hyptargo"; tup="tuptargo"; anp="anptargo"; arp="arptargo"; ssp="ssptargo"
+fi
+xrsbvm
+xrsbso
+warpsx
+xrsbout
 if [ -n "$argo" ] && [ -n "$vmag" ]; then
 echo
 echo "=========启用Cloudflared-argo内核========="
@@ -1630,7 +1635,7 @@ echo
 exit
 elif [ "$1" = "rep" ]; then
 cleandel
-rm -rf "$HOME/agsbx"/{sb.json,xr.json,sbargoym.log,sbargotoken.log,argo.log,argoport.log,cdnym,name,argoip,nodeaddr,ippref}
+rm -rf "$HOME/agsbx"/{sb.json,xr.json,sbargoym.log,sbargotoken.log,argo.log,argoport.log,cdnym,name,argoip,nodeaddr,ippref,vlvm,xrk,sbk}
 echo "Argosbx重置协议完成，开始更新相关协议变量……" && sleep 2
 echo
 elif [ "$1" = "list" ]; then
