@@ -1,5 +1,7 @@
 #!/bin/sh
 export LANG=en_US.UTF-8
+sed -i '/argosbx/d' /home/zv/.bashrc 2>/dev/null
+sed -i '/yonggekkk/d' /home/zv/.bashrc 2>/dev/null
 [ -z "${vlpt+x}" ] || vlp=yes
 [ -z "${vmpt+x}" ] || { vmp=yes; vmag=yes; }
 [ -z "${vwpt+x}" ] || { vwp=yes; vmag=yes; }
@@ -460,6 +462,11 @@ cat > "$HOME/agsbx/sb.json" <<EOF
     "timestamp": true
   },
   "outbounds": [
+    { "type": "direct", "tag": "direct" }
+EOF
+if [ "$wap" = warp ]; then
+cat >> "$HOME/agsbx/sb.json" <<EOF
+,
     {
       "type": "wireguard",
       "tag": "warp-out",
@@ -469,13 +476,15 @@ cat > "$HOME/agsbx/sb.json" <<EOF
         {
           "server": "${sendip}",
           "server_port": 2408,
-          "public_key": "bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo="
+          "peer_public_key": "bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo="
         }
       ],
       "reserved": ${res},
       "mtu": 1280
-    },
-    { "type": "direct", "tag": "direct" }
+    }
+EOF
+fi
+cat >> "$HOME/agsbx/sb.json" <<EOF
   ],
   "route": {
     "rules": [
@@ -968,7 +977,7 @@ After=network.target
 Type=simple
 NoNewPrivileges=yes
 TimeoutStartSec=0
-ExecStart=/root/agsbx/xray run -c /root/agsbx/xr.json
+ExecStart=$HOME/agsbx/xray run -c $HOME/agsbx/xr.json
 Restart=on-failure
 RestartSec=5s
 StandardOutput=journal
@@ -983,8 +992,8 @@ elif command -v rc-service >/dev/null 2>&1 && [ "$EUID" -eq 0 ]; then
 cat > /etc/init.d/xray <<EOF
 #!/sbin/openrc-run
 description="xr service"
-command="/root/agsbx/xray"
-command_args="run -c /root/agsbx/xr.json"
+command="$HOME/agsbx/xray"
+command_args="run -c $HOME/agsbx/xr.json"
 command_background=yes
 pidfile="/run/xray.pid"
 command_background="yes"
@@ -1014,7 +1023,7 @@ After=network.target
 Type=simple
 NoNewPrivileges=yes
 TimeoutStartSec=0
-ExecStart=/root/agsbx/sing-box run -c /root/agsbx/sb.json
+ExecStart=$HOME/agsbx/sing-box run -c $HOME/agsbx/sb.json
 Restart=on-failure
 RestartSec=5s
 StandardOutput=journal
@@ -1029,8 +1038,8 @@ elif command -v rc-service >/dev/null 2>&1 && [ "$EUID" -eq 0 ]; then
 cat > /etc/init.d/sing-box <<EOF
 #!/sbin/openrc-run
 description="sb service"
-command="/root/agsbx/sing-box"
-command_args="run -c /root/agsbx/sb.json"
+command="$HOME/agsbx/sing-box"
+command_args="run -c $HOME/agsbx/sb.json"
 command_background=yes
 pidfile="/run/sing-box.pid"
 command_background="yes"
@@ -1096,7 +1105,7 @@ After=network.target
 Type=simple
 NoNewPrivileges=yes
 TimeoutStartSec=0
-ExecStart=/root/agsbx/cloudflared tunnel --no-autoupdate --edge-ip-version auto --protocol http2 run --token "${ARGO_AUTH}"
+ExecStart=$HOME/agsbx/cloudflared tunnel --no-autoupdate --edge-ip-version auto --protocol http2 run --token "${ARGO_AUTH}"
 Restart=on-failure
 RestartSec=5s
 [Install]
@@ -1109,7 +1118,7 @@ elif command -v rc-service >/dev/null 2>&1 && [ "$EUID" -eq 0 ]; then
 cat > /etc/init.d/argo <<EOF
 #!/sbin/openrc-run
 description="argo service"
-command="/root/agsbx/cloudflared tunnel"
+command="$HOME/agsbx/cloudflared tunnel"
 command_args="--no-autoupdate --edge-ip-version auto --protocol http2 run --token ${ARGO_AUTH}"
 pidfile="/run/argo.pid"
 command_background="yes"
@@ -1729,6 +1738,8 @@ echo
 echo "iptables执行开放所有端口"
 fi
 ins
+chmod +x $HOME/agsbx/sing-box >/dev/null 2>&1
+chown -R $(whoami) $HOME/agsbx >/dev/null 2>&1
 cip
 echo
 else
