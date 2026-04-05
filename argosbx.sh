@@ -279,7 +279,7 @@ private_key_x=$(cat "$HOME/agsbx/xrk/private_key")
 public_key_x=$(cat "$HOME/agsbx/xrk/public_key")
 short_id_x=$(cat "$HOME/agsbx/xrk/short_id")
 fi
-if [ -n "$xhp" ] || [ -n "$vxp" ] || [ -n "$vwp" ]; then
+if [ -n "$xhp" ] || [ -n "$vxp" ]; then
 if [ ! -e "$HOME/agsbx/xrk/dekey" ]; then
 vlkey=$("$HOME/agsbx/xray" vlessenc)
 dekey=$(echo "$vlkey" | grep '"decryption":' | sed -n '2p' | cut -d' ' -f2- | tr -d '"')
@@ -388,50 +388,6 @@ cat >> "$HOME/agsbx/xr.json" <<EOF
 EOF
 else
 vxp=vxptargo
-fi
-if [ -n "$vwp" ]; then
-vwp=vwpt
-if [ -z "$port_vw" ] && [ ! -e "$HOME/agsbx/port_vw" ]; then
-port_vw=$(shuf -i 10000-65535 -n 1)
-echo "$port_vw" > "$HOME/agsbx/port_vw"
-elif [ -n "$port_vw" ]; then
-echo "$port_vw" > "$HOME/agsbx/port_vw"
-fi
-port_vw=$(cat "$HOME/agsbx/port_vw")
-echo "Vless-ws端口：$port_vw"
-if [ -n "$cdnym" ]; then
-echo "$cdnym" > "$HOME/agsbx/cdnym"
-echo "80系CDN或者回源CDN的host域名 (确保IP已解析在CF域名)：$cdnym"
-fi
-cat >> "$HOME/agsbx/xr.json" <<EOF
-    {
-      "tag":"vless-ws",
-      "listen": "0.0.0.0",
-      "port": ${port_vw},
-      "protocol": "vless",
-      "settings": {
-        "clients": [
-          {
-            "id": "${uuid}"
-          }
-        ],
-        "decryption": "none"
-      },
-      "streamSettings": {
-        "network": "ws",
-        "wsSettings": {
-          "path": "/ws"
-        }
-      },
-        "sniffing": {
-        "enabled": true,
-        "destOverride": ["http", "tls", "quic"],
-        "metadataOnly": false
-      }
-    },
-EOF
-else
-vwp=vwptargo
 fi
 if [ -n "$vlp" ]; then
 vlp=vlpt
@@ -766,6 +722,76 @@ vmp=vmptargo
 fi
 }
 
+xrsbvw(){
+if [ -n "$vwp" ]; then
+vwp=vwpt
+if [ -z "$port_vw" ] && [ ! -e "$HOME/agsbx/port_vw" ]; then
+port_vw=$(shuf -i 10000-65535 -n 1)
+echo "$port_vw" > "$HOME/agsbx/port_vw"
+elif [ -n "$port_vw" ]; then
+echo "$port_vw" > "$HOME/agsbx/port_vw"
+fi
+port_vw=$(cat "$HOME/agsbx/port_vw")
+echo "Vless-ws端口：$port_vw"
+if [ -n "$cdnym" ]; then
+echo "$cdnym" > "$HOME/agsbx/cdnym"
+echo "80系CDN或者回源CDN的host域名 (确保IP已解析在CF域名)：$cdnym"
+fi
+if [ -e "$HOME/agsbx/xr.json" ]; then
+cat >> "$HOME/agsbx/xr.json" <<EOF
+    {
+      "tag":"vless-ws",
+      "listen": "0.0.0.0",
+      "port": ${port_vw},
+      "protocol": "vless",
+      "settings": {
+        "clients": [
+          {
+            "id": "${uuid}"
+          }
+        ],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "ws",
+        "wsSettings": {
+          "path": "/ws"
+        }
+      },
+        "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls", "quic"],
+        "metadataOnly": false
+      }
+    },
+EOF
+else
+cat >> "$HOME/agsbx/sb.json" <<EOF
+{
+"type": "vless",
+"tag": "vless-sb",
+"listen": "0.0.0.0",
+"listen_port": ${port_vw},
+"users": [
+{
+"uuid": "${uuid}",
+"flow": ""
+}
+],
+"transport": {
+"type": "ws",
+"path": "/ws",
+"max_early_data": 2048,
+"early_data_header_name": "Sec-WebSocket-Protocol"
+}
+},
+EOF
+fi
+else
+vwp=vwptargo
+fi
+}
+
 xrsbso(){
 if [ -n "$sop" ]; then
 sop=sopt
@@ -1027,21 +1053,21 @@ fi
 ins(){
 need_x=no
 need_s=no
-if [ "$xhp" = yes ] || [ "$vlp" = yes ] || [ "$vxp" = yes ] || [ "$vwp" = yes ]; then
+if [ "$xhp" = yes ] || [ "$vlp" = yes ] || [ "$vxp" = yes ]; then
 need_x=yes
 fi
 if [ "$hyp" = yes ] || [ "$tup" = yes ] || [ "$anp" = yes ] || [ "$arp" = yes ] || [ "$ssp" = yes ]; then
 need_s=yes
 fi
 if [ "$need_x" = no ] && [ "$need_s" = no ]; then
-if [ "$vmp" = yes ] || [ "$sop" = yes ]; then
-need_x=yes
+if [ "$vmp" = yes ] || [ "$sop" = yes ] || [ "$vwp" = yes ]; then
+need_s=yes
 fi
 fi
 if [ "$need_x" = yes ]; then
 installxray
 else
-xhp="xhptargo"; vlp="vlptargo"; vxp="vxptargo"; vwp="vwptargo"
+xhp="xhptargo"; vlp="vlptargo"; vxp="vxptargo"
 fi
 if [ "$need_s" = yes ]; then
 installsb
@@ -1049,6 +1075,7 @@ else
 hyp="hyptargo"; tup="tuptargo"; anp="anptargo"; arp="arptargo"; ssp="ssptargo"
 fi
 xrsbvm
+xrsbvw
 xrsbso
 warpsx
 xrsbout
@@ -1340,7 +1367,7 @@ echo "$vl_vx_cdn_link"
 echo
 fi
 fi
-if grep vless-ws "$HOME/agsbx/xr.json" >/dev/null 2>&1; then
+if grep vless-ws "$HOME/agsbx/xr.json" >/dev/null 2>&1 || grep vless-sb "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
 port_vw=$(cat "$HOME/agsbx/port_vw")
 echo "💣【 Vless-ws 】节点信息如下："
 vl_vw_link="vless://$uuid@$server_ip:$port_vw?encryption=none&type=ws&path=%2Fws#${sxname}vl-ws-$hostname"
