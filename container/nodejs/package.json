@@ -1,0 +1,23 @@
+{
+  "name": "nodejs-argosbx",
+  "version": "1.0.0",
+  "description": "node",
+  "main": "index.js",
+  "author": "ygkkk",
+  "license": "MIT",
+  "private": false,
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js"
+  },
+  "engines": {
+    "node": ">=14"
+  },
+  "dependencies": {
+  "ws": "^8.0.0"
+  }
+}
+  
+
+
+

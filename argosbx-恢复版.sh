@@ -1,0 +1,1792 @@
+#!/bin/sh
+# =============================================================================
+# SECTION 0: 脚本头部初始化 - 环境配置与全局变量定义
+# 功能: 
+#   - 设置UTF-8语言环境
+#   - 定义所有协议开关变量(vlpt/vmpt/vwpt等)
+#   - 导入环境变量(uuid/port_vl_re/port_vm_ws等)
+#   - 检测进程运行状态,防止重复安装
+#   - 定义资源下载URL
+# 依赖: 无
+# =============================================================================
+export LANG=en_US.UTF-8
+[ -z "${vlpt+x}" ] || vlp=yes
+[ -z "${vmpt+x}" ] || { vmp=yes; vmag=yes; }
+[ -z "${vwpt+x}" ] || { vwp=yes; vmag=yes; }
+[ -z "${hypt+x}" ] || hyp=yes
+[ -z "${tupt+x}" ] || tup=yes
+[ -z "${xhpt+x}" ] || xhp=yes
+[ -z "${vxpt+x}" ] || vxp=yes
+[ -z "${anpt+x}" ] || anp=yes
+[ -z "${sspt+x}" ] || ssp=yes
+[ -z "${arpt+x}" ] || arp=yes
+[ -z "${sopt+x}" ] || sop=yes
+[ -z "${warp+x}" ] || wap=yes
+if find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null | grep -Eq 'agsbx/(s|x)' || pgrep -f 'agsbx/(s|x)' >/dev/null 2>&1; then
+if [ "$1" = "rep" ]; then
+[ "$vwp" = yes ] || [ "$sop" = yes ] || [ "$vxp" = yes ] || [ "$ssp" = yes ] || [ "$vlp" = yes ] || [ "$vmp" = yes ] || [ "$hyp" = yes ] || [ "$tup" = yes ] || [ "$xhp" = yes ] || [ "$anp" = yes ] || [ "$arp" = yes ] || { echo "提示：rep重置协议时，请在脚本前至少设置一个协议变量哦，再见！💣"; exit; }
+fi
+else
+[ "$1" = "del" ] || [ "$vwp" = yes ] || [ "$sop" = yes ] || [ "$vxp" = yes ] || [ "$ssp" = yes ] || [ "$vlp" = yes ] || [ "$vmp" = yes ] || [ "$hyp" = yes ] || [ "$tup" = yes ] || [ "$xhp" = yes ] || [ "$anp" = yes ] || [ "$arp" = yes ] || { echo "提示：未安装argosbx脚本，请在脚本前至少设置一个协议变量哦，再见！💣"; exit; }
+fi
+export uuid=${uuid:-''}
+export port_vl_re=${vlpt:-''}
+export port_vl_re_ext=${vlpt_ext:-''}
+export port_vm_ws=${vmpt:-''}
+export port_vm_ws_ext=${vmpt_ext:-''}
+export port_vw=${vwpt:-''}
+export port_vw_ext=${vwpt_ext:-''}
+export port_hy2=${hypt:-''}
+export port_hy2_ext=${hypt_ext:-''}
+export port_tu=${tupt:-''}
+export port_tu_ext=${tupt_ext:-''}
+export port_xh=${xhpt:-''}
+export port_xh_ext=${xhpt_ext:-''}
+export port_vx=${vxpt:-''}
+export port_vx_ext=${vxpt_ext:-''}
+export port_an=${anpt:-''}
+export port_an_ext=${anpt_ext:-''}
+export port_ar=${arpt:-''}
+export port_ar_ext=${arpt_ext:-''}
+export port_ss=${sspt:-''}
+export port_ss_ext=${sspt_ext:-''}
+export port_so=${sopt:-''}
+export port_so_ext=${sopt_ext:-''}
+export ym_vl_re=${reym:-''}
+export cdnym=${cdnym:-''}
+export argo=${argo:-''}
+export ARGO_DOMAIN=${agn:-''}
+export ARGO_AUTH=${agk:-''}
+export ippz=${ippz:-''}
+export warp=${warp:-''}
+export name=${name:-''}
+export oap=${oap:-''}
+export argoip=${argoip:-''}
+export gh_token=${gh_token:-''}
+export gh_gist_id=${gh_gist_id:-''}
+export nodeaddr=${nodeaddr:-''}
+export ippref=${ippref:-''}
+v46url="https://icanhazip.com"
+agsbxurl="https://raw.githubusercontent.com/yonggekkk/argosbx/main/argosbx.sh"
+
+# =============================================================================
+# SECTION 1: 脚本欢迎信息 - 显示横幅与系统环境检测
+# 功能:
+#   - 打印脚本标题与项目信息
+#   - 获取主机名、操作系统信息
+#   - 检测虚拟化环境
+#   - 判断CPU架构(arm64/x86_64)
+#   - 创建工作目录$HOME/agsbx
+#   - 首次运行安装系统兼容层(gcompat/libc6-compat)
+# 依赖: 无
+# =============================================================================
+echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+echo "甬哥-Argosbx-new一键无交互脚本-zv修改版"
+echo 
+echo "Github项目 ：github.com/zv201413/argosbx-new"
+echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+hostname=$(uname -a | awk '{print $2}')
+op=$(cat /etc/redhat-release 2>/dev/null || cat /etc/os-release 2>/dev/null | grep -i pretty_name | cut -d \" -f2)
+[ -z "$(systemd-detect-virt 2>/dev/null)" ] && vi=$(virt-what 2>/dev/null) || vi=$(systemd-detect-virt 2>/dev/null)
+case $(uname -m) in
+arm64|aarch64) cpu=arm64;;
+amd64|x86_64) cpu=amd64;;
+*) echo "目前脚本不支持$(uname -m)架构" && exit
+esac
+mkdir -p "$HOME/agsbx"
+if [ ! -f sbx_update ]; then
+echo "执行脚本中，请稍后"
+if command -v apk >/dev/null 2>&1; then
+apk update >/dev/null 2>&1
+apk add gcompat libc6-compat >/dev/null 2>&1
+elif command -v apt >/dev/null 2>&1; then
+apt update >/dev/null 2>&1 && apt install coreutils util-linux -y >/dev/null 2>&1
+fi
+touch sbx_update
+fi
+
+# =============================================================================
+# SECTION 2: 网络环境检测 - IPv4/IPv6连通性判断
+# 功能:
+#   - v4v6(): 检测VPS的IPv4/IPv6出口地址
+#   - warpsx(): 获取WARP配置(私钥/IPv6/reserved)
+#   - 根据v4/v6可用性设置代理策略路由
+#   - 支持多种warp模式(sx/xs/s4/s6/x/x4/x6等)
+#   - 设置Xray/Sing-box的域名解析策略
+# 依赖: uuid(可能由insuuid生成)
+# =============================================================================
+v4v6(){
+v4=$( (command -v curl >/dev/null 2>&1 && curl -s4m5 -k "$v46url" 2>/dev/null) || (command -v wget >/dev/null 2>&1 && timeout 3 wget -4 --tries=2 -qO- "$v46url" 2>/dev/null) )
+v6=$( (command -v curl >/dev/null 2>&1 && curl -s6m5 -k "$v46url" 2>/dev/null) || (command -v wget >/dev/null 2>&1 && timeout 3 wget -6 --tries=2 -qO- "$v46url" 2>/dev/null) )
+v4dq=$( (command -v curl >/dev/null 2>&1 && curl -s4m5 -k https://ip.fm | sed -n 's/.*Location: //p' 2>/dev/null) || (command -v wget >/dev/null 2>&1 && timeout 3 wget -4 --tries=2 -qO- https://ip.fm | grep '<span class="has-text-grey-light">Location:' | tail -n1 | sed -E 's/.*>Location: <\/span>([^<]+)<.*/\1/' 2>/dev/null) )
+v6dq=$( (command -v curl >/dev/null 2>&1 && curl -s6m5 -k https://ip.fm | sed -n 's/.*Location: //p' 2>/dev/null) || (command -v wget >/dev/null 2>&1 && timeout 3 wget -6 --tries=2 -qO- https://ip.fm | grep '<span class="has-text-grey-light">Location:' | tail -n1 | sed -E 's/.*>Location: <\/span>([^<]+)<.*/\1/' 2>/dev/null) )
+}
+warpsx(){
+warpurl=$( (command -v curl >/dev/null 2>&1 && curl -sm5 -k https://warp.xijp.eu.org 2>/dev/null) || (command -v wget >/dev/null 2>&1 && timeout 3 wget --tries=2 -qO- https://warp.xijp.eu.org 2>/dev/null) )
+if [ -z "$warpurl" ] || printf '%s' "$warpurl" | grep -q html; then
+wpv6='2606:4700:110:8d8d:1845:c39f:2dd5:a03a'
+pvk='52cuYFgCJXp0LAq7+nWJIbCXXgU9eGggOc+Hlfz5u6A='
+res='[215, 69, 233]'
+else
+pvk=$(echo "$warpurl" | awk -F'：' '/Private_key/{print $2}' | xargs)
+wpv6=$(echo "$warpurl" | awk -F'：' '/IPV6/{print $2}' | xargs)
+res=$(echo "$warpurl" | awk -F'：' '/reserved/{print $2}' | xargs)
+fi
+if [ -n "$name" ]; then
+sxname=$name-
+echo "$sxname" > "$HOME/agsbx/name"
+echo
+echo "所有节点名称前缀：$name"
+fi
+v4v6
+if echo "$v6" | grep -q '^2a09' || echo "$v4" | grep -q '^104.28'; then
+s1outtag=direct; s2outtag=direct; x1outtag=direct; x2outtag=direct; xip='"::/0", "0.0.0.0/0"'; sip='"::/0", "0.0.0.0/0"'; wap=warpargo
+echo; echo "请注意：你已安装了warp"
+else
+if [ "$wap" != yes ]; then
+s1outtag=direct; s2outtag=direct; x1outtag=direct; x2outtag=direct; xip='"::/0", "0.0.0.0/0"'; sip='"::/0", "0.0.0.0/0"'; wap=warpargo
+else
+case "$warp" in
+""|sx|xs) s1outtag=warp-out; s2outtag=warp-out; x1outtag=warp-out; x2outtag=warp-out; xip='"::/0", "0.0.0.0/0"'; sip='"::/0", "0.0.0.0/0"'; wap=warp ;;
+s ) s1outtag=warp-out; s2outtag=warp-out; x1outtag=direct; x2outtag=direct; xip='"::/0", "0.0.0.0/0"'; sip='"::/0", "0.0.0.0/0"'; wap=warp ;;
+s4) s1outtag=warp-out; s2outtag=direct; x1outtag=direct; x2outtag=direct; xip='"::/0", "0.0.0.0/0"'; sip='"0.0.0.0/0"'; wap=warp ;;
+s6) s1outtag=warp-out; s2outtag=direct; x1outtag=direct; x2outtag=direct; xip='"::/0", "0.0.0.0/0"'; sip='"::/0"'; wap=warp ;;
+x ) s1outtag=direct; s2outtag=direct; x1outtag=warp-out; x2outtag=warp-out; xip='"::/0", "0.0.0.0/0"'; sip='"::/0", "0.0.0.0/0"'; wap=warp ;;
+x4) s1outtag=direct; s2outtag=direct; x1outtag=warp-out; x2outtag=direct; xip='"0.0.0.0/0"'; sip='"::/0", "0.0.0.0/0"'; wap=warp ;;
+x6) s1outtag=direct; s2outtag=direct; x1outtag=warp-out; x2outtag=direct; xip='"::/0"'; sip='"::/0", "0.0.0.0/0"'; wap=warp ;;
+s4x4|x4s4) s1outtag=warp-out; s2outtag=direct; x1outtag=warp-out; x2outtag=direct; xip='"0.0.0.0/0"'; sip='"0.0.0.0/0"'; wap=warp ;;
+s4x6|x6s4) s1outtag=warp-out; s2outtag=direct; x1outtag=warp-out; x2outtag=direct; xip='"::/0"'; sip='"0.0.0.0/0"'; wap=warp ;;
+s6x4|x4s6) s1outtag=warp-out; s2outtag=direct; x1outtag=warp-out; x2outtag=direct; xip='"0.0.0.0/0"'; sip='"::/0"'; wap=warp ;;
+s6x6|x6s6) s1outtag=warp-out; s2outtag=direct; x1outtag=warp-out; x2outtag=direct; xip='"::/0"'; sip='"::/0"'; wap=warp ;;
+sx4|x4s) s1outtag=warp-out; s2outtag=warp-out; x1outtag=warp-out; x2outtag=direct; xip='"0.0.0.0/0"'; sip='"::/0", "0.0.0.0/0"'; wap=warp ;;
+sx6|x6s) s1outtag=warp-out; s2outtag=warp-out; x1outtag=warp-out; x2outtag=direct; xip='"::/0"'; sip='"::/0", "0.0.0.0/0"'; wap=warp ;;
+xs4|s4x) s1outtag=warp-out; s2outtag=direct; x1outtag=warp-out; x2outtag=warp-out; xip='"::/0", "0.0.0.0/0"'; sip='"0.0.0.0/0"'; wap=warp ;;
+xs6|s6x) s1outtag=warp-out; s2outtag=direct; x1outtag=warp-out; x2outtag=warp-out; xip='"::/0", "0.0.0.0/0"'; sip='"::/0"'; wap=warp ;;
+* ) s1outtag=direct; s2outtag=direct; x1outtag=direct; x2outtag=direct; xip='"::/0", "0.0.0.0/0"'; sip='"::/0", "0.0.0.0/0"'; wap=warpargo ;;
+esac
+fi
+fi
+case "$warp" in *x4*) wxryx='ForceIPv4' ;; *x6*) wxryx='ForceIPv6' ;; *) wxryx='ForceIPv6v4' ;; esac
+if command -v curl >/dev/null 2>&1; then
+curl -s4m5 -k "$v46url" >/dev/null 2>&1 && v4_ok=true
+elif command -v wget >/dev/null 2>&1; then
+timeout 3 wget -4 --tries=2 -qO- "$v46url" >/dev/null 2>&1 && v4_ok=true
+fi
+if command -v curl >/dev/null 2>&1; then
+curl -s6m5 -k "$v46url" >/dev/null 2>&1 && v6_ok=true
+elif command -v wget >/dev/null 2>&1; then
+timeout 3 wget -6 --tries=2 -qO- "$v46url" >/dev/null 2>&1 && v6_ok=true
+fi
+if [ "$v4_ok" = true ] && [ "$v6_ok" = true ]; then
+case "$warp" in *s4*) sbyx='prefer_ipv4' ;; *) sbyx='prefer_ipv6' ;; esac
+case "$warp" in *x4*) xryx='ForceIPv4v6' ;; *x*) xryx='ForceIPv6v4' ;; *) xryx='ForceIPv4v6' ;; esac
+elif [ "$v4_ok" = true ] && [ "$v6_ok" != true ]; then
+case "$warp" in *s4*) sbyx='ipv4_only' ;; *) sbyx='prefer_ipv6' ;; esac
+case "$warp" in *x4*) xryx='ForceIPv4' ;; *x*) xryx='ForceIPv6v4' ;; *) xryx='ForceIPv4v6' ;; esac
+elif [ "$v4_ok" != true ] && [ "$v6_ok" = true ]; then
+case "$warp" in *s6*) sbyx='ipv6_only' ;; *) sbyx='prefer_ipv4' ;; esac
+case "$warp" in *x6*) xryx='ForceIPv6' ;; *x*) xryx='ForceIPv4v6' ;; *) xryx='ForceIPv6v4' ;; esac
+fi
+}
+
+# =============================================================================
+# SECTION 3: 内核下载与UUID管理
+# 功能:
+#   - upxray(): 下载Xray内核二进制文件,设置执行权限,显示版本
+#   - upsingbox(): 下载Sing-box内核二进制文件,设置执行权限,显示版本
+#   - insuuid(): 生成或读取UUID,持久化到$HOME/agsbx/uuid
+# 依赖: upxray/upsingbox下载的内核
+# =============================================================================
+upxray(){
+url="https://github.com/yonggekkk/argosbx/releases/download/argosbx/xray-$cpu"; out="$HOME/agsbx/xray"; (command -v curl >/dev/null 2>&1 && curl -Lo "$out" -# --retry 2 "$url") || (command -v wget>/dev/null 2>&1 && timeout 3 wget -O "$out" --tries=2 "$url")
+chmod +x "$HOME/agsbx/xray"
+sbcore=$("$HOME/agsbx/xray" version 2>/dev/null | awk '/^Xray/{print $2}')
+echo "已安装Xray正式版内核：$sbcore"
+}
+upsingbox(){
+url="https://github.com/yonggekkk/argosbx/releases/download/argosbx/sing-box-$cpu"; out="$HOME/agsbx/sing-box"; (command -v curl>/dev/null 2>&1 && curl -Lo "$out" -# --retry 2 "$url") || (command -v wget>/dev/null 2>&1 && timeout 3 wget -O "$out" --tries=2 "$url")
+chmod +x "$HOME/agsbx/sing-box"
+sbcore=$("$HOME/agsbx/sing-box" version 2>/dev/null | awk '/version/{print $NF}')
+echo "已安装Sing-box正式版内核：$sbcore"
+}
+insuuid(){
+if [ -z "$uuid" ] && [ ! -e "$HOME/agsbx/uuid" ]; then
+if [ -e "$HOME/agsbx/sing-box" ]; then
+uuid=$("$HOME/agsbx/sing-box" generate uuid)
+else
+uuid=$("$HOME/agsbx/xray" uuid)
+fi
+echo "$uuid" > "$HOME/agsbx/uuid"
+elif [ -n "$uuid" ]; then
+echo "$uuid" > "$HOME/agsbx/uuid"
+fi
+uuid=$(cat "$HOME/agsbx/uuid")
+echo "UUID密码：$uuid"
+}
+
+# =============================================================================
+# SECTION 4: installxray - Xray内核配置生成(仅Xray协议)
+# 功能:
+#   - 生成Xray配置文件$HOME/agsbx/xr.json
+#   - 配置VLESS-Reality(xhttp-reality)协议(xtls-rprx-vision/xhttp)
+#   - 配置VLESS-xhttp和VLESS-xhttp-reality协议
+#   - 配置VMess-WS(已被xrsbvm接管,此处仅保留结构)
+#   - 配置SOCKS5代理(已被xrsbso接管)
+#   - 自动生成或读取Reality密钥对
+# 条件: 仅当启用xhp/vlp/vxp时调用
+# 注意: VMess-WS和SOCKS5配置已移至xrsbvm/xrsbso
+# =============================================================================
+installxray(){
+echo
+echo "=========启用xray内核========="
+mkdir -p "$HOME/agsbx/xrk"
+if [ ! -e "$HOME/agsbx/xray" ]; then
+upxray
+fi
+cat > "$HOME/agsbx/xr.json" <<EOF
+{
+  "log": {
+  "loglevel": "none"
+  },
+  "inbounds": [
+EOF
+insuuid
+if [ -n "$xhp" ] || [ -n "$vlp" ]; then
+if [ -z "$ym_vl_re" ]; then
+ym_vl_re=apple.com
+fi
+echo "$ym_vl_re" > "$HOME/agsbx/ym_vl_re"
+echo "Reality域名：$ym_vl_re"
+if [ ! -e "$HOME/agsbx/xrk/private_key" ]; then
+key_pair=$("$HOME/agsbx/xray" x25519)
+private_key=$(echo "$key_pair" | awk -F':' '/PrivateKey/ {print $2}' | xargs)
+public_key=$(echo "$key_pair" | awk -F':' '/Password/ {print $2}' | xargs)
+short_id=$(date +%s%N | sha256sum | cut -c 1-8)
+echo "$private_key" > "$HOME/agsbx/xrk/private_key"
+echo "$public_key" > "$HOME/agsbx/xrk/public_key"
+echo "$short_id" > "$HOME/agsbx/xrk/short_id"
+fi
+private_key_x=$(cat "$HOME/agsbx/xrk/private_key")
+public_key_x=$(cat "$HOME/agsbx/xrk/public_key")
+short_id_x=$(cat "$HOME/agsbx/xrk/short_id")
+fi
+
+if [ -n "$xhp" ]; then
+xhp=xhpt
+if [ -z "$port_xh" ] && [ ! -e "$HOME/agsbx/port_xh" ]; then
+port_xh=$(shuf -i 10000-65535 -n 1)
+echo "$port_xh" > "$HOME/agsbx/port_xh"
+elif [ -n "$port_xh" ]; then
+echo "$port_xh" > "$HOME/agsbx/port_xh"
+fi
+port_xh=$(cat "$HOME/agsbx/port_xh")
+echo "Vless-xhttp-reality端口：$port_xh"
+cat >> "$HOME/agsbx/xr.json" <<EOF
+    {
+      "tag":"xhttp-reality",
+      "listen": "::",
+      "port": ${port_xh},
+      "protocol": "vless",
+      "settings": {
+        "clients": [
+          {
+            "id": "${uuid}",
+            "flow": "xtls-rprx-vision"
+          }
+        ],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "xhttp",
+        "security": "reality",
+        "realitySettings": {
+          "fingerprint": "chrome",
+          "target": "${ym_vl_re}:443",
+          "serverNames": [
+            "${ym_vl_re}"
+          ],
+          "privateKey": "$private_key_x",
+          "shortIds": ["$short_id_x"]
+        },
+        "xhttpSettings": {
+          "host": "",
+          "path": "/xhttp",
+          "mode": "auto"
+        }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls", "quic"],
+        "metadataOnly": false
+      }
+    },
+EOF
+else
+xhp=xhptargo
+fi
+if [ -n "$vxp" ]; then
+vxp=vxpt
+if [ -z "$port_vx" ] && [ ! -e "$HOME/agsbx/port_vx" ]; then
+port_vx=$(shuf -i 10000-65535 -n 1)
+echo "$port_vx" > "$HOME/agsbx/port_vx"
+elif [ -n "$port_vx" ]; then
+echo "$port_vx" > "$HOME/agsbx/port_vx"
+fi
+port_vx=$(cat "$HOME/agsbx/port_vx")
+echo "Vless-xhttp端口：$port_vx"
+if [ -n "$cdnym" ]; then
+echo "$cdnym" > "$HOME/agsbx/cdnym"
+echo "80系CDN或者回源CDN的host域名 (确保IP已解析在CF域名)：$cdnym"
+fi
+cat >> "$HOME/agsbx/xr.json" <<EOF
+    {
+      "tag":"vless-xhttp",
+      "listen": "::",
+      "port": ${port_vx},
+      "protocol": "vless",
+      "settings": {
+        "clients": [
+          {
+            "id": "${uuid}",
+            "flow": "xtls-rprx-vision"
+          }
+        ],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "xhttp",
+        "xhttpSettings": {
+          "host": "",
+          "path": "/xhttp",
+          "mode": "auto"
+        }
+      },
+        "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls", "quic"],
+        "metadataOnly": false
+      }
+    },
+EOF
+else
+vxp=vxptargo
+fi
+if [ -n "$vlp" ]; then
+vlp=vlpt
+if [ -z "$port_vl_re" ] && [ ! -e "$HOME/agsbx/port_vl_re" ]; then
+port_vl_re=$(shuf -i 10000-65535 -n 1)
+echo "$port_vl_re" > "$HOME/agsbx/port_vl_re"
+elif [ -n "$port_vl_re" ]; then
+echo "$port_vl_re" > "$HOME/agsbx/port_vl_re"
+fi
+port_vl_re=$(cat "$HOME/agsbx/port_vl_re")
+echo "Vless-tcp-reality-v端口：$port_vl_re"
+cat >> "$HOME/agsbx/xr.json" <<EOF
+        {
+            "tag":"reality-vision",
+            "listen": "::",
+            "port": $port_vl_re,
+            "protocol": "vless",
+            "settings": {
+                "clients": [
+                    {
+                        "id": "${uuid}",
+                        "flow": "xtls-rprx-vision"
+                    }
+                ],
+                "decryption": "none"
+            },
+            "streamSettings": {
+                "network": "tcp",
+                "security": "reality",
+                "realitySettings": {
+                    "fingerprint": "chrome",
+                    "dest": "${ym_vl_re}:443",
+                    "serverNames": [
+                      "${ym_vl_re}"
+                    ],
+                    "privateKey": "$private_key_x",
+                    "shortIds": ["$short_id_x"]
+                }
+            },
+          "sniffing": {
+          "enabled": true,
+          "destOverride": ["http", "tls", "quic"],
+          "metadataOnly": false
+      }
+    },  
+EOF
+else
+vlp=vlptargo
+fi
+}
+
+# =============================================================================
+# SECTION 5: installsb - Sing-box内核配置生成(Sing-box专有协议)
+# 功能:
+#   - 生成Sing-box配置文件$HOME/agsbx/sb.json
+#   - 配置Hysteria2协议(port_hy2)
+#   - 配置Tuic协议(port_tu)
+#   - 配置AnyTLS协议(port_an)
+#   - 配置Any-Reality协议(port_ar)
+#   - 配置Shadowsocks协议(port_ss)
+#   - 生成自签名证书用于TLS
+# 条件: 当启用hyp/tup/anp/arp/ssp时调用
+# 特点: 所有协议配置均写入sb.json,不使用XR.json
+# =============================================================================
+installsb(){
+echo
+echo "=========启用Sing-box内核========="
+if [ ! -e "$HOME/agsbx/sing-box" ]; then
+upsingbox
+fi
+cat > "$HOME/agsbx/sb.json" <<EOF
+{
+"log": {
+    "disabled": false,
+    "level": "info",
+    "timestamp": true
+  },
+  "inbounds": [
+EOF
+insuuid
+command -v openssl >/dev/null 2>&1 && openssl ecparam -genkey -name prime256v1 -out "$HOME/agsbx/private.key" >/dev/null 2>&1
+command -v openssl >/dev/null 2>&1 && openssl req -new -x509 -days 36500 -key "$HOME/agsbx/private.key" -out "$HOME/agsbx/cert.pem" -subj "/CN=www.bing.com" >/dev/null 2>&1
+if [ ! -f "$HOME/agsbx/private.key" ]; then
+url="https://github.com/yonggekkk/argosbx/releases/download/argosbx/private.key"; out="$HOME/agsbx/private.key"; (command -v curl>/dev/null 2>&1 && curl -Ls -o "$out" --retry 2 "$url") || (command -v wget>/dev/null 2>&1 && timeout 3 wget -q -O "$out" --tries=2 "$url")
+url="https://github.com/yonggekkk/argosbx/releases/download/argosbx/cert.pem"; out="$HOME/agsbx/cert.pem"; (command -v curl>/dev/null 2>&1 && curl -Ls -o "$out" --retry 2 "$url") || (command -v wget>/dev/null 2>&1 && timeout 3 wget -q -O "$out" --tries=2 "$url")
+fi
+if [ -n "$hyp" ]; then
+hyp=hypt
+if [ -z "$port_hy2" ] && [ ! -e "$HOME/agsbx/port_hy2" ]; then
+port_hy2=$(shuf -i 10000-65535 -n 1)
+echo "$port_hy2" > "$HOME/agsbx/port_hy2"
+elif [ -n "$port_hy2" ]; then
+echo "$port_hy2" > "$HOME/agsbx/port_hy2"
+fi
+port_hy2=$(cat "$HOME/agsbx/port_hy2")
+echo "Hysteria2端口：$port_hy2"
+cat >> "$HOME/agsbx/sb.json" <<EOF
+    {
+        "type": "hysteria2",
+        "tag": "hy2-sb",
+        "listen": "::",
+        "listen_port": ${port_hy2},
+        "users": [
+            {
+                "password": "${uuid}"
+            }
+        ],
+        "ignore_client_bandwidth":false,
+        "tls": {
+            "enabled": true,
+            "alpn": [
+                "h3"
+            ],
+            "certificate_path": "$HOME/agsbx/cert.pem",
+            "key_path": "$HOME/agsbx/private.key"
+        }
+    },
+EOF
+else
+hyp=hyptargo
+fi
+if [ -n "$tup" ]; then
+tup=tupt
+if [ -z "$port_tu" ] && [ ! -e "$HOME/agsbx/port_tu" ]; then
+port_tu=$(shuf -i 10000-65535 -n 1)
+echo "$port_tu" > "$HOME/agsbx/port_tu"
+elif [ -n "$port_tu" ]; then
+echo "$port_tu" > "$HOME/agsbx/port_tu"
+fi
+port_tu=$(cat "$HOME/agsbx/port_tu")
+echo "Tuic端口：$port_tu"
+cat >> "$HOME/agsbx/sb.json" <<EOF
+        {
+            "type":"tuic",
+            "tag": "tuic5-sb",
+            "listen": "::",
+            "listen_port": ${port_tu},
+            "users": [
+                {
+                    "uuid": "${uuid}",
+                    "password": "${uuid}"
+                }
+            ],
+            "congestion_control": "bbr",
+            "tls":{
+                "enabled": true,
+                "alpn": [
+                    "h3"
+                ],
+                "certificate_path": "$HOME/agsbx/cert.pem",
+                "key_path": "$HOME/agsbx/private.key"
+            }
+        },
+EOF
+else
+tup=tuptargo
+fi
+if [ -n "$anp" ]; then
+anp=anpt
+if [ -z "$port_an" ] && [ ! -e "$HOME/agsbx/port_an" ]; then
+port_an=$(shuf -i 10000-65535 -n 1)
+echo "$port_an" > "$HOME/agsbx/port_an"
+elif [ -n "$port_an" ]; then
+echo "$port_an" > "$HOME/agsbx/port_an"
+fi
+port_an=$(cat "$HOME/agsbx/port_an")
+echo "Anytls端口：$port_an"
+cat >> "$HOME/agsbx/sb.json" <<EOF
+        {
+            "type":"anytls",
+            "tag":"anytls-sb",
+            "listen":"::",
+            "listen_port":${port_an},
+            "users":[
+                {
+                  "password":"${uuid}"
+                }
+            ],
+            "padding_scheme":[],
+            "tls":{
+                "enabled": true,
+                "certificate_path": "$HOME/agsbx/cert.pem",
+                "key_path": "$HOME/agsbx/private.key"
+            }
+        },
+EOF
+else
+anp=anptargo
+fi
+if [ -n "$arp" ]; then
+arp=arpt
+if [ -z "$ym_vl_re" ]; then
+ym_vl_re=apple.com
+fi
+echo "$ym_vl_re" > "$HOME/agsbx/ym_vl_re"
+echo "Reality域名：$ym_vl_re"
+mkdir -p "$HOME/agsbx/sbk"
+if [ ! -e "$HOME/agsbx/sbk/private_key" ]; then
+key_pair=$("$HOME/agsbx/sing-box" generate reality-keypair)
+private_key=$(echo "$key_pair" | awk '/PrivateKey/ {print $2}' | tr -d '"')
+public_key=$(echo "$key_pair" | awk '/PublicKey/ {print $2}' | tr -d '"')
+short_id=$("$HOME/agsbx/sing-box" generate rand --hex 4)
+echo "$private_key" > "$HOME/agsbx/sbk/private_key"
+echo "$public_key" > "$HOME/agsbx/sbk/public_key"
+echo "$short_id" > "$HOME/agsbx/sbk/short_id"
+fi
+private_key_s=$(cat "$HOME/agsbx/sbk/private_key")
+public_key_s=$(cat "$HOME/agsbx/sbk/public_key")
+short_id_s=$(cat "$HOME/agsbx/sbk/short_id")
+if [ -z "$port_ar" ] && [ ! -e "$HOME/agsbx/port_ar" ]; then
+port_ar=$(shuf -i 10000-65535 -n 1)
+echo "$port_ar" > "$HOME/agsbx/port_ar"
+elif [ -n "$port_ar" ]; then
+echo "$port_ar" > "$HOME/agsbx/port_ar"
+fi
+port_ar=$(cat "$HOME/agsbx/port_ar")
+echo "Any-Reality端口：$port_ar"
+cat >> "$HOME/agsbx/sb.json" <<EOF
+        {
+            "type":"anytls",
+            "tag":"anyreality-sb",
+            "listen":"::",
+            "listen_port":${port_ar},
+            "users":[
+                {
+                  "password":"${uuid}"
+                }
+            ],
+            "padding_scheme":[],
+            "tls": {
+            "enabled": true,
+            "server_name": "${ym_vl_re}",
+             "reality": {
+              "enabled": true,
+              "handshake": {
+              "server": "${ym_vl_re}",
+              "server_port": 443
+             },
+             "private_key": "$private_key_s",
+             "short_id": ["$short_id_s"]
+            }
+          }
+        },
+EOF
+else
+arp=arptargo
+fi
+if [ -n "$ssp" ]; then
+ssp=sspt
+if [ ! -e "$HOME/agsbx/sskey" ]; then
+sskey=$("$HOME/agsbx/sing-box" generate rand 16 --base64)
+echo "$sskey" > "$HOME/agsbx/sskey"
+fi
+if [ -z "$port_ss" ] && [ ! -e "$HOME/agsbx/port_ss" ]; then
+port_ss=$(shuf -i 10000-65535 -n 1)
+echo "$port_ss" > "$HOME/agsbx/port_ss"
+elif [ -n "$port_ss" ]; then
+echo "$port_ss" > "$HOME/agsbx/port_ss"
+fi
+sskey=$(cat "$HOME/agsbx/sskey")
+port_ss=$(cat "$HOME/agsbx/port_ss")
+echo "Shadowsocks-2022端口：$port_ss"
+cat >> "$HOME/agsbx/sb.json" <<EOF
+        {
+            "type": "shadowsocks",
+            "tag":"ss-2022",
+            "listen": "::",
+            "listen_port": $port_ss,
+            "method": "2022-blake3-aes-128-gcm",
+            "password": "$sskey"
+    },  
+EOF
+else
+ssp=ssptargo
+fi
+}
+
+# =============================================================================
+# SECTION 6: xrsbvm - VMess-WS/VLESS-WS双协议配置注入(核心函数)
+# 功能:
+#   - VMess-WS配置注入:
+#     * 检查xr.json是否存在,决定注入目标
+#     * 存在 → 注入到Xray (tag: vmess-xr, path: ${uuid}-vm)
+#     * 不存在 → 注入到Sing-box (tag: vmess-sb, path: ${uuid}-vm)
+#   - VLESS-WS配置注入(与VMess相同逻辑):
+#     * 检查xr.json是否存在,决定注入目标
+#     * 存在 → 注入到Xray (tag: vless-ws-xr, path: ${uuid}-vw)
+#     * 不存在 → 注入到Sing-box (tag: vless-ws-sb, path: ${uuid}-vw)
+#   - 自动分配端口,支持CDN域名配置
+# 条件: 当启用vmp(VMess)或vwp(VLESS)时调用
+# 特点: 遵循"双核模式"逻辑,共享xr.json存在性判断
+# =============================================================================
+xrsbvm(){
+if [ -n "$vmp" ]; then
+vmp=vmpt
+if [ -z "$port_vm_ws" ] && [ ! -e "$HOME/agsbx/port_vm_ws" ]; then
+port_vm_ws=$(shuf -i 10000-65535 -n 1)
+echo "$port_vm_ws" > "$HOME/agsbx/port_vm_ws"
+elif [ -n "$port_vm_ws" ]; then
+echo "$port_vm_ws" > "$HOME/agsbx/port_vm_ws"
+fi
+port_vm_ws=$(cat "$HOME/agsbx/port_vm_ws")
+echo "Vmess-ws端口：$port_vm_ws"
+if [ -n "$cdnym" ]; then
+echo "$cdnym" > "$HOME/agsbx/cdnym"
+echo "80系CDN或者回源CDN的host域名 (确保IP已解析在CF域名)：$cdnym"
+fi
+if [ -e "$HOME/agsbx/xr.json" ]; then
+cat >> "$HOME/agsbx/xr.json" <<EOF
+        {
+            "tag": "vmess-xr",
+            "listen": "::",
+            "port": ${port_vm_ws},
+            "protocol": "vmess",
+            "settings": {
+                "clients": [
+                    {
+                        "id": "${uuid}"
+                    }
+                ]
+            },
+            "streamSettings": {
+                "network": "ws",
+                "security": "none",
+                "wsSettings": {
+                  "path": "${uuid}-vm"
+            }
+        },
+            "sniffing": {
+            "enabled": true,
+            "destOverride": ["http", "tls", "quic"],
+            "metadataOnly": false
+            }
+         }, 
+EOF
+else
+cat >> "$HOME/agsbx/sb.json" <<EOF
+{
+        "type": "vmess",
+        "tag": "vmess-sb",
+        "listen": "::",
+        "listen_port": ${port_vm_ws},
+        "users": [
+            {
+                "uuid": "${uuid}",
+                "alterId": 0
+            }
+        ],
+        "transport": {
+            "type": "ws",
+            "path": "${uuid}-vm",
+            "max_early_data":2048,
+            "early_data_header_name": "Sec-WebSocket-Protocol"
+        }
+    },
+EOF
+fi
+else
+vmp=vmptargo
+fi
+# VLESS-WS 配置注入（与 VMess 相同逻辑）
+if [ -n "$vwp" ]; then
+vwp=vwpt
+if [ -z "$port_vw" ] && [ ! -e "$HOME/agsbx/port_vw" ]; then
+port_vw=$(shuf -i 10000-65535 -n 1)
+echo "$port_vw" > "$HOME/agsbx/port_vw"
+elif [ -n "$port_vw" ]; then
+echo "$port_vw" > "$HOME/agsbx/port_vw"
+fi
+port_vw=$(cat "$HOME/agsbx/port_vw")
+echo "Vless-ws端口：$port_vw"
+if [ -n "$cdnym" ]; then
+echo "$cdnym" > "$HOME/agsbx/cdnym"
+echo "80系CDN或者回源CDN的host域名 (确保IP已解析在CF域名)：$cdnym"
+fi
+if [ -e "$HOME/agsbx/xr.json" ]; then
+cat >> "$HOME/agsbx/xr.json" <<EOF
+        {
+            "tag": "vless-ws-xr",
+            "listen": "::",
+            "port": ${port_vw},
+            "protocol": "vless",
+            "settings": {
+                "clients": [
+                    {
+                        "id": "${uuid}"
+                    }
+                ],
+                "decryption": "none"
+            },
+            "streamSettings": {
+                "network": "ws",
+                "wsSettings": {
+                    "path": "/${uuid}-vw"
+                }
+            },
+            "sniffing": {
+                "enabled": true,
+                "destOverride": ["http", "tls", "quic"],
+                "metadataOnly": false
+            }
+        },
+EOF
+else
+cat >> "$HOME/agsbx/sb.json" <<EOF
+        {
+            "type": "vless",
+            "tag": "vless-ws-sb",
+            "listen": "::",
+            "listen_port": ${port_vw},
+            "users": [
+                {
+                    "uuid": "${uuid}"
+                }
+            ],
+            "transport": {
+                "type": "ws",
+                "path": "/${uuid}-vw",
+                "max_early_data": 2048,
+                "early_data_header_name": "Sec-WebSocket-Protocol"
+            }
+        },
+EOF
+fi
+else
+vwp=vwptargo
+fi
+}
+
+# =============================================================================
+# SECTION 7: xrsbso - SOCKS5代理配置注入
+# 功能:
+#   - SOCKS5代理配置注入
+#   - 检查xr.json是否存在,决定注入目标
+#     * 存在 → 注入到Xray (tag: socks5-xr)
+#     * 不存在 → 注入到Sing-box (tag: socks5-sb)
+#   - 使用UUID作为用户名和密码
+#   - 支持UDP协议
+# 条件: 当启用sop时调用
+# 特点: 与VMess-WS/VLESS-WS使用相同的xr.json存在性判断逻辑
+# =============================================================================
+xrsbso(){
+if [ -n "$sop" ]; then
+sop=sopt
+if [ -z "$port_so" ] && [ ! -e "$HOME/agsbx/port_so" ]; then
+port_so=$(shuf -i 10000-65535 -n 1)
+echo "$port_so" > "$HOME/agsbx/port_so"
+elif [ -n "$port_so" ]; then
+echo "$port_so" > "$HOME/agsbx/port_so"
+fi
+port_so=$(cat "$HOME/agsbx/port_so")
+echo "Socks5端口：$port_so"
+if [ -e "$HOME/agsbx/xr.json" ]; then
+cat >> "$HOME/agsbx/xr.json" <<EOF
+        {
+         "tag": "socks5-xr",
+         "port": ${port_so},
+         "listen": "::",
+         "protocol": "socks",
+         "settings": {
+            "auth": "password",
+             "accounts": [
+               {
+               "user": "${uuid}",
+               "pass": "${uuid}"
+               }
+            ],
+            "udp": true
+          },
+            "sniffing": {
+            "enabled": true,
+            "destOverride": ["http", "tls", "quic"],
+            "metadataOnly": false
+            }
+         }, 
+EOF
+else
+cat >> "$HOME/agsbx/sb.json" <<EOF
+    {
+      "tag": "socks5-sb",
+      "type": "socks",
+      "listen": "::",
+      "listen_port": ${port_so},
+      "users": [
+      {
+      "username": "${uuid}",
+      "password": "${uuid}"
+      }
+     ]
+    },
+EOF
+fi
+else
+sop=soptargo
+fi
+}
+
+# =============================================================================
+# SECTION 8: xrsbout - 出站规则与路由配置生成
+# 功能:
+#   - 完善Xray配置文件的outbounds部分
+#   - 配置direct直连出站(带域名策略)
+#   - 配置WARP出站(WireGuard协议)
+#   - 配置自由出站(freedom)
+#   - 设置域名解析策略(ForceIPv4/ForceIPv6/ForceIPv4v6等)
+# 条件: 仅当xr.json存在时调用(即双核模式或仅Xray模式)
+# 依赖: warpsx()设置的pvk/wpv6/res等变量
+# =============================================================================
+xrsbout(){
+if [ -e "$HOME/agsbx/xr.json" ]; then
+sed -i '${s/,\s*$//}' "$HOME/agsbx/xr.json"
+cat >> "$HOME/agsbx/xr.json" <<EOF
+  ],
+  "outbounds": [
+    {
+      "protocol": "freedom",
+      "tag": "direct",
+      "settings": {
+      "domainStrategy":"${xryx}"
+     }
+    },
+    {
+      "tag": "x-warp-out",
+      "protocol": "wireguard",
+      "settings": {
+        "secretKey": "${pvk}",
+        "address": [
+          "172.16.0.2/32",
+          "${wpv6}/128"
+        ],
+        "peers": [
+          {
+            "publicKey": "bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo=",
+            "allowedIPs": [
+              "0.0.0.0/0",
+              "::/0"
+            ],
+            "endpoint": "${xendip}:2408"
+          }
+        ],
+        "reserved": ${res}
+        }
+    },
+    {
+      "tag":"warp-out",
+      "protocol":"freedom",
+        "settings":{
+        "domainStrategy":"${wxryx}"
+       },
+       "proxySettings":{
+       "tag":"x-warp-out"
+     }
+}
+  ],
+  "routing": {
+    "domainStrategy": "IPOnDemand",
+    "rules": [
+      {
+        "type": "field",
+        "ip": [ ${xip} ],
+        "network": "tcp,udp",
+        "outboundTag": "${x1outtag}"
+      },
+      {
+        "type": "field",
+        "network": "tcp,udp",
+        "outboundTag": "${x2outtag}"
+      }
+    ]
+  }
+}
+EOF
+if pidof systemd >/dev/null 2>&1 && [ "$EUID" -eq 0 ]; then
+cat > /etc/systemd/system/xr.service <<EOF
+[Unit]
+Description=xr service
+After=network.target
+[Service]
+Type=simple
+NoNewPrivileges=yes
+TimeoutStartSec=0
+ExecStart=/root/agsbx/xray run -c /root/agsbx/xr.json
+Restart=on-failure
+RestartSec=5s
+StandardOutput=journal
+StandardError=journal
+[Install]
+WantedBy=multi-user.target
+EOF
+systemctl daemon-reload >/dev/null 2>&1
+systemctl enable xr >/dev/null 2>&1
+systemctl start xr >/dev/null 2>&1
+elif command -v rc-service >/dev/null 2>&1 && [ "$EUID" -eq 0 ]; then
+cat > /etc/init.d/xray <<EOF
+#!/sbin/openrc-run
+description="xr service"
+command="/root/agsbx/xray"
+command_args="run -c /root/agsbx/xr.json"
+command_background=yes
+pidfile="/run/xray.pid"
+command_background="yes"
+depend() {
+need net
+}
+EOF
+chmod +x /etc/init.d/xray >/dev/null 2>&1
+rc-update add xray default >/dev/null 2>&1
+rc-service xray start >/dev/null 2>&1
+else
+nohup "$HOME/agsbx/xray" run -c "$HOME/agsbx/xr.json" >/dev/null 2>&1 &
+fi
+fi
+if [ -e "$HOME/agsbx/sb.json" ]; then
+sed -i '${s/,\s*$//}' "$HOME/agsbx/sb.json"
+cat >> "$HOME/agsbx/sb.json" <<EOF
+  ],
+  "outbounds": [
+    {
+      "type": "direct",
+      "tag": "direct"
+    }
+  ],
+  "endpoints": [
+    {
+      "type": "wireguard",
+      "tag": "warp-out",
+      "address": [
+        "172.16.0.2/32",
+        "${wpv6}/128"
+      ],
+      "private_key": "${pvk}",
+      "peers": [
+        {
+          "address": "${sendip}",
+          "port": 2408,
+          "public_key": "bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo=",
+          "allowed_ips": [
+            "0.0.0.0/0",
+            "::/0"
+          ],
+          "reserved": $res
+        }
+      ]
+    }
+  ],
+  "route": {
+    "rules": [
+       {
+          "action": "sniff"
+        },
+       {
+        "action": "resolve",
+         "strategy": "${sbyx}"
+       },
+      {
+        "ip_cidr": [ ${sip} ],         
+        "outbound": "${s1outtag}"
+      }
+    ],
+    "final": "${s2outtag}"
+  }
+}
+EOF
+if pidof systemd >/dev/null 2>&1 && [ "$EUID" -eq 0 ]; then
+cat > /etc/systemd/system/sb.service <<EOF
+[Unit]
+Description=sb service
+After=network.target
+[Service]
+Type=simple
+NoNewPrivileges=yes
+TimeoutStartSec=0
+ExecStart=/root/agsbx/sing-box run -c /root/agsbx/sb.json
+Restart=on-failure
+RestartSec=5s
+StandardOutput=journal
+StandardError=journal
+[Install]
+WantedBy=multi-user.target
+EOF
+systemctl daemon-reload >/dev/null 2>&1
+systemctl enable sb >/dev/null 2>&1
+systemctl start sb >/dev/null 2>&1
+elif command -v rc-service >/dev/null 2>&1 && [ "$EUID" -eq 0 ]; then
+cat > /etc/init.d/sing-box <<EOF
+#!/sbin/openrc-run
+description="sb service"
+command="/root/agsbx/sing-box"
+command_args="run -c /root/agsbx/sb.json"
+command_background=yes
+pidfile="/run/sing-box.pid"
+command_background="yes"
+depend() {
+need net
+}
+EOF
+chmod +x /etc/init.d/sing-box >/dev/null 2>&1
+rc-update add sing-box default >/dev/null 2>&1
+rc-service sing-box start >/dev/null 2>&1
+else
+nohup "$HOME/agsbx/sing-box" run -c "$HOME/agsbx/sb.json" >/dev/null 2>&1 &
+fi
+fi
+}
+
+# =============================================================================
+# SECTION 9: ins - 主安装编排函数(核心函数)
+# 功能:
+#   - 根据协议组合决定安装模式:
+#     * 纯Sing-box模式: 仅启用hyp/tup/anp/arp/ssp时
+#     * 纯Xray模式: 仅启用xhp/vlp/vxp时
+#     * 双核模式: 同时启用两边协议时
+#   - 顺序调用: installsb → installxray → xrsbvm → xrsbso → warpsx → xrsbout
+#   - 配置Argo隧道:
+#     * 下载cloudflared
+#     * 支持固定隧道(token)或临时隧道
+#     * 支持systemd/openrc/直接nohup三种启动方式
+#     * 设置自启动crontab
+#   - 创建进程管理脚本和快捷方式
+#   - 写入~/.bashrc配置别名
+# 条件: 首次安装时调用
+# 依赖: 所有配置函数,warpsx
+# =============================================================================
+ins(){
+# =============================================================================
+# 安装模式判断逻辑：
+#   - 情况A: 只启用 Xray 协议 (xhp/vlp/vxp) 且不启用 SB 协议
+#   - 情况B: 只启用 SB 协议 (hyp/tup/anp/arp/ssp/vwp) 且不启用 Xray 协议
+#   - 情况C: 混合模式 (同时启用两边协议)
+# 说明: VLESS-WS 和 VMess-WS 现在可以跟随 Sing-box 单独运行
+# =============================================================================
+if [ "$hyp" != yes ] && [ "$tup" != yes ] && [ "$anp" != yes ] && [ "$arp" != yes ] && [ "$ssp" != yes ] && [ "$vwp" != yes ]; then
+# 情况A: 纯Xray模式 (不启用任何SB协议，也不启用vwp)
+installxray
+xrsbvm
+xrsbso
+warpsx
+xrsbout
+hyp="hyptargo"; tup="tuptargo"; anp="anptargo"; arp="arptargo"; ssp="ssptargo"; vwp="vwptargo"
+elif [ "$xhp" != yes ] && [ "$vlp" != yes ] && [ "$vxp" != yes ]; then
+# 情况B: 纯SB模式 (不启用任何Xray协议，vwp跟随Sing-box)
+installsb
+xrsbvm
+xrsbso
+warpsx
+xrsbout
+xhp="xhptargo"; vlp="vlptargo"; vxp="vxptargo"
+else
+# 情况C: 双核模式 (同时启用Xray和SB协议)
+installsb
+installxray
+xrsbvm
+xrsbso
+warpsx
+xrsbout
+fi
+if [ -n "$argo" ] && [ -n "$vmag" ]; then
+echo
+echo "=========启用Cloudflared-argo内核========="
+if [ ! -e "$HOME/agsbx/cloudflared" ]; then
+argocore=$({ command -v curl >/dev/null 2>&1 && curl -Ls https://data.jsdelivr.com/v1/package/gh/cloudflare/cloudflared || wget -qO- https://data.jsdelivr.com/v1/package/gh/cloudflare/cloudflared; } | grep -Eo '"[0-9.]+"' | sed -n 1p | tr -d '",')
+echo "下载Cloudflared-argo最新正式版内核：$argocore"
+url="https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-$cpu"; out="$HOME/agsbx/cloudflared"; (command -v curl>/dev/null 2>&1 && curl -Lo "$out" -# --retry 2 "$url") || (command -v wget>/dev/null 2>&1 && timeout 3 wget -O "$out" --tries=2 "$url")
+chmod +x "$HOME/agsbx/cloudflared"
+fi
+if [ "$argo" = "vmpt" ]; then argoport=$(cat "$HOME/agsbx/port_vm_ws" 2>/dev/null); echo "Vmess" > "$HOME/agsbx/vlvm"; elif [ "$argo" = "vwpt" ]; then argoport=$(cat "$HOME/agsbx/port_vw" 2>/dev/null); echo "Vless" > "$HOME/agsbx/vlvm"; fi; echo "$argoport" > "$HOME/agsbx/argoport.log"
+if [ -n "${ARGO_DOMAIN}" ] && [ -n "${ARGO_AUTH}" ]; then
+argoname='固定'
+if pidof systemd >/dev/null 2>&1 && [ "$EUID" -eq 0 ]; then
+cat > /etc/systemd/system/argo.service <<EOF
+[Unit]
+Description=argo service
+After=network.target
+[Service]
+Type=simple
+NoNewPrivileges=yes
+TimeoutStartSec=0
+ExecStart=/root/agsbx/cloudflared tunnel --no-autoupdate --edge-ip-version auto --protocol http2 run --token "${ARGO_AUTH}"
+Restart=on-failure
+RestartSec=5s
+[Install]
+WantedBy=multi-user.target
+EOF
+systemctl daemon-reload >/dev/null 2>&1
+systemctl enable argo >/dev/null 2>&1
+systemctl start argo >/dev/null 2>&1
+elif command -v rc-service >/dev/null 2>&1 && [ "$EUID" -eq 0 ]; then
+cat > /etc/init.d/argo <<EOF
+#!/sbin/openrc-run
+description="argo service"
+command="/root/agsbx/cloudflared tunnel"
+command_args="--no-autoupdate --edge-ip-version auto --protocol http2 run --token ${ARGO_AUTH}"
+pidfile="/run/argo.pid"
+command_background="yes"
+depend() {
+need net
+}
+EOF
+chmod +x /etc/init.d/argo >/dev/null 2>&1
+rc-update add argo default >/dev/null 2>&1
+rc-service argo start >/dev/null 2>&1
+else
+nohup "$HOME/agsbx/cloudflared" tunnel --no-autoupdate --edge-ip-version auto --protocol http2 run --token "${ARGO_AUTH}" >/dev/null 2>&1 &
+fi
+echo "${ARGO_DOMAIN}" > "$HOME/agsbx/sbargoym.log"
+echo "${ARGO_AUTH}" > "$HOME/agsbx/sbargotoken.log"
+else
+argoname='临时'
+nohup "$HOME/agsbx/cloudflared" tunnel --url http://localhost:$(cat $HOME/agsbx/argoport.log) --edge-ip-version auto --no-autoupdate --protocol http2 > $HOME/agsbx/argo.log 2>&1 &
+fi
+echo "申请Argo$argoname隧道中……请稍等"
+sleep 8
+if [ -n "${ARGO_DOMAIN}" ] && [ -n "${ARGO_AUTH}" ]; then
+argodomain=$(cat "$HOME/agsbx/sbargoym.log" 2>/dev/null)
+else
+argodomain=$(grep -a trycloudflare.com "$HOME/agsbx/argo.log" 2>/dev/null | awk 'NR==2{print}' | awk -F// '{print $2}' | awk '{print $1}')
+fi
+if [ -n "${argodomain}" ]; then
+echo "Argo$argoname隧道申请成功"
+else
+echo "Argo$argoname隧道申请失败，请稍后再试"
+fi
+fi
+sleep 5
+echo
+if find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null | grep -Eq 'agsbx/(s|x)' || pgrep -f 'agsbx/(s|x)' >/dev/null 2>&1 ; then
+[ -f ~/.bashrc ] || touch ~/.bashrc
+sed -i '/agsbx/d' ~/.bashrc
+SCRIPT_PATH="$HOME/bin/agsbx"
+mkdir -p "$HOME/bin"
+(command -v curl >/dev/null 2>&1 && curl -sL "$agsbxurl" -o "$SCRIPT_PATH") || (command -v wget >/dev/null 2>&1 && wget -qO "$SCRIPT_PATH" "$agsbxurl")
+chmod +x "$SCRIPT_PATH"
+if ! pidof systemd >/dev/null 2>&1 && ! command -v rc-service >/dev/null 2>&1; then
+echo "if ! find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null | grep -Eq 'agsbx/(s|x)' && ! pgrep -f 'agsbx/(s|x)' >/dev/null 2>&1; then echo '检测到系统可能中断过，或者变量格式错误？建议在SSH对话框输入 reboot 重启下服务器。现在自动执行Argosbx脚本的节点恢复操作，请稍等……'; sleep 6; export cdnym=\"${cdnym}\" name=\"${name}\" ippz=\"${ippz}\" ippref=\"${ippref}\" argo=\"${argo}\" uuid=\"${uuid}\" $wap=\"${warp}\" $xhp=\"${port_xh}\" $vxp=\"${port_vx}\" $ssp=\"${port_ss}\" $sop=\"${port_so}\" $anp=\"${port_an}\" $arp=\"${port_ar}\" $vlp=\"${port_vl_re}\" $vwp=\"${port_vw}\" $vmp=\"${port_vm_ws}\" $hyp=\"${port_hy2}\" $tup=\"${port_tu}\" reym=\"${ym_vl_re}\" agn=\"${ARGO_DOMAIN}\" agk=\"${ARGO_AUTH}\" argoip=\"${argoip}\" gh_token=\"${gh_token}\" gh_gist_id=\"${gh_gist_id}\" nodeaddr=\"${nodeaddr}\"; bash "$HOME/bin/agsbx"; fi" >> ~/.bashrc
+fi
+sed -i '/export PATH="\$HOME\/bin:\$PATH"/d' ~/.bashrc
+echo 'export PATH="$HOME/bin:$PATH"' >> "$HOME/.bashrc"
+grep -qxF 'source ~/.bashrc' ~/.bash_profile 2>/dev/null || echo 'source ~/.bashrc' >> ~/.bash_profile
+. ~/.bashrc 2>/dev/null
+crontab -l > /tmp/crontab.tmp 2>/dev/null
+if ! pidof systemd >/dev/null 2>&1 && ! command -v rc-service >/dev/null 2>&1; then
+sed -i '/agsbx\/sing-box/d' /tmp/crontab.tmp
+sed -i '/agsbx\/xray/d' /tmp/crontab.tmp
+if find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null | grep -q 'agsbx/s' || pgrep -f 'agsbx/s' >/dev/null 2>&1 ; then
+echo '@reboot sleep 10 && /bin/sh -c "nohup $HOME/agsbx/sing-box run -c $HOME/agsbx/sb.json >/dev/null 2>&1 &"' >> /tmp/crontab.tmp
+fi
+if find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null | grep -q 'agsbx/x' || pgrep -f 'agsbx/x' >/dev/null 2>&1 ; then
+echo '@reboot sleep 10 && /bin/sh -c "nohup $HOME/agsbx/xray run -c $HOME/agsbx/xr.json >/dev/null 2>&1 &"' >> /tmp/crontab.tmp
+fi
+fi
+sed -i '/agsbx\/cloudflared/d' /tmp/crontab.tmp
+if [ -n "$argo" ] && [ -n "$vmag" ]; then
+if [ -n "${ARGO_DOMAIN}" ] && [ -n "${ARGO_AUTH}" ]; then
+if ! pidof systemd >/dev/null 2>&1 && ! command -v rc-service >/dev/null 2>&1; then
+echo '@reboot sleep 10 && /bin/sh -c "nohup $HOME/agsbx/cloudflared tunnel --no-autoupdate --edge-ip-version auto --protocol http2 run --token $(cat $HOME/agsbx/sbargotoken.log 2>/dev/null) >/dev/null 2>&1 &"' >> /tmp/crontab.tmp
+fi
+else
+echo '@reboot sleep 10 && /bin/sh -c "nohup $HOME/agsbx/cloudflared tunnel --url http://localhost:$(cat $HOME/agsbx/argoport.log) --edge-ip-version auto --no-autoupdate --protocol http2 > $HOME/agsbx/argo.log 2>&1 &"' >> /tmp/crontab.tmp
+fi
+fi
+crontab /tmp/crontab.tmp >/dev/null 2>&1
+rm /tmp/crontab.tmp
+echo "Argosbx脚本进程启动成功，安装完毕" && sleep 2
+else
+echo "Argosbx脚本进程未启动，安装失败" && exit
+fi
+}
+
+# =============================================================================
+# SECTION 10: argosbxstatus - 内核进程状态查询
+# 功能:
+#   - 检查Sing-box/Xray/Argo三大内核进程是否运行
+#   - 显示各内核版本号和运行状态
+# 输出: "内核名 (版本Vx.x.x): 运行中/未启用"
+# =============================================================================
+argosbxstatus(){
+echo "=========当前三大内核运行状态========="
+procs=$(find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null)
+if echo "$procs" | grep -Eq 'agsbx/s' || pgrep -f 'agsbx/s' >/dev/null 2>&1; then
+echo "Sing-box (版本V$("$HOME/agsbx/sing-box" version 2>/dev/null | awk '/version/{print $NF}'))：运行中"
+else
+echo "Sing-box：未启用"
+fi
+if echo "$procs" | grep -Eq 'agsbx/x' || pgrep -f 'agsbx/x' >/dev/null 2>&1; then
+echo "Xray (版本V$("$HOME/agsbx/xray" version 2>/dev/null | awk '/^Xray/{print $2}'))：运行中"
+else
+echo "Xray：未启用"
+fi
+if echo "$procs" | grep -Eq 'agsbx/c' || pgrep -f 'agsbx/c' >/dev/null 2>&1; then
+echo "Argo (版本V$("$HOME/agsbx/cloudflared" version 2>/dev/null | awk '{print $3}'))：运行中"
+else
+echo "Argo：未启用"
+fi
+}
+
+# =============================================================================
+# SECTION 11: cip - 节点信息输出与IP管理(重要输出函数)
+# 功能:
+#   - cip(): 主入口函数,协调IP检测和节点输出
+#   - ipbest(): 获取服务器公网IP
+#   - ipchange(): 详细IP信息展示与策略选择
+#   - 生成并输出所有节点订阅链接:
+#     * VLESS-xhttp-reality节点
+#     * VLESS-xhttp节点(含CDN变体)
+#     * VLESS-WS节点(含CDN变体)
+#     * VMess-WS节点(含CDN变体)
+#     * AnyTLS节点
+#     * Any-Reality节点
+#     * Hysteria2节点
+#     * Tuic节点
+#     * SOCKS5代理信息
+#   - Argo隧道节点输出(支持Vmess/VLESS)
+# 输出: 所有节点链接到$HOME/agsbx/jh.txt并显示
+# 依赖: uuid/server_ip,Reality密钥,端口配置
+# =============================================================================
+cip(){
+ipbest(){
+serip=$( (command -v curl >/dev/null 2>&1 && (curl -s4m5 -k "$v46url" 2>/dev/null || curl -s6m5 -k "$v46url" 2>/dev/null) ) || (command -v wget >/dev/null 2>&1 && (timeout 3 wget -4 -qO- --tries=2 "$v46url" 2>/dev/null || timeout 3 wget -6 -qO- --tries=2 "$v46url" 2>/dev/null) ) )
+if echo "$serip" | grep -q ':'; then
+server_ip="[$serip]"
+echo "$server_ip" > "$HOME/agsbx/server_ip.log"
+else
+server_ip="$serip"
+echo "$server_ip" > "$HOME/agsbx/server_ip.log"
+fi
+}
+ipchange(){
+v4v6
+if [ -z "$v4" ]; then
+vps_ipv4='无IPV4'
+vps_ipv6="$v6"
+location="$v6dq"
+elif [ -n "$v4" ] && [ -n "$v6" ]; then
+vps_ipv4="$v4"
+vps_ipv6="$v6"
+location="$v4dq"
+else
+vps_ipv4="$v4"
+vps_ipv6='无IPV6'
+location="$v4dq"
+fi
+if echo "$v6" | grep -q '^2a09'; then
+w6="【WARP】"
+fi
+if echo "$v4" | grep -q '^104.28'; then
+w4="【WARP】"
+fi
+echo
+argosbxstatus
+echo
+echo "=========当前服务器本地IP情况========="
+echo "本地IPV4地址：$vps_ipv4 $w4"
+echo "本地IPV6地址：$vps_ipv6 $w6"
+echo "服务器地区：$location"
+echo
+sleep 2
+if [ "$ippz" = "4" ]; then
+if [ -z "$v4" ]; then
+ipbest
+else
+server_ip="$v4"
+echo "$server_ip" > "$HOME/agsbx/server_ip.log"
+fi
+elif [ "$ippz" = "6" ]; then
+if [ -z "$v6" ]; then
+ipbest
+else
+server_ip="[$v6]"
+echo "$server_ip" > "$HOME/agsbx/server_ip.log"
+fi
+else
+ipbest
+fi
+}
+ipchange
+rm -rf "$HOME/agsbx/jh.txt"
+uuid=$(cat "$HOME/agsbx/uuid")
+server_ip=$(cat "$HOME/agsbx/server_ip.log")
+sxname=$(cat "$HOME/agsbx/name" 2>/dev/null)
+xvvmcdnym=$(cat "$HOME/agsbx/cdnym" 2>/dev/null)
+echo "*********************************************************"
+echo "*********************************************************"
+echo "Argosbx脚本输出节点配置如下："
+echo
+case "$server_ip" in
+104.28*|\[2a09*) echo "检测到有WARP的IP作为客户端地址 (104.28或者2a09开头的IP)，请把客户端地址上的WARP的IP手动更换为VPS本地IPV4或者IPV6地址" && sleep 3 ;;
+esac
+echo
+ym_vl_re=$(cat "$HOME/agsbx/ym_vl_re" 2>/dev/null)
+cfip() { echo $((RANDOM % 13 + 1)); }
+if [ -e "$HOME/agsbx/xray" ]; then
+private_key_x=$(cat "$HOME/agsbx/xrk/private_key" 2>/dev/null)
+public_key_x=$(cat "$HOME/agsbx/xrk/public_key" 2>/dev/null)
+short_id_x=$(cat "$HOME/agsbx/xrk/short_id" 2>/dev/null)
+enkey=$(cat "$HOME/agsbx/xrk/enkey" 2>/dev/null)
+fi
+if [ -e "$HOME/agsbx/sing-box" ]; then
+private_key_s=$(cat "$HOME/agsbx/sbk/private_key" 2>/dev/null)
+public_key_s=$(cat "$HOME/agsbx/sbk/public_key" 2>/dev/null)
+short_id_s=$(cat "$HOME/agsbx/sbk/short_id" 2>/dev/null)
+sskey=$(cat "$HOME/agsbx/sskey" 2>/dev/null)
+fi
+if grep xhttp-reality "$HOME/agsbx/xr.json" >/dev/null 2>&1; then
+echo "💣【 Vless-xhttp-reality 】节点信息如下："
+port_xh=$(cat "$HOME/agsbx/port_xh")
+display_port_xh="${port_xh_ext:-${port_xh}}"
+vl_xh_link="vless://$uuid@$server_ip:$display_port_xh?encryption=none&flow=xtls-rprx-vision&security=reality&sni=$ym_vl_re&fp=chrome&pbk=$public_key_x&sid=$short_id_x&type=xhttp&path=/xhttp&mode=auto#${sxname}vl-xhttp-reality-$hostname"
+echo "$vl_xh_link" >> "$HOME/agsbx/jh.txt"
+echo "$vl_xh_link"
+echo
+fi
+if grep vless-xhttp "$HOME/agsbx/xr.json" >/dev/null 2>&1; then
+echo "💣【 Vless-xhttp 】节点信息如下："
+port_vx=$(cat "$HOME/agsbx/port_vx")
+display_port_vx="${port_vx_ext:-${port_vx}}"
+vl_vx_link="vless://$uuid@$server_ip:$display_port_vx?encryption=none&type=xhttp&path=/xhttp&mode=auto#${sxname}vl-xhttp-$hostname"
+echo "$vl_vx_link" >> "$HOME/agsbx/jh.txt"
+echo "$vl_vx_link"
+echo
+if [ -f "$HOME/agsbx/cdnym" ]; then
+echo "💣【 Vless-xhttp-cdn 】节点信息如下："
+echo "注：可自行更换优选IP域名，如是回源端口需手动修改443或者80系端口"
+vl_vx_cdn_link="vless://$uuid@yg$(cfip).ygkkk.dpdns.org:$display_port_vx?encryption=none&type=xhttp&host=$xvvmcdnym&path=/xhttp&mode=auto#${sxname}vl-xhttp-cdn-$hostname"
+echo "$vl_vx_cdn_link" >> "$HOME/agsbx/jh.txt"
+echo "$vl_vx_cdn_link"
+echo
+fi
+fi
+if grep vless-ws "$HOME/agsbx/xr.json" >/dev/null 2>&1; then
+echo "💣【 Vless-ws 】节点信息如下："
+port_vw=$(cat "$HOME/agsbx/port_vw")
+display_port_vw="${port_vw_ext:-${port_vw}}"
+vl_vw_link="vless://$uuid@$server_ip:$display_port_vw?encryption=none&type=ws&path=%2F${uuid}-vw#${sxname}vl-ws-$hostname"
+echo "$vl_vw_link" >> "$HOME/agsbx/jh.txt"
+echo "$vl_vw_link"
+echo
+if [ -f "$HOME/agsbx/cdnym" ]; then
+echo "💣【 Vless-ws-cdn 】节点信息如下："
+echo "注：可自行更换优选IP域名，如是回源端口需手动修改443或者80系端口"
+vl_vw_cdn_link="vless://$uuid@yg$(cfip).ygkkk.dpdns.org:$display_port_vw?encryption=none&type=ws&host=$xvvmcdnym&path=%2F${uuid}-vw#${sxname}vl-ws-cdn-$hostname"
+echo "$vl_vw_cdn_link" >> "$HOME/agsbx/jh.txt"
+echo "$vl_vw_cdn_link"
+echo
+fi
+fi
+if grep reality-vision "$HOME/agsbx/xr.json" >/dev/null 2>&1; then
+echo "💣【 Vless-tcp-reality-vision 】节点信息如下："
+port_vl_re=$(cat "$HOME/agsbx/port_vl_re")
+display_port_vl_re="${port_vl_re_ext:-${port_vl_re}}"
+vl_link="vless://$uuid@$server_ip:$display_port_vl_re?encryption=none&flow=xtls-rprx-vision&security=reality&sni=$ym_vl_re&fp=chrome&pbk=$public_key_x&sid=$short_id_x&type=tcp&headerType=none#${sxname}vl-reality-vision-$hostname"
+echo "$vl_link" >> "$HOME/agsbx/jh.txt"
+echo "$vl_link"
+echo
+fi
+if grep ss-2022 "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
+echo "💣【 Shadowsocks-2022 】节点信息如下："
+port_ss=$(cat "$HOME/agsbx/port_ss")
+display_port_ss="${port_ss_ext:-${port_ss}}"
+ss_link="ss://$(echo -n "2022-blake3-aes-128-gcm:$sskey@$server_ip:$display_port_ss" | base64 -w0)#${sxname}Shadowsocks-2022-$hostname"
+echo "$ss_link" >> "$HOME/agsbx/jh.txt"
+echo "$ss_link"
+echo
+fi
+if grep vmess-xr "$HOME/agsbx/xr.json" >/dev/null 2>&1 || grep vmess-sb "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
+echo "💣【 Vmess-ws 】节点信息如下："
+port_vm_ws=$(cat "$HOME/agsbx/port_vm_ws")
+display_port_vm="${port_vm_ws_ext:-${port_vm_ws}}"
+vm_link="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vm-ws-$hostname\", \"add\": \"$server_ip\", \"port\": \"$display_port_vm\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"www.bing.com\", \"path\": \"/$uuid-vm\", \"tls\": \"\"}" | base64 -w0)"
+echo "$vm_link" >> "$HOME/agsbx/jh.txt"
+echo "$vm_link"
+echo
+if [ -f "$HOME/agsbx/cdnym" ]; then
+echo "💣【 Vmess-ws-cdn 】节点信息如下："
+echo "注：可自行更换优选IP域名，如是回源端口需手动修改443或者80系端口"
+vm_cdn_link="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vm-ws-cdn-$hostname\", \"add\": \"yg$(cfip).ygkkk.dpdns.org\", \"port\": \"$display_port_vm\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$xvvmcdnym\", \"path\": \"/$uuid-vm\", \"tls\": \"\"}" | base64 -w0)"
+echo "$vm_cdn_link" >> "$HOME/agsbx/jh.txt"
+echo "$vm_cdn_link"
+echo
+fi
+fi
+if grep anytls-sb "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
+echo "💣【 AnyTLS 】节点信息如下："
+port_an=$(cat "$HOME/agsbx/port_an")
+display_port_an="${port_an_ext:-${port_an}}"
+an_link="anytls://$uuid@$server_ip:$display_port_an?insecure=1&allowInsecure=1#${sxname}anytls-$hostname"
+echo "$an_link" >> "$HOME/agsbx/jh.txt"
+echo "$an_link"
+echo
+fi
+if grep anyreality-sb "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
+echo "💣【 Any-Reality 】节点信息如下："
+port_ar=$(cat "$HOME/agsbx/port_ar")
+display_port_ar="${port_ar_ext:-${port_ar}}"
+ar_link="anytls://$uuid@$server_ip:$display_port_ar?security=reality&sni=$ym_vl_re&fp=chrome&pbk=$public_key_s&sid=$short_id_s&type=tcp&headerType=none#${sxname}any-reality-$hostname"
+echo "$ar_link" >> "$HOME/agsbx/jh.txt"
+echo "$ar_link"
+echo
+fi
+if grep hy2-sb "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
+echo "💣【 Hysteria2 】节点信息如下："
+port_hy2=$(cat "$HOME/agsbx/port_hy2")
+display_port_hy2="${port_hy2_ext:-${port_hy2}}"
+hy2_link="hysteria2://$uuid@$server_ip:$display_port_hy2?security=tls&alpn=h3&insecure=1&sni=www.bing.com#${sxname}hy2-$hostname"
+echo "$hy2_link" >> "$HOME/agsbx/jh.txt"
+echo "$hy2_link"
+echo
+fi
+if grep tuic5-sb "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
+echo "💣【 Tuic 】节点信息如下："
+port_tu=$(cat "$HOME/agsbx/port_tu")
+display_port_tu="${port_tu_ext:-${port_tu}}"
+tuic5_link="tuic://$uuid:$uuid@$server_ip:$display_port_tu?congestion_control=bbr&udp_relay_mode=native&alpn=h3&sni=www.bing.com&allow_insecure=1&allowInsecure=1#${sxname}tuic-$hostname"
+echo "$tuic5_link" >> "$HOME/agsbx/jh.txt"
+echo "$tuic5_link"
+echo
+fi
+if grep socks5-xr "$HOME/agsbx/xr.json" >/dev/null 2>&1 || grep socks5-sb "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
+echo "💣【 Socks5 】客户端信息如下："
+port_so=$(cat "$HOME/agsbx/port_so")
+display_port_so="${port_so_ext:-${port_so}}"
+echo "请配合其他应用内置代理使用，勿做节点直接使用"
+echo "客户端地址：$server_ip"
+echo "客户端端口：$display_port_so"
+echo "客户端用户名：$uuid"
+echo "客户端密码：$uuid"
+echo
+fi
+argodomain=$(cat "$HOME/agsbx/sbargoym.log" 2>/dev/null)
+[ -z "$argodomain" ] && argodomain=$(grep -a trycloudflare.com "$HOME/agsbx/argo.log" 2>/dev/null | awk 'NR==2{print}' | awk -F// '{print $2}' | awk '{print $1}')
+if [ -n "$argodomain" ]; then
+vlvm=$(cat $HOME/agsbx/vlvm 2>/dev/null)
+if [ "$vlvm" = "Vmess" ]; then
+vmatls_link1="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vmess-ws-tls-argo-$hostname-443\", \"add\": \"yg1.ygkkk.dpdns.org\", \"port\": \"443\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$argodomain\", \"path\": \"/$uuid-vm\", \"tls\": \"tls\", \"sni\": \"$argodomain\", \"alpn\": \"\", \"fp\": \"chrome\"}" | base64 -w0)"
+echo "$vmatls_link1" >> "$HOME/agsbx/jh.txt"
+vmatls_link2="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vmess-ws-tls-argo-$hostname-8443\", \"add\": \"yg2.ygkkk.dpdns.org\", \"port\": \"8443\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$argodomain\", \"path\": \"/$uuid-vm\", \"tls\": \"tls\", \"sni\": \"$argodomain\", \"alpn\": \"\", \"fp\": \"chrome\"}" | base64 -w0)"
+echo "$vmatls_link2" >> "$HOME/agsbx/jh.txt"
+vmatls_link3="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vmess-ws-tls-argo-$hostname-2053\", \"add\": \"yg3.ygkkk.dpdns.org\", \"port\": \"2053\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$argodomain\", \"path\": \"/$uuid-vm\", \"tls\": \"tls\", \"sni\": \"$argodomain\", \"alpn\": \"\", \"fp\": \"chrome\"}" | base64 -w0)"
+echo "$vmatls_link3" >> "$HOME/agsbx/jh.txt"
+vmatls_link4="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vmess-ws-tls-argo-$hostname-2083\", \"add\": \"yg4.ygkkk.dpdns.org\", \"port\": \"2083\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$argodomain\", \"path\": \"/$uuid-vm\", \"tls\": \"tls\", \"sni\": \"$argodomain\", \"alpn\": \"\", \"fp\": \"chrome\"}" | base64 -w0)"
+echo "$vmatls_link4" >> "$HOME/agsbx/jh.txt"
+vmatls_link5="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vmess-ws-tls-argo-$hostname-2087\", \"add\": \"yg5.ygkkk.dpdns.org\", \"port\": \"2087\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$argodomain\", \"path\": \"/$uuid-vm\", \"tls\": \"tls\", \"sni\": \"$argodomain\", \"alpn\": \"\", \"fp\": \"chrome\"}" | base64 -w0)"
+echo "$vmatls_link5" >> "$HOME/agsbx/jh.txt"
+vmatls_link6="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vmess-ws-tls-argo-$hostname-2096\", \"add\": \"[2606:4700::0]\", \"port\": \"2096\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$argodomain\", \"path\": \"/$uuid-vm\", \"tls\": \"tls\", \"sni\": \"$argodomain\", \"alpn\": \"\", \"fp\": \"chrome\"}" | base64 -w0)"
+echo "$vmatls_link6" >> "$HOME/agsbx/jh.txt"
+vma_link7="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vmess-ws-argo-$hostname-80\", \"add\": \"yg6.ygkkk.dpdns.org\", \"port\": \"80\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$argodomain\", \"path\": \"/$uuid-vm\", \"tls\": \"\"}" | base64 -w0)"
+echo "$vma_link7" >> "$HOME/agsbx/jh.txt"
+vma_link8="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vmess-ws-argo-$hostname-8080\", \"add\": \"yg7.ygkkk.dpdns.org\", \"port\": \"8080\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$argodomain\", \"path\": \"/$uuid-vm\", \"tls\": \"\"}" | base64 -w0)"
+echo "$vma_link8" >> "$HOME/agsbx/jh.txt"
+vma_link9="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vmess-ws-argo-$hostname-8880\", \"add\": \"yg8.ygkkk.dpdns.org\", \"port\": \"8880\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$argodomain\", \"path\": \"/$uuid-vm\", \"tls\": \"\"}" | base64 -w0)"
+echo "$vma_link9" >> "$HOME/agsbx/jh.txt"
+vma_link10="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vmess-ws-argo-$hostname-2052\", \"add\": \"yg9.ygkkk.dpdns.org\", \"port\": \"2052\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$argodomain\", \"path\": \"/$uuid-vm\", \"tls\": \"\"}" | base64 -w0)"
+echo "$vma_link10" >> "$HOME/agsbx/jh.txt"
+vma_link11="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vmess-ws-argo-$hostname-2082\", \"add\": \"yg10.ygkkk.dpdns.org\", \"port\": \"2082\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$argodomain\", \"path\": \"/$uuid-vm\", \"tls\": \"\"}" | base64 -w0)"
+echo "$vma_link11" >> "$HOME/agsbx/jh.txt"
+vma_link12="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vmess-ws-argo-$hostname-2086\", \"add\": \"yg11.ygkkk.dpdns.org\", \"port\": \"2086\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$argodomain\", \"path\": \"/$uuid-vm\", \"tls\": \"\"}" | base64 -w0)"
+echo "$vma_link12" >> "$HOME/agsbx/jh.txt"
+vma_link13="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vmess-ws-argo-$hostname-2095\", \"add\": \"[2400:cb00:2049::0]\", \"port\": \"2095\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$argodomain\", \"path\": \"/$uuid-vm\", \"tls\": \"\"}" | base64 -w0)"
+echo "$vma_link13" >> "$HOME/agsbx/jh.txt"
+elif [ "$vlvm" = "Vless" ]; then
+vwatls_link1="vless://$uuid@yg$(cfip).ygkkk.dpdns.org:443?flow=xtls-rprx-vision&type=ws&host=$argodomain&path=%2F${uuid}-vw&security=tls&sni=$argodomain&fp=chrome&insecure=0&allowInsecure=0#${sxname}vless-ws-tls-argo-vision-$hostname"
+echo "$vwatls_link1" >> "$HOME/agsbx/jh.txt"
+vwa_link2="vless://$uuid@yg$(cfip).ygkkk.dpdns.org:80?flow=xtls-rprx-vision&type=ws&host=$argodomain&path=%2F${uuid}-vw&security=none#${sxname}vless-ws-argo-vision-$hostname"
+echo "$vwa_link2" >> "$HOME/agsbx/jh.txt"
+fi
+sbtk=$(cat "$HOME/agsbx/sbargotoken.log" 2>/dev/null)
+if [ -n "$sbtk" ]; then
+nametn="Argo固定隧道token：$sbtk"
+fi
+argoshow=$(
+echo "Argo隧道端口正在使用$vlvm-ws主协议端口：$(cat $HOME/agsbx/argoport.log 2>/dev/null)
+Argo域名：$argodomain
+$nametn
+
+1、💣443端口的$vlvm-ws-tls-argo节点(优选IP与443系端口随便换)
+${vmatls_link1}${vwatls_link1}
+
+2、💣80端口的$vlvm-ws-argo节点(优选IP与80系端口随便换)
+${vma_link7}${vwa_link2}
+"
+)
+fi
+echo "---------------------------------------------------------"
+echo "$argoshow"
+echo
+echo "---------------------------------------------------------"
+echo "聚合节点信息，请进入 $HOME/agsbx/jh.txt 文件目录查看或者运行 cat $HOME/agsbx/jh.txt 查看"
+echo "========================================================="
+}
+
+# =============================================================================
+# SECTION 12: cleandel - 完全卸载清理函数
+# 功能:
+#   - 终止所有agsbx相关进程(x/s/c)
+#   - 清理crontab中的agsbx条目
+#   - 删除systemd/openrc服务文件
+#   - 删除~/.bashrc中的agsbx配置
+#   - 删除$HOME/agsbx目录
+#   - 删除$HOME/bin/agsbx软链接
+# 注意: 清理彻底,包括所有配置文件和进程
+# =============================================================================
+cleandel(){
+for P in /proc/[0-9]*; do if [ -L "$P/exe" ]; then TARGET=$(readlink -f "$P/exe" 2>/dev/null); if echo "$TARGET" | grep -qE '/agsbx/c|/agsbx/s|/agsbx/x'; then PID=$(basename "$P"); kill "$PID" 2>/dev/null; fi; fi; done
+kill -15 $(pgrep -f 'agsbx/s' 2>/dev/null) $(pgrep -f 'agsbx/c' 2>/dev/null) $(pgrep -f 'agsbx/x' 2>/dev/null) >/dev/null 2>&1
+sed -i '/agsbx/d' ~/.bashrc
+sed -i '/export PATH="\$HOME\/bin:\$PATH"/d' ~/.bashrc
+. ~/.bashrc 2>/dev/null
+crontab -l > /tmp/crontab.tmp 2>/dev/null
+sed -i '/agsbx\/sing-box/d' /tmp/crontab.tmp
+sed -i '/agsbx\/xray/d' /tmp/crontab.tmp
+sed -i '/agsbx\/cloudflared/d' /tmp/crontab.tmp
+crontab /tmp/crontab.tmp >/dev/null 2>&1
+rm /tmp/crontab.tmp
+rm -rf  "$HOME/bin/agsbx"
+if pidof systemd >/dev/null 2>&1; then
+for svc in xr sb argo; do
+systemctl stop "$svc" >/dev/null 2>&1
+systemctl disable "$svc" >/dev/null 2>&1
+done
+rm -rf /etc/systemd/system/{xr.service,sb.service,argo.service}
+elif command -v rc-service >/dev/null 2>&1; then
+for svc in sing-box xray argo; do
+rc-service "$svc" stop >/dev/null 2>&1
+rc-update del "$svc" default >/dev/null 2>&1
+done
+rm -rf /etc/init.d/{sing-box,xray,argo}
+fi
+}
+# =============================================================================
+# SECTION 13: xrestart/sbrestart - 内核重启函数
+# 功能:
+#   - xrestart(): 重启Xray内核
+#   - sbrestart(): 重启Sing-box内核
+#   - 支持systemd/openrc/直接nohup三种启动方式
+# 用途: 用于内核更新后重启或配置刷新
+# =============================================================================
+xrestart(){
+kill -15 $(pgrep -f 'agsbx/x' 2>/dev/null) >/dev/null 2>&1
+if pidof systemd >/dev/null 2>&1; then
+systemctl restart xr >/dev/null 2>&1
+elif command -v rc-service >/dev/null 2>&1; then
+rc-service xray restart >/dev/null 2>&1
+else
+nohup $HOME/agsbx/xray run -c $HOME/agsbx/xr.json >/dev/null 2>&1 &
+fi
+}
+sbrestart(){
+kill -15 $(pgrep -f 'agsbx/s' 2>/dev/null) >/dev/null 2>&1
+if pidof systemd >/dev/null 2>&1; then
+systemctl restart sb >/dev/null 2>&1
+elif command -v rc-service >/dev/null 2>&1; then
+rc-service sing-box restart >/dev/null 2>&1
+else
+nohup $HOME/agsbx/sing-box run -c $HOME/agsbx/sb.json >/dev/null 2>&1 &
+fi
+}
+
+# =============================================================================
+# SECTION 14.1: GitHub Gist推送
+# =============================================================================
+push_gist(){
+  if [ -f "$HOME/agsbx/jh.txt" ] && [ -n "$gh_token" ]; then
+    # 1. 获取出口IP的国家代码 (2位大写字母)
+    country=$(curl -s4m5 http://ip-api.com/line/?fields=countryCode 2>/dev/null || echo "Unknown")
+    
+    # 格式化内容以符合JSON规范
+    gist_content=$(cat "$HOME/agsbx/jh.txt" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
+    
+    # 2. 构造文件名：${sxname}_国家代码_${hostname}.txt
+    # 这里加了下划线方便区分，如果你不想要下划线可以去掉
+    gist_filename="${sxname}${country}_${hostname}.txt"
+    gist_filename=$(echo "$gist_filename" | sed 's/-/_/g')
+    
+    gist_data="{\"description\":\"Argosbx节点信息\",\"public\":false,\"files\":{\"${gist_filename}\":{\"content\":\"$gist_content\"}}}"
+    
+    if [ -n "$gh_gist_id" ]; then
+      # 更新现有 Gist
+      result=$(curl -s -X PATCH -H "Authorization: token $gh_token" -H "Content-Type: application/json" -d "$gist_data" "https://api.github.com/gists/$gh_gist_id" 2>/dev/null)
+    else
+      # 创建新 Gist
+      result=$(curl -s -X POST -H "Authorization: token $gh_token" -H "Content-Type: application/json" -d "$gist_data" "https://api.github.com/gists" 2>/dev/null)
+      gh_gist_id=$(echo "$result" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+      [ -n "$gh_gist_id" ] && echo "$gh_gist_id" > "$HOME/agsbx/gh_gist_id"
+    fi
+
+    if [ -n "$gh_gist_id" ]; then
+      # 3. 构造并显示 Raw 链接
+      # GitHub Gist 的 Raw 链接格式支持省略 commit ID 直接访问最新版
+      gist_raw_url="https://gist.github.com/zv201413/$gh_gist_id/raw/$gist_filename"
+      
+      echo "节点信息已推送到Gist Raw：$gist_raw_url"
+      echo "$gist_raw_url" >> "$HOME/agsbx/jh.txt"
+    else
+      echo "Gist推送失败，请检查GitHub Token是否正确"
+    fi
+  fi
+}
+
+# =============================================================================
+# SECTION 14: 脚本主入口 - 命令路由分发
+# 功能:
+#   - del: 完全卸载并清理
+#   - rep: 重置协议配置(保留内核)
+#   - list: 仅显示节点信息
+#   - upx: 更新Xray内核并重启
+#   - ups: 更新Sing-box内核并重启
+#   - res: 重启所有内核进程
+#   - (无参数): 首次安装或显示状态
+# 使用: ./argosbx.sh [del|rep|list|upx|ups|res]
+# =============================================================================
+if [ "$1" = "del" ]; then
+cleandel
+rm -rf sbx_update "$HOME/agsbx" "$HOME/agsb"
+echo "卸载完成"
+echo "欢迎继续：https://zv201413.github.io/argosbx-new" && sleep 2
+echo
+exit
+elif [ "$1" = "rep" ]; then
+cleandel
+rm -rf "$HOME/agsbx"/{sb.json,xr.json,sbargoym.log,sbargotoken.log,argo.log,argoport.log,cdnym,name}
+echo "Argosbx重置协议完成，开始更新相关协议变量……" && sleep 2
+echo
+elif [ "$1" = "list" ]; then
+cip
+exit
+elif [ "$1" = "upx" ]; then
+for P in /proc/[0-9]*; do [ -L "$P/exe" ] || continue; TARGET=$(readlink -f "$P/exe" 2>/dev/null) || continue; case "$TARGET" in *"/agsbx/x"*) kill "$(basename "$P")" 2>/dev/null ;; esac; done
+kill -15 $(pgrep -f 'agsbx/x' 2>/dev/null) >/dev/null 2>&1
+upxray && xrestart && echo "Xray内核更新完成" && sleep 2 && cip
+exit
+elif [ "$1" = "ups" ]; then
+for P in /proc/[0-9]*; do [ -L "$P/exe" ] || continue; TARGET=$(readlink -f "$P/exe" 2>/dev/null) || continue; case "$TARGET" in *"/agsbx/s"*) kill "$(basename "$P")" 2>/dev/null ;; esac; done
+kill -15 $(pgrep -f 'agsbx/s' 2>/dev/null) >/dev/null 2>&1
+upsingbox && sbrestart && echo "Sing-box内核更新完成" && sleep 2 && cip
+exit
+elif [ "$1" = "res" ]; then
+for P in /proc/[0-9]*; do
+[ -L "$P/exe" ] || continue
+TARGET=$(readlink -f "$P/exe" 2>/dev/null) || continue
+case "$TARGET" in
+*"/agsbx/s"*)
+kill "$(basename "$P")" 2>/dev/null
+sbrestart
+;;
+*"/agsbx/x"*)
+kill "$(basename "$P")" 2>/dev/null
+xrestart
+;;
+*"/agsbx/c"*)
+kill "$(basename "$P")" 2>/dev/null
+kill -15 $(pgrep -f 'agsbx/c' 2>/dev/null) >/dev/null 2>&1
+if pidof systemd >/dev/null 2>&1; then
+systemctl restart argo >/dev/null 2>&1
+elif command -v rc-service >/dev/null 2>&1; then
+rc-service argo restart >/dev/null 2>&1
+else
+if [ -e "$HOME/agsbx/sbargotoken.log" ]; then
+if ! pidof systemd >/dev/null 2>&1 && ! command -v rc-service >/dev/null 2>&1; then
+nohup $HOME/agsbx/cloudflared tunnel --no-autoupdate --edge-ip-version auto --protocol http2 run --token $(cat $HOME/agsbx/sbargotoken.log 2>/dev/null) >/dev/null 2>&1 &
+fi
+else
+nohup $HOME/agsbx/cloudflared tunnel --url http://localhost:$(cat $HOME/agsbx/argoport.log 2>/dev/null) --edge-ip-version auto --no-autoupdate --protocol http2 > $HOME/agsbx/argo.log 2>&1 &
+fi
+fi
+;;
+esac
+done
+sleep 5 && echo "重启完成" && sleep 3 && cip
+exit
+fi
+
+# =============================================================================
+# SECTION 15: 脚本主执行流程 - 首次安装逻辑
+# 功能:
+#   - 检测DNS配置,必要时添加IPv6 DNS
+#   - 判断WARP IP可用性,设置endpoint
+#   - 显示系统信息(CPU架构等)
+#   - 执行ins()进行完整安装流程
+#   - 执行cip()输出节点信息
+#   - 已安装时显示状态和快捷方式
+# 条件: 无agsbx进程运行时执行
+# =============================================================================
+if ! find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null | grep -Eq 'agsbx/(s|x)' && ! pgrep -f 'agsbx/(s|x)' >/dev/null 2>&1; then
+for P in /proc/[0-9]*; do if [ -L "$P/exe" ]; then TARGET=$(readlink -f "$P/exe" 2>/dev/null); if echo "$TARGET" | grep -qE '/agsbx/c|/agsbx/s|/agsbx/x'; then PID=$(basename "$P"); kill "$PID" 2>/dev/null && echo "Killed $PID ($TARGET)" || echo "Could not kill $PID ($TARGET)"; fi; fi; done
+kill -15 $(pgrep -f 'agsbx/s' 2>/dev/null) $(pgrep -f 'agsbx/c' 2>/dev/null) $(pgrep -f 'agsbx/x' 2>/dev/null) >/dev/null 2>&1
+if [ -z "$( (command -v curl >/dev/null 2>&1 && curl -s4m5 -k "$v46url" 2>/dev/null) || (command -v wget >/dev/null 2>&1 && timeout 3 wget -4 -qO- --tries=2 "$v46url" 2>/dev/null) )" ]; then
+echo -e "nameserver 2a00:1098:2b::1\nnameserver 2a00:1098:2c::1" > /etc/resolv.conf
+fi
+if [ -n "$( (command -v curl >/dev/null 2>&1 && curl -s6m5 -k "$v46url" 2>/dev/null) || (command -v wget >/dev/null 2>&1 && timeout 3 wget -6 -qO- --tries=2 "$v46url" 2>/dev/null) )" ]; then
+sendip="2606:4700:d0::a29f:c001"
+xendip="[2606:4700:d0::a29f:c001]"
+else
+sendip="162.159.192.1"
+xendip="162.159.192.1"
+fi
+echo "VPS系统：$op"
+echo "CPU架构：$cpu"
+echo "Argosbx脚本未安装，开始安装…………" && sleep 1
+if [ -n "$oap" ]; then
+setenforce 0 >/dev/null 2>&1
+iptables -P INPUT ACCEPT >/dev/null 2>&1
+iptables -P FORWARD ACCEPT >/dev/null 2>&1
+iptables -P OUTPUT ACCEPT >/dev/null 2>&1
+iptables -F >/dev/null 2>&1
+netfilter-persistent save >/dev/null 2>&1
+echo
+echo "iptables执行开放所有端口"
+fi
+ins
+cip
+if [ -n "$gh_token" ]; then
+  push_gist
+fi
+echo
+else
+echo "Argosbx脚本已安装"
+echo
+argosbxstatus
+echo
+exit
+fi
