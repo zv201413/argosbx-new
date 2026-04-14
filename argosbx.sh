@@ -1441,7 +1441,7 @@ echo "$vl_vx_cdn_link"
 echo
 fi
 fi
-if grep vless-ws 2>/dev/null || grep vless-ws-sb 2>/dev/null; then
+if grep vless-ws "$HOME/agsbx/xr.json" >/dev/null 2>&1 || grep vless-ws-sb "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
 echo "💣【 Vless-ws 】节点信息如下："
 port_vw=$(cat "$HOME/agsbx/port_vw")
 display_port_vw="${port_vw_ext:-${port_vw}}"
