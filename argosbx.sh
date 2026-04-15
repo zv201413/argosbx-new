@@ -65,7 +65,7 @@ export argoip=${argoip:-''}
 export gh_token=${gh_token:-''}
 export gh_gist_id=${gh_gist_id:-''}
 export nodeaddr=${nodeaddr:-''}
-export ippref=${ippref:-''}
+export wippref=${wippref:-''}
 v46url="https://icanhazip.com"
 agsbxurl="https://raw.githubusercontent.com/zv201413/argosbx-new/main-new/argosbx.sh"
 
@@ -1241,7 +1241,7 @@ mkdir -p "$HOME/bin"
 (command -v curl >/dev/null 2>&1 && curl -sL "$agsbxurl" -o "$SCRIPT_PATH") || (command -v wget >/dev/null 2>&1 && wget -qO "$SCRIPT_PATH" "$agsbxurl")
 chmod +x "$SCRIPT_PATH"
 if ! pidof systemd >/dev/null 2>&1 && ! command -v rc-service >/dev/null 2>&1; then
-echo "if ! find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null | grep -Eq 'agsbx/(s|x)' && ! pgrep -f 'agsbx/(s|x)' >/dev/null 2>&1; then echo '检测到系统可能中断过，或者变量格式错误？建议在SSH对话框输入 reboot 重启下服务器。现在自动执行Argosbx脚本的节点恢复操作，请稍等……'; sleep 6; export cdnym=\"${cdnym}\" name=\"${name}\" ippz=\"${ippz}\" ippref=\"${ippref}\" argo=\"${argo}\" uuid=\"${uuid}\" warp=\"${warp}\" xhpt=\"${port_xh}\" vxpt=\"${port_vx}\" sspt=\"${port_ss}\" sopt=\"${port_so}\" anpt=\"${port_an}\" arpt=\"${port_ar}\" vlpt=\"${port_vl_re}\" vwpt=\"${port_vw}\" vmpt=\"${port_vm_ws}\" hypt=\"${port_hy2}\" tupt=\"${port_tu}\" reym=\"${ym_vl_re}\" agn=\"${ARGO_DOMAIN}\" agk=\"${ARGO_AUTH}\" argoip=\"${argoip}\" gh_token=\"${gh_token}\" gh_gist_id=\"${gh_gist_id}\" nodeaddr=\"${nodeaddr}\"; bash "$HOME/bin/agsbx"; fi" >> ~/.bashrc
+echo "if ! find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null | grep -Eq 'agsbx/(s|x)' && ! pgrep -f 'agsbx/(s|x)' >/dev/null 2>&1; then echo '检测到系统可能中断过，或者变量格式错误？建议在SSH对话框输入 reboot 重启下服务器。现在自动执行Argosbx脚本的节点恢复操作，请稍等……'; sleep 6; export cdnym=\"${cdnym}\" name=\"${name}\" ippz=\"${ippz}\" wippref=\"${wippref}\" argo=\"${argo}\" uuid=\"${uuid}\" warp=\"${warp}\" xhpt=\"${port_xh}\" vxpt=\"${port_vx}\" sspt=\"${port_ss}\" sopt=\"${port_so}\" anpt=\"${port_an}\" arpt=\"${port_ar}\" vlpt=\"${port_vl_re}\" vwpt=\"${port_vw}\" vmpt=\"${port_vm_ws}\" hypt=\"${port_hy2}\" tupt=\"${port_tu}\" reym=\"${ym_vl_re}\" agn=\"${ARGO_DOMAIN}\" agk=\"${ARGO_AUTH}\" argoip=\"${argoip}\" gh_token=\"${gh_token}\" gh_gist_id=\"${gh_gist_id}\" nodeaddr=\"${nodeaddr}\"; bash "$HOME/bin/agsbx"; fi" >> ~/.bashrc
 fi
 sed -i '/export PATH="\$HOME\/bin:\$PATH"/d' ~/.bashrc
 echo 'export PATH="$HOME/bin:$PATH"' >> "$HOME/.bashrc"
@@ -1715,8 +1715,13 @@ push_gist(){
     else
       echo "Gist推送失败，请检查GitHub Token是否正确"
     fi
-  fi
+fi
 }
+
+# wippref 人工干预覆盖逻辑
+[ "$wippref" = "s4" ] && sbyx="prefer_ipv4"
+[ "$wippref" = "x4" ] && xryx="ForceIPv4"
+[ "$wippref" = "sx4" ] && { sbyx="prefer_ipv4"; xryx="ForceIPv4"; }
 
 # =============================================================================
 # SECTION 14: 脚本主入口 - 命令路由分发

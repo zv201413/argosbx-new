@@ -487,11 +487,12 @@
             <option value="6">强制 IPv6 出站</option>
           </select>
         </div>
-        <div class="row"><label>优先 IPv4/IPv6 出站 <span class="pill">ippref</span></label>
-          <select id="ippref">
-            <option value="">auto (默认)</option>
-            <option value="prefer_ipv6">ipv6 (优先)</option>
-            <option value="prefer_ipv4">ipv4 (优先)</option>
+        <div class="row"><label>Warp IPv4/IPv6 出站 <span class="pill">wippref</span></label>
+          <select id="wippref">
+            <option value="">默认优先IPv6</option>
+            <option value="s4">singbox:ipv4出站</option>
+            <option value="x4">xray:ipv4出站</option>
+            <option value="sx4">双核ipv4出站</option>
           </select>
         </div>
         <div class="row">
@@ -760,7 +761,40 @@ document.getElementById('uuid').value = '';
   }
   
   nameInput.addEventListener('input', updateNamePreview);
-  updateNamePreview(); // 初始化预览
+  updateNamePreview();
+
+  // wippref 联动逻辑
+  const warpSelect = document.getElementById('warp');
+  const wipprefSelect = document.getElementById('wippref');
+
+  function updateWipprefOptions() {
+    const warpVal = warpSelect.value;
+    const opts = wipprefSelect.options;
+
+    wipprefSelect.value = "";
+
+    if (!warpVal) {
+      wipprefSelect.parentElement.parentElement.style.display = 'none';
+      return;
+    }
+
+    wipprefSelect.parentElement.parentElement.style.display = '';
+
+    if (warpVal.includes('sx')) {
+      for (let i = 1; i < opts.length; i++) opts[i].style.display = '';
+    } else if (warpVal.includes('s')) {
+      opts[1].style.display = '';
+      opts[2].style.display = 'none';
+      opts[3].style.display = 'none';
+    } else if (warpVal.includes('x')) {
+      opts[1].style.display = 'none';
+      opts[2].style.display = '';
+      opts[3].style.display = 'none';
+    }
+  }
+
+  warpSelect.addEventListener('change', updateWipprefOptions);
+  updateWipprefOptions(); // 初始化预览
 
   commandTypeRadios.forEach(radio => {
     radio.addEventListener('change', render);
