@@ -568,7 +568,7 @@
   const CURL = 'bash <(curl -Ls https://raw.githubusercontent.com/zv201413/argosbx-new/main-new/argosbx.sh)';
   const WGET = 'bash <(wget -qO- https://raw.githubusercontent.com/zv201413/argosbx-new/main-new/argosbx.sh)';
 const protoKeys = ['sopt','vmpt','vlpt','xhpt','vxpt','vwpt','arpt','anpt','hypt','tupt','sspt'];
-const optIds = ['warp','ippz','ippref','uuid','reym','cdnym','name', 'oap', 'argoip', 'nodeaddr', 'gh_token', 'gh_gist_id'];
+const optIds = ['warp','ippz','wippref','uuid','reym','cdnym','name', 'oap', 'argoip', 'nodeaddr', 'gh_token', 'gh_gist_id'];
 
   const argoSelect = document.getElementById('argoSelect');
   const agn = document.getElementById('agn');
@@ -770,15 +770,16 @@ document.getElementById('uuid').value = '';
   function updateWipprefOptions() {
     const warpVal = warpSelect.value;
     const opts = wipprefSelect.options;
+    const rowDiv = wipprefSelect.parentElement;
 
     wipprefSelect.value = "";
 
     if (!warpVal) {
-      wipprefSelect.parentElement.parentElement.style.display = 'none';
+      rowDiv.style.display = 'none';
       return;
     }
 
-    wipprefSelect.parentElement.parentElement.style.display = '';
+    rowDiv.style.display = '';
 
     if (warpVal.includes('sx')) {
       for (let i = 1; i < opts.length; i++) opts[i].style.display = '';
