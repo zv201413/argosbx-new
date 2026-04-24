@@ -480,11 +480,16 @@
           </select>
         </div>
         
-        <div class="row"><label>非Warp IPv4/IPv6 出站 <span class="pill">ippz</span></label>
+        <div class="row"><label>非Warp IPv4/IPv6 出站 <span class="pill">ippref</span></label>
+          <select id="ippref">
+            <option value="">默认IPv4优先出站</option>
+            <option value="prefer_ipv6">IPv6优先出站</option>
+          </select>
+        </div>
+        <div class="row"><label>Address: IPv4/IPv6 <span class="pill">ippz</span></label>
           <select id="ippz">
-            <option value="">默认 自动(IPv4优先)</option>
-            <option value="4">强制 IPv4 出站</option>
-            <option value="6">强制 IPv6 出站</option>
+            <option value="">默认IPv4优先</option>
+            <option value="6">IPv6优先</option>
           </select>
         </div>
         <div class="row"><label>Warp IPv4/IPv6 出站 <span class="pill">wippref</span></label>
@@ -568,7 +573,7 @@
   const CURL = 'bash <(curl -Ls https://raw.githubusercontent.com/zv201413/argosbx-new/main-new/argosbx.sh)';
   const WGET = 'bash <(wget -qO- https://raw.githubusercontent.com/zv201413/argosbx-new/main-new/argosbx.sh)';
 const protoKeys = ['sopt','vmpt','vlpt','xhpt','vxpt','vwpt','arpt','anpt','hypt','tupt','sspt'];
-const optIds = ['warp','ippz','wippref','uuid','reym','cdnym','name', 'oap', 'argoip', 'nodeaddr', 'gh_token', 'gh_gist_id'];
+const optIds = ['warp','ippz','ippref','wippref','uuid','reym','cdnym', 'name', 'oap', 'argoip', 'nodeaddr', 'gh_token', 'gh_gist_id'];
 
   const argoSelect = document.getElementById('argoSelect');
   const agn = document.getElementById('agn');
@@ -582,6 +587,7 @@ const optIds = ['warp','ippz','wippref','uuid','reym','cdnym','name', 'oap', 'ar
   const checkboxes = document.querySelectorAll('input[type="checkbox"]');
   const textInputs = document.querySelectorAll('input[type="text"]');
   const ippzSelect = document.getElementById('ippz');
+  const ipprefSelect = document.getElementById('ippref');
   const oapSelect = document.getElementById('oap');
   const generateUuidBtn = document.getElementById('generateUuidBtn');
   const uuidInput = document.getElementById('uuid');
@@ -623,6 +629,7 @@ const optIds = ['warp','ippz','wippref','uuid','reym','cdnym','name', 'oap', 'ar
     document.getElementById('warp').value = '';
     if (!preserveIppz) {
         ippzSelect.value = '';
+        ipprefSelect.value = '';
     }
     oapSelect.value = '';
 document.getElementById('uuid').value = '';
@@ -840,7 +847,7 @@ document.getElementById('uuid').value = '';
     const keys = Object.keys(m);
     const ordered = [];
     protoKeys.forEach(k => { if (keys.includes(k)) ordered.push(k); });
-    ['warp', 'uuid', 'reym', 'cdnym', 'name', 'ippz', 'ippref', 'argoip', 'nodeaddr', 'gh_token', 'gh_gist_id'].forEach(k => { if (keys.includes(k)) ordered.push(k); });
+    ['warp', 'uuid', 'reym', 'cdnym', 'name', 'ippz', 'ippref', 'wippref', 'argoip', 'nodeaddr', 'gh_token', 'gh_gist_id'].forEach(k => { if (keys.includes(k)) ordered.push(k); });
     if (keys.includes('argo')) ordered.push('argo');
     if (keys.includes('agn')) ordered.push('agn');
     if (keys.includes('agk')) ordered.push('agk');

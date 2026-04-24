@@ -58,6 +58,7 @@ export argo=${argo:-''}
 export ARGO_DOMAIN=${agn:-''}
 export ARGO_AUTH=${agk:-''}
 export ippz=${ippz:-''}
+export ippref=${ippref:-''}
 export warp=${warp:-''}
 export name=${name:-''}
 export oap=${oap:-''}
@@ -214,6 +215,19 @@ case "$warp" in *x4*) xryx='ForceIPv4' ;; *x*) xryx='ForceIPv6v4' ;; *) xryx='Fo
 elif [ "$v4_ok" != true ] && [ "$v6_ok" = true ]; then
 case "$warp" in *s6*) sbyx='ipv6_only' ;; *) sbyx='prefer_ipv4' ;; esac
 case "$warp" in *x6*) xryx='ForceIPv6' ;; *x*) xryx='ForceIPv4v6' ;; *) xryx='ForceIPv6v4' ;; esac
+fi
+
+if [ -n "$ippref" ]; then
+  case "$ippref" in
+    prefer_ipv6)
+      sbyx='prefer_ipv6'
+      xryx='ForceIPv6v4'
+      ;;
+    prefer_ipv4)
+      sbyx='prefer_ipv4'
+      xryx='ForceIPv4v6'
+      ;;
+  esac
 fi
 }
 
@@ -1241,7 +1255,7 @@ mkdir -p "$HOME/bin"
 (command -v curl >/dev/null 2>&1 && curl -sL "$agsbxurl" -o "$SCRIPT_PATH") || (command -v wget >/dev/null 2>&1 && wget -qO "$SCRIPT_PATH" "$agsbxurl")
 chmod +x "$SCRIPT_PATH"
 if ! pidof systemd >/dev/null 2>&1 && ! command -v rc-service >/dev/null 2>&1; then
-echo "if ! find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null | grep -Eq 'agsbx/(s|x)' && ! pgrep -f 'agsbx/(s|x)' >/dev/null 2>&1; then echo '检测到系统可能中断过，或者变量格式错误？建议在SSH对话框输入 reboot 重启下服务器。现在自动执行Argosbx脚本的节点恢复操作，请稍等……'; sleep 6; export cdnym=\"${cdnym}\" name=\"${name}\" ippz=\"${ippz}\" wippref=\"${wippref}\" argo=\"${argo}\" uuid=\"${uuid}\" warp=\"${warp}\" xhpt=\"${port_xh}\" vxpt=\"${port_vx}\" sspt=\"${port_ss}\" sopt=\"${port_so}\" anpt=\"${port_an}\" arpt=\"${port_ar}\" vlpt=\"${port_vl_re}\" vwpt=\"${port_vw}\" vmpt=\"${port_vm_ws}\" hypt=\"${port_hy2}\" tupt=\"${port_tu}\" reym=\"${ym_vl_re}\" agn=\"${ARGO_DOMAIN}\" agk=\"${ARGO_AUTH}\" argoip=\"${argoip}\" gh_token=\"${gh_token}\" gh_gist_id=\"${gh_gist_id}\" nodeaddr=\"${nodeaddr}\"; bash "$HOME/bin/agsbx"; fi" >> ~/.bashrc
+echo "if ! find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null | grep -Eq 'agsbx/(s|x)' && ! pgrep -f 'agsbx/(s|x)' >/dev/null 2>&1; then echo '检测到系统可能中断过，或者变量格式错误？建议在SSH对话框输入 reboot 重启下服务器。现在自动执行Argosbx脚本的节点恢复操作，请稍等……'; sleep 6; export cdnym=\"${cdnym}\" name=\"${name}\" ippz=\"${ippz}\" ippref=\"${ippref}\" wippref=\"${wippref}\" argo=\"${argo}\" uuid=\"${uuid}\" warp=\"${warp}\" xhpt=\"${port_xh}\" vxpt=\"${port_vx}\" sspt=\"${port_ss}\" sopt=\"${port_so}\" anpt=\"${port_an}\" arpt=\"${port_ar}\" vlpt=\"${port_vl_re}\" vwpt=\"${port_vw}\" vmpt=\"${port_vm_ws}\" hypt=\"${port_hy2}\" tupt=\"${port_tu}\" reym=\"${ym_vl_re}\" agn=\"${ARGO_DOMAIN}\" agk=\"${ARGO_AUTH}\" argoip=\"${argoip}\" gh_token=\"${gh_token}\" gh_gist_id=\"${gh_gist_id}\" nodeaddr=\"${nodeaddr}\"; bash "$HOME/bin/agsbx"; fi" >> ~/.bashrc
 fi
 sed -i '/export PATH="\$HOME\/bin:\$PATH"/d' ~/.bashrc
 echo 'export PATH="$HOME/bin:$PATH"' >> "$HOME/.bashrc"
@@ -1324,6 +1338,16 @@ server_ip="$serip"
 echo "$server_ip" > "$HOME/agsbx/server_ip.log"
 fi
 }
+ipbest6(){
+serip=$( (command -v curl >/dev/null 2>&1 && (curl -s6m5 -k "$v46url" 2>/dev/null || curl -s4m5 -k "$v46url" 2>/dev/null) ) || (command -v wget >/dev/null 2>&1 && (timeout 3 wget -6 -qO- --tries=2 "$v46url" 2>/dev/null || timeout 3 wget -4 -qO- --tries=2 "$v46url" 2>/dev/null) ) )
+if echo "$serip" | grep -q ':'; then
+server_ip="[$serip]"
+echo "$server_ip" > "$HOME/agsbx/server_ip.log"
+else
+server_ip="$serip"
+echo "$server_ip" > "$HOME/agsbx/server_ip.log"
+fi
+}
 ipchange(){
 v4v6
 if [ -z "$v4" ]; then
@@ -1363,7 +1387,7 @@ echo "$server_ip" > "$HOME/agsbx/server_ip.log"
 fi
 elif [ "$ippz" = "6" ]; then
 if [ -z "$v6" ]; then
-ipbest
+ipbest6
 else
 server_ip="[$v6]"
 echo "$server_ip" > "$HOME/agsbx/server_ip.log"
