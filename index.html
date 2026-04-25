@@ -821,6 +821,13 @@ document.getElementById('uuid').value = '';
         m[k + '_ext'] = ev;
       }
     });
+    const encKeys = ['vlpt', 'xhpt', 'vxpt', 'vwpt'];
+    encKeys.forEach(k => {
+      const encCb = document.querySelector(`[data-enc="${k}"]`);
+      if (encCb && encCb.checked) {
+        m[k + '_enc'] = 'y';
+      }
+    });
     optIds.forEach(id => {
       const el = document.getElementById(id);
       const v = (el.value || '').trim();
@@ -847,6 +854,7 @@ document.getElementById('uuid').value = '';
     const keys = Object.keys(m);
     const ordered = [];
     protoKeys.forEach(k => { if (keys.includes(k)) ordered.push(k); });
+    ['vlpt_enc', 'xhpt_enc', 'vxpt_enc', 'vwpt_enc'].forEach(k => { if (keys.includes(k)) ordered.push(k); });
     ['warp', 'uuid', 'reym', 'cdnym', 'name', 'ippz', 'ippref', 'wippref', 'argoip', 'nodeaddr', 'gh_token', 'gh_gist_id'].forEach(k => { if (keys.includes(k)) ordered.push(k); });
     if (keys.includes('argo')) ordered.push('argo');
     if (keys.includes('agn')) ordered.push('agn');
