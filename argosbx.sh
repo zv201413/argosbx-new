@@ -320,7 +320,7 @@ fi
 private_key_x=$(cat "$HOME/agsbx/xrk/private_key")
 public_key_x=$(cat "$HOME/agsbx/xrk/public_key")
 short_id_x=$(cat "$HOME/agsbx/xrk/short_id")
-if [ -n "$port_xh_enc" ] || [ -n "$port_vx_enc" ] || [ -n "$port_vw_enc" ]; then
+if [ -n "$port_vl_re_enc" ] || [ -n "$port_xh_enc" ] || [ -n "$port_vx_enc" ] || [ -n "$port_vw_enc" ]; then
 if [ ! -e "$HOME/agsbx/xrk/dekey" ]; then
 vlkey=$("$HOME/agsbx/xray" vlessenc)
 dekey=$(echo "$vlkey" | grep '"decryption":' | sed -n '2p' | cut -d' ' -f2- | tr -d '"')
@@ -826,6 +826,9 @@ if [ -n "$cdnym" ]; then
 echo "$cdnym" > "$HOME/agsbx/cdnym"
 echo "80系CDN或者回源CDN的host域名 (确保IP已解析在CF域名)：$cdnym"
 fi
+if [ -n "$port_vw_enc" ] && [ ! -e "$HOME/agsbx/xr.json" ]; then
+installxray
+fi
 if [ -e "$HOME/agsbx/xr.json" ]; then
 if [ -n "$port_vw_enc" ]; then
 dec_vw="$dekey"
@@ -1202,6 +1205,9 @@ hyp="hyptargo"; tup="tuptargo"; anp="anptargo"; arp="arptargo"; ssp="ssptargo"; 
 elif [ "$xhp" != yes ] && [ "$vlp" != yes ] && [ "$vxp" != yes ]; then
 # 情况B: 纯SB模式 (不启用任何Xray协议，vwp跟随Sing-box)
 installsb
+if [ -n "$port_vw_enc" ]; then
+installxray
+fi
 xrsbvm
 xrsbso
 warpsx
