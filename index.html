@@ -237,6 +237,15 @@
     .switch.on::after {
       left: auto;
       right: 3px;
+.enc-label {
+      margin-left: 8px;
+      white-space: nowrap;
+    }
+    .enc-label input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      margin: 0;
+    }
     }
     .pill {
       display: inline-block;
@@ -246,7 +255,7 @@
       border-radius: 999px;
       color: var(--sub);
       margin-left: 6px;
-      transition: border-color 0.3s, color 0.3s;
+      transition: border-color 0.3s, color: 0.3s;
     }
     .actions {
       display: flex;
@@ -423,9 +432,9 @@
         <div class="protocol-group separator">
           <h3>Xray可选协议：</h3>
           <div class="protocol-grid">
-            <label><input type="checkbox" data-proto="vlpt"> Vless-tcp-reality-vision <span class="pill">vlpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="vlpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="vlpt"></div>
-            <label><input type="checkbox" data-proto="xhpt"> Vless-xhttp-reality <span class="pill">xhpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="xhpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="xhpt"></div>
-            <label><input type="checkbox" data-proto="vxpt"> Vless-xhttp <span class="pill">vxpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="vxpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="vxpt"></div>
+            <label><input type="checkbox" data-proto="vlpt"> Vless-tcp-reality-vision <span class="pill">vlpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="vlpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="vlpt"></div><label class="enc-label"><input type="checkbox" data-enc="vlpt"> <span class="pill">enc</span></label>
+            <label><input type="checkbox" data-proto="xhpt"> Vless-xhttp-reality <span class="pill">xhpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="xhpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="xhpt"></div><label class="enc-label"><input type="checkbox" data-enc="xhpt"> <span class="pill">enc</span></label>
+            <label><input type="checkbox" data-proto="vxpt"> Vless-xhttp <span class="pill">vxpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="vxpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="vxpt"></div><label class="enc-label"><input type="checkbox" data-enc="vxpt"> <span class="pill">enc</span></label>
           </div>
         </div>
         <div class="protocol-group separator">
@@ -441,7 +450,7 @@
         <div class="protocol-group separator">
           <h3>Xray/Singbox自动分配协议：</h3>
           <div class="protocol-grid">
-            <label><input type="checkbox" data-proto="vwpt"> Vless-ws <span class="pill">vwpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="vwpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="vwpt"></div>
+            <label><input type="checkbox" data-proto="vwpt"> Vless-ws <span class="pill">vwpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="vwpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="vwpt"></div><label class="enc-label"><input type="checkbox" data-enc="vwpt"> <span class="pill">enc</span></label>
             <label><input type="checkbox" data-proto="vmpt"> Vmess-ws <span class="pill">vmpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="vmpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="vmpt"></div>
             <label><input type="checkbox" data-proto="sopt"> Socks5 <span class="pill">sopt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="sopt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="sopt"></div>
           </div>
@@ -740,6 +749,10 @@ document.getElementById('uuid').value = '';
         if (extpt) {
           extpt.value = '';
         }
+        const encCb = document.querySelector(`[data-enc="${key}"]`);
+        if (encCb) {
+          encCb.checked = false;
+        }
       }
 
       if (ck.getAttribute('data-proto') === 'vmpt' || ck.getAttribute('data-proto') === 'vxpt' || ck.getAttribute('data-proto') === 'vwpt') {
@@ -747,6 +760,10 @@ document.getElementById('uuid').value = '';
       }
       render();
     });
+  });
+
+  document.querySelectorAll('[data-enc]').forEach(encCb => {
+    encCb.addEventListener('change', render);
   });
 
   generateUuidBtn.addEventListener('click', () => {
@@ -810,6 +827,7 @@ document.getElementById('uuid').value = '';
 
   function collectVars(){
     const m = {};
+    const encKeys = ['vlpt', 'xhpt', 'vxpt', 'vwpt'];
     protoKeys.forEach(k => {
       const ck = document.querySelector(`[data-proto="${k}"]`);
       const pt = document.querySelector(`[data-port="${k}"]`);
@@ -819,6 +837,12 @@ document.getElementById('uuid').value = '';
         const ev = (extpt.value || '').trim();
         m[k] = v;
         m[k + '_ext'] = ev;
+        if (encKeys.includes(k)) {
+          const encCb = document.querySelector(`[data-enc="${k}"]`);
+          if (encCb && encCb.checked) {
+            m[k + '_enc'] = 'y';
+          }
+        }
       }
     });
     optIds.forEach(id => {
@@ -852,11 +876,12 @@ document.getElementById('uuid').value = '';
     if (keys.includes('agn')) ordered.push('agn');
     if (keys.includes('agk')) ordered.push('agk');
     if (keys.includes('oap')) ordered.push('oap');
+    protoKeys.forEach(k => { if (keys.includes(k + '_enc')) ordered.push(k + '_enc'); });
     keys.forEach(k => { if (!ordered.includes(k)) ordered.push(k); });
 
     return ordered.map(k => {
       const val = m[k];
-      if (val === '') return `${k}=""`;
+      if (val === '' || val === undefined) return `${k}=""`;
       if (/[^\w\-\.:/]/.test(val)) {
         return `${k}="${val.replace(/"/g, '\\"')}"`;
       }

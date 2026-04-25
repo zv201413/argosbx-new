@@ -32,6 +32,10 @@ fi
 export uuid=${uuid:-''}
 export port_vl_re=${vlpt:-''}
 export port_vl_re_ext=${vlpt_ext:-''}
+export port_vl_re_enc=${vlpt_enc:-''}
+export port_xh_enc=${xhpt_enc:-''}
+export port_vx_enc=${vxpt_enc:-''}
+export port_vw_enc=${vwpt_enc:-''}
 export port_vm_ws=${vmpt:-''}
 export port_vm_ws_ext=${vmpt_ext:-''}
 export port_vw=${vwpt:-''}
@@ -59,6 +63,7 @@ export ARGO_DOMAIN=${agn:-''}
 export ARGO_AUTH=${agk:-''}
 export ippz=${ippz:-''}
 export ippref=${ippref:-''}
+export enc=${enc:-''}
 export warp=${warp:-''}
 export name=${name:-''}
 export oap=${oap:-''}
@@ -311,6 +316,17 @@ fi
 private_key_x=$(cat "$HOME/agsbx/xrk/private_key")
 public_key_x=$(cat "$HOME/agsbx/xrk/public_key")
 short_id_x=$(cat "$HOME/agsbx/xrk/short_id")
+if [ -n "$port_xh_enc" ] || [ -n "$port_vx_enc" ] || [ -n "$port_vw_enc" ]; then
+if [ ! -e "$HOME/agsbx/xrk/dekey" ]; then
+vlkey=$("$HOME/agsbx/xray" vlessenc)
+dekey=$(echo "$vlkey" | grep '"decryption":' | sed -n '2p' | cut -d' ' -f2- | tr -d '"')
+enkey=$(echo "$vlkey" | grep '"encryption":' | sed -n '2p' | cut -d' ' -f2- | tr -d '"')
+echo "$dekey" > "$HOME/agsbx/xrk/dekey"
+echo "$enkey" > "$HOME/agsbx/xrk/enkey"
+fi
+dekey=$(cat "$HOME/agsbx/xrk/dekey")
+enkey=$(cat "$HOME/agsbx/xrk/enkey")
+fi
 fi
 
 if [ -n "$xhp" ]; then
@@ -323,6 +339,11 @@ echo "$port_xh" > "$HOME/agsbx/port_xh"
 fi
 port_xh=$(cat "$HOME/agsbx/port_xh")
 echo "Vless-xhttp-reality端口：$port_xh"
+if [ -n "$port_xh_enc" ]; then
+dec_xh="$dekey"
+else
+dec_xh="none"
+fi
 cat >> "$HOME/agsbx/xr.json" <<EOF
     {
       "tag":"xhttp-reality",
@@ -336,7 +357,7 @@ cat >> "$HOME/agsbx/xr.json" <<EOF
             "flow": "xtls-rprx-vision"
           }
         ],
-        "decryption": "none"
+        "decryption": "${dec_xh}"
       },
       "streamSettings": {
         "network": "xhttp",
@@ -380,6 +401,11 @@ if [ -n "$cdnym" ]; then
 echo "$cdnym" > "$HOME/agsbx/cdnym"
 echo "80系CDN或者回源CDN的host域名 (确保IP已解析在CF域名)：$cdnym"
 fi
+if [ -n "$port_vx_enc" ]; then
+dec_vx="$dekey"
+else
+dec_vx="none"
+fi
 cat >> "$HOME/agsbx/xr.json" <<EOF
     {
       "tag":"vless-xhttp",
@@ -393,7 +419,7 @@ cat >> "$HOME/agsbx/xr.json" <<EOF
             "flow": "xtls-rprx-vision"
           }
         ],
-        "decryption": "none"
+        "decryption": "${dec_vx}"
       },
       "streamSettings": {
         "network": "xhttp",
@@ -423,6 +449,11 @@ echo "$port_vl_re" > "$HOME/agsbx/port_vl_re"
 fi
 port_vl_re=$(cat "$HOME/agsbx/port_vl_re")
 echo "Vless-tcp-reality-v端口：$port_vl_re"
+if [ -n "$port_vl_re_enc" ]; then
+dec_vl="$dekey"
+else
+dec_vl="none"
+fi
 cat >> "$HOME/agsbx/xr.json" <<EOF
         {
             "tag":"reality-vision",
@@ -436,7 +467,7 @@ cat >> "$HOME/agsbx/xr.json" <<EOF
                         "flow": "xtls-rprx-vision"
                     }
                 ],
-                "decryption": "none"
+                "decryption": "${dec_vl}"
             },
             "streamSettings": {
                 "network": "tcp",
@@ -792,7 +823,12 @@ echo "$cdnym" > "$HOME/agsbx/cdnym"
 echo "80系CDN或者回源CDN的host域名 (确保IP已解析在CF域名)：$cdnym"
 fi
 if [ -e "$HOME/agsbx/xr.json" ]; then
-cat >> "$HOME/agsbx/xr.json" <<EOF
+if [ -n "$port_vw_enc" ]; then
+dec_vw="$dekey"
+else
+dec_vw="none"
+fi
+cat >> "$HOME/agsbx/xr.json" <<'EOF'
         {
             "tag": "vless-ws-xr",
             "listen": "::",
@@ -804,7 +840,7 @@ cat >> "$HOME/agsbx/xr.json" <<EOF
                         "id": "${uuid}"
                     }
                 ],
-                "decryption": "none"
+                "decryption": "${dec_vw}"
             },
             "streamSettings": {
                 "network": "ws",
@@ -1255,7 +1291,7 @@ mkdir -p "$HOME/bin"
 (command -v curl >/dev/null 2>&1 && curl -sL "$agsbxurl" -o "$SCRIPT_PATH") || (command -v wget >/dev/null 2>&1 && wget -qO "$SCRIPT_PATH" "$agsbxurl")
 chmod +x "$SCRIPT_PATH"
 if ! pidof systemd >/dev/null 2>&1 && ! command -v rc-service >/dev/null 2>&1; then
-echo "if ! find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null | grep -Eq 'agsbx/(s|x)' && ! pgrep -f 'agsbx/(s|x)' >/dev/null 2>&1; then echo '检测到系统可能中断过，或者变量格式错误？建议在SSH对话框输入 reboot 重启下服务器。现在自动执行Argosbx脚本的节点恢复操作，请稍等……'; sleep 6; export cdnym=\"${cdnym}\" name=\"${name}\" ippz=\"${ippz}\" ippref=\"${ippref}\" wippref=\"${wippref}\" argo=\"${argo}\" uuid=\"${uuid}\" warp=\"${warp}\" xhpt=\"${port_xh}\" vxpt=\"${port_vx}\" sspt=\"${port_ss}\" sopt=\"${port_so}\" anpt=\"${port_an}\" arpt=\"${port_ar}\" vlpt=\"${port_vl_re}\" vwpt=\"${port_vw}\" vmpt=\"${port_vm_ws}\" hypt=\"${port_hy2}\" tupt=\"${port_tu}\" reym=\"${ym_vl_re}\" agn=\"${ARGO_DOMAIN}\" agk=\"${ARGO_AUTH}\" argoip=\"${argoip}\" gh_token=\"${gh_token}\" gh_gist_id=\"${gh_gist_id}\" nodeaddr=\"${nodeaddr}\"; bash "$HOME/bin/agsbx"; fi" >> ~/.bashrc
+echo "if ! find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null | grep -Eq 'agsbx/(s|x)' && ! pgrep -f 'agsbx/(s|x)' >/dev/null 2>&1; then echo '检测到系统可能中断过，或者变量格式错误？建议在SSH对话框输入 reboot 重启下服务器。现在自动执行Argosbx脚本的节点恢复操作，请稍等……'; sleep 6; export cdnym=\"${cdnym}\" name=\"${name}\" ippz=\"${ippz}\" ippref=\"${ippref}\" wippref=\"${wippref}\" argo=\"${argo}\" uuid=\"${uuid}\" warp=\"${warp}\" xhpt=\"${port_xh}\" vxpt=\"${port_vx}\" sspt=\"${port_ss}\" sopt=\"${port_so}\" anpt=\"${port_an}\" arpt=\"${port_ar}\" vlpt=\"${port_vl_re}\" vwpt=\"${port_vw}\" vmpt=\"${port_vm_ws}\" hypt=\"${port_hy2}\" tupt=\"${port_tu}\" reym=\"${ym_vl_re}\" agn=\"${ARGO_DOMAIN}\" agk=\"${ARGO_AUTH}\" argoip=\"${argoip}\" gh_token=\"${gh_token}\" gh_gist_id=\"${gh_gist_id}\" nodeaddr=\"${nodeaddr}\" vlpt_enc=\"${vlpt_enc}\" xhpt_enc=\"${xhpt_enc}\" vxpt_enc=\"${vxpt_enc}\" vwpt_enc=\"${vwpt_enc}\"; bash "$HOME/bin/agsbx"; fi" >> ~/.bashrc
 fi
 sed -i '/export PATH="\$HOME\/bin:\$PATH"/d' ~/.bashrc
 echo 'export PATH="$HOME/bin:$PATH"' >> "$HOME/.bashrc"
@@ -1443,7 +1479,12 @@ if grep xhttp-reality "$HOME/agsbx/xr.json" >/dev/null 2>&1; then
 echo "💣【 Vless-xhttp-reality 】节点信息如下："
 port_xh=$(cat "$HOME/agsbx/port_xh")
 display_port_xh="${port_xh_ext:-${port_xh}}"
-vl_xh_link="vless://$uuid@$server_ip:$display_port_xh?encryption=none&flow=xtls-rprx-vision&security=reality&sni=$ym_vl_re&fp=chrome&pbk=$public_key_x&sid=$short_id_x&type=xhttp&path=/xhttp&mode=auto#${sxname}${country}_vl_xhttp_reality-$hostname"
+if [ -n "$port_xh_enc" ]; then
+en_xh="$enkey"
+else
+en_xh="none"
+fi
+vl_xh_link="vless://$uuid@$server_ip:$display_port_xh?encryption=$en_xh&flow=xtls-rprx-vision&security=reality&sni=$ym_vl_re&fp=chrome&pbk=$public_key_x&sid=$short_id_x&type=xhttp&path=/xhttp&mode=auto#${sxname}${country}_vl_xhttp_reality-$hostname"
 echo "$vl_xh_link" >> "$HOME/agsbx/jh.txt"
 echo "$vl_xh_link"
 echo
@@ -1452,14 +1493,19 @@ if grep vless-xhttp "$HOME/agsbx/xr.json" >/dev/null 2>&1; then
 echo "💣【 Vless-xhttp 】节点信息如下："
 port_vx=$(cat "$HOME/agsbx/port_vx")
 display_port_vx="${port_vx_ext:-${port_vx}}"
-vl_vx_link="vless://$uuid@$server_ip:$display_port_vx?encryption=none&type=xhttp&path=/xhttp&mode=auto#${sxname}${country}_vl_xhttp_$hostname"
+if [ -n "$port_vx_enc" ]; then
+en_vx="$enkey"
+else
+en_vx="none"
+fi
+vl_vx_link="vless://$uuid@$server_ip:$display_port_vx?encryption=$en_vx&type=xhttp&path=/xhttp&mode=auto#${sxname}${country}_vl_xhttp_$hostname"
 echo "$vl_vx_link" >> "$HOME/agsbx/jh.txt"
 echo "$vl_vx_link"
 echo
 if [ -f "$HOME/agsbx/cdnym" ]; then
 echo "💣【 Vless-xhttp-cdn 】节点信息如下："
 echo "注：可自行更换优选IP域名，如是回源端口需手动修改443或者80系端口"
-vl_vx_cdn_link="vless://$uuid@$preferred_ip:$display_port_vx?encryption=none&type=xhttp&host=$xvvmcdnym&path=/xhttp&mode=auto#${sxname}${country}_vl_xhttp_cdn-$hostname"
+vl_vx_cdn_link="vless://$uuid@$preferred_ip:$display_port_vx?encryption=$en_vx&type=xhttp&host=$xvvmcdnym&path=/xhttp&mode=auto#${sxname}${country}_vl_xhttp_cdn-$hostname"
 echo "$vl_vx_cdn_link" >> "$HOME/agsbx/jh.txt"
 echo "$vl_vx_cdn_link"
 echo
@@ -1469,14 +1515,21 @@ if grep vless-ws "$HOME/agsbx/xr.json" >/dev/null 2>&1 || grep vless-ws-sb "$HOM
 echo "💣【 Vless-ws 】节点信息如下："
 port_vw=$(cat "$HOME/agsbx/port_vw")
 display_port_vw="${port_vw_ext:-${port_vw}}"
-vl_vw_link="vless://$uuid@$server_ip:$display_port_vw?encryption=none&type=ws&path=%2F${uuid}-vw#${sxname}${country}_vl_ws_$hostname"
+if [ -n "$port_vw_enc" ]; then
+en_vw="$enkey"
+vw_flow="&flow=xtls-rprx-vision"
+else
+en_vw="none"
+vw_flow=""
+fi
+vl_vw_link="vless://$uuid@$server_ip:$display_port_vw?encryption=$en_vw${vw_flow}&type=ws&path=%2F${uuid}-vw#${sxname}${country}_vl_ws_$hostname"
 echo "$vl_vw_link" >> "$HOME/agsbx/jh.txt"
 echo "$vl_vw_link"
 echo
 if [ -f "$HOME/agsbx/cdnym" ]; then
 echo "💣【 Vless-ws-cdn 】节点信息如下："
 echo "注：可自行更换优选IP域名，如是回源端口需手动修改443或者80系端口"
-vl_vw_cdn_link="vless://$uuid@$preferred_ip:$display_port_vw?encryption=none&type=ws&host=$xvvmcdnym&path=%2F${uuid}-vw#${sxname}${country}_vl_ws_cdn-$hostname"
+vl_vw_cdn_link="vless://$uuid@$preferred_ip:$display_port_vw?encryption=$en_vw${vw_flow}&type=ws&host=$xvvmcdnym&path=%2F${uuid}-vw#${sxname}${country}_vl_ws_cdn-$hostname"
 echo "$vl_vw_cdn_link" >> "$HOME/agsbx/jh.txt"
 echo "$vl_vw_cdn_link"
 echo
@@ -1486,7 +1539,12 @@ if grep reality-vision "$HOME/agsbx/xr.json" >/dev/null 2>&1; then
 echo "💣【 Vless-tcp-reality-vision 】节点信息如下："
 port_vl_re=$(cat "$HOME/agsbx/port_vl_re")
 display_port_vl_re="${port_vl_re_ext:-${port_vl_re}}"
-vl_link="vless://$uuid@$server_ip:$display_port_vl_re?encryption=none&flow=xtls-rprx-vision&security=reality&sni=$ym_vl_re&fp=chrome&pbk=$public_key_x&sid=$short_id_x&type=tcp&headerType=none#${sxname}${country}_vl_reality_vision_$hostname"
+if [ -n "$port_vl_re_enc" ]; then
+en_vl="$enkey"
+else
+en_vl="none"
+fi
+vl_link="vless://$uuid@$server_ip:$display_port_vl_re?encryption=$en_vl&flow=xtls-rprx-vision&security=reality&sni=$ym_vl_re&fp=chrome&pbk=$public_key_x&sid=$short_id_x&type=tcp&headerType=none#${sxname}${country}_vl_reality_vision_$hostname"
 echo "$vl_link" >> "$HOME/agsbx/jh.txt"
 echo "$vl_link"
 echo
