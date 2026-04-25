@@ -158,26 +158,24 @@
       transition: background-color 0.3s, border-color 0.3s, color 0.3s;
     }
     .protocol-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .protocol-row {
-      display: flex;
-      flex-wrap: wrap;
+      display: grid;
+      grid-template-columns: auto 1fr; 
+      gap: 10px 16px;
       align-items: center;
-      gap: 8px 16px;
     }
-    .protocol-row > label {
-      flex-shrink: 0;
-    }
-    .protocol-row .port-inputs {
+    .port-inputs {
       display: flex;
       gap: 8px;
-      flex-wrap: wrap;
     }
-    .protocol-row .port-inputs input {
-      min-width: 100px;
+    .port-inputs input {
+      flex: 1;
+      min-width: 0;
+    }
+    .port-inputs input:first-child {
+      flex: 1;
+    }
+    .port-inputs input:last-child {
+      flex: 1;
     }
     .protocol-grid .protocol-item {
       margin: 0; 
@@ -236,21 +234,9 @@
     .switch.on {
       background: var(--acc);
     }
-.switch.on::after {
+    .switch.on::after {
       left: auto;
       right: 3px;
-    }
-    .enc-label {
-      margin-left: 8px;
-      white-space: nowrap;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-    }
-    .enc-label input[type="checkbox"] {
-      width: 16px;
-      height: 16px;
-      margin: 0;
     }
     .pill {
       display: inline-block;
@@ -260,7 +246,7 @@
       border-radius: 999px;
       color: var(--sub);
       margin-left: 6px;
-      transition: border-color 0.3s, color: 0.3s;
+      transition: border-color 0.3s, color 0.3s;
     }
     .actions {
       display: flex;
@@ -437,29 +423,29 @@
         <div class="protocol-group separator">
           <h3>Xray可选协议：</h3>
           <div class="protocol-grid">
-            <div class="protocol-row"><label><input type="checkbox" data-proto="vlpt"> Vless-tcp-reality-vision <span class="pill">vlpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="vlpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="vlpt"></div><label class="enc-label"><input type="checkbox" data-enc="vlpt"> <span class="pill">enc</span></label></div>
-            <div class="protocol-row"><label><input type="checkbox" data-proto="xhpt"> Vless-xhttp-reality <span class="pill">xhpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="xhpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="xhpt"></div><label class="enc-label"><input type="checkbox" data-enc="xhpt"> <span class="pill">enc</span></label></div>
-            <div class="protocol-row"><label><input type="checkbox" data-proto="vxpt"> Vless-xhttp <span class="pill">vxpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="vxpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="vxpt"></div><label class="enc-label"><input type="checkbox" data-enc="vxpt"> <span class="pill">enc</span></label></div>
+            <label><input type="checkbox" data-proto="vlpt"> Vless-tcp-reality-vision <span class="pill">vlpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="vlpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="vlpt"></div><label><input type="checkbox" data-enc="vlpt"> <span class="pill">enc</span></label>
+            <label><input type="checkbox" data-proto="xhpt"> Vless-xhttp-reality <span class="pill">xhpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="xhpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="xhpt"></div><label><input type="checkbox" data-enc="xhpt"> <span class="pill">enc</span></label>
+            <label><input type="checkbox" data-proto="vxpt"> Vless-xhttp <span class="pill">vxpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="vxpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="vxpt"></div><label><input type="checkbox" data-enc="vxpt"> <span class="pill">enc</span></label>
           </div>
         </div>
         <div class="protocol-group separator">
           <h3>Singbox可选协议：</h3>
           <div class="protocol-grid">
-            <div class="protocol-row"><label><input type="checkbox" data-proto="hypt"> Hysteria2 <span class="pill">hypt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="hypt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="hypt"></div></div>
-            <div class="protocol-row"><label><input type="checkbox" data-proto="tupt"> Tuic <span class="pill">tupt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="tupt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="tupt"></div></div>
-            <div class="protocol-row"><label><input type="checkbox" data-proto="anpt"> AnyTLS <span class="pill">anpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="anpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="anpt"></div></div>
-            <div class="protocol-row"><label><input type="checkbox" data-proto="arpt"> Any-reality <span class="pill">arpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="arpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="arpt"></div></div>
-            <div class="protocol-row"><label><input type="checkbox" data-proto="sspt"> Shadowsocks-2022 <span class="pill">sspt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="sspt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="sspt"></div></div>
+            <label><input type="checkbox" data-proto="hypt"> Hysteria2 <span class="pill">hypt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="hypt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="hypt"></div>
+            <label><input type="checkbox" data-proto="tupt"> Tuic <span class="pill">tupt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="tupt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="tupt"></div>
+            <label><input type="checkbox" data-proto="anpt"> AnyTLS <span class="pill">anpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="anpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="anpt"></div>
+            <label><input type="checkbox" data-proto="arpt"> Any-reality <span class="pill">arpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="arpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="arpt"></div>
+            <label><input type="checkbox" data-proto="sspt"> Shadowsocks-2022 <span class="pill">sspt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="sspt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="sspt"></div>
           </div>
         </div>
         <div class="protocol-group separator">
           <h3>Xray/Singbox自动分配协议：</h3>
           <div class="protocol-grid">
-            <div class="protocol-row"><label><input type="checkbox" data-proto="vwpt"> Vless-ws <span class="pill">vwpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="vwpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="vwpt"></div><label class="enc-label"><input type="checkbox" data-enc="vwpt"> <span class="pill">enc</span></label></div>
-            <div class="protocol-row"><label><input type="checkbox" data-proto="vmpt"> Vmess-ws <span class="pill">vmpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="vmpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="vmpt"></div></div>
-            <div class="protocol-row"><label><input type="checkbox" data-proto="sopt"> Socks5 <span class="pill">sopt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="sopt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="sopt"></div></div>
+            <label><input type="checkbox" data-proto="vwpt"> Vless-ws <span class="pill">vwpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="vwpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="vwpt"></div><label><input type="checkbox" data-enc="vwpt"> <span class="pill">enc</span></label>
+            <label><input type="checkbox" data-proto="vmpt"> Vmess-ws <span class="pill">vmpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="vmpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="vmpt"></div>
+            <label><input type="checkbox" data-proto="sopt"> Socks5 <span class="pill">sopt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="sopt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="sopt"></div>
           </div>
-</div>
+        </div>
       </section>
 
       <section class="card outbound-warp">
@@ -556,7 +542,6 @@
           <button class="command-button" data-command="ups">升级Singbox内核：ups</button>
           <button class="command-button" data-command="res">重启脚本命令：res</button>
           <button class="command-button" data-command="rep">调整变量、更新脚本命令（注:变量设置完成后再点击）：rep</button>
-</div>
         </div>
       </section>
 
@@ -755,10 +740,6 @@ document.getElementById('uuid').value = '';
         if (extpt) {
           extpt.value = '';
         }
-        const encCb = document.querySelector(`[data-enc="${key}"]`);
-        if (encCb) {
-          encCb.checked = false;
-        }
       }
 
       if (ck.getAttribute('data-proto') === 'vmpt' || ck.getAttribute('data-proto') === 'vxpt' || ck.getAttribute('data-proto') === 'vwpt') {
@@ -766,10 +747,6 @@ document.getElementById('uuid').value = '';
       }
       render();
     });
-  });
-
-  document.querySelectorAll('[data-enc]').forEach(encCb => {
-    encCb.addEventListener('change', render);
   });
 
   generateUuidBtn.addEventListener('click', () => {
@@ -833,7 +810,6 @@ document.getElementById('uuid').value = '';
 
   function collectVars(){
     const m = {};
-    const encKeys = ['vlpt', 'xhpt', 'vxpt', 'vwpt'];
     protoKeys.forEach(k => {
       const ck = document.querySelector(`[data-proto="${k}"]`);
       const pt = document.querySelector(`[data-port="${k}"]`);
@@ -843,12 +819,6 @@ document.getElementById('uuid').value = '';
         const ev = (extpt.value || '').trim();
         m[k] = v;
         m[k + '_ext'] = ev;
-        if (encKeys.includes(k)) {
-          const encCb = document.querySelector(`[data-enc="${k}"]`);
-          if (encCb && encCb.checked) {
-            m[k + '_enc'] = 'y';
-          }
-        }
       }
     });
     optIds.forEach(id => {
@@ -882,12 +852,11 @@ document.getElementById('uuid').value = '';
     if (keys.includes('agn')) ordered.push('agn');
     if (keys.includes('agk')) ordered.push('agk');
     if (keys.includes('oap')) ordered.push('oap');
-    protoKeys.forEach(k => { if (keys.includes(k + '_enc')) ordered.push(k + '_enc'); });
     keys.forEach(k => { if (!ordered.includes(k)) ordered.push(k); });
 
     return ordered.map(k => {
       const val = m[k];
-      if (val === '' || val === undefined) return `${k}=""`;
+      if (val === '') return `${k}=""`;
       if (/[^\w\-\.:/]/.test(val)) {
         return `${k}="${val.replace(/"/g, '\\"')}"`;
       }
