@@ -4,6 +4,7 @@
 # 功能: 
 #   - 设置UTF-8语言环境
 #   - 定义所有协议开关变量(vlpt/vmpt/vwpt等)
+#   - 定义ENC加密变量(vlpt_enc/xhpt_enc/vxpt_enc/vwpt_enc)
 #   - 导入环境变量(uuid/port_vl_re/port_vm_ws等)
 #   - 检测进程运行状态,防止重复安装
 #   - 定义资源下载URL
@@ -147,6 +148,8 @@ fi
 #   - 根据v4/v6可用性设置代理策略路由
 #   - 支持多种warp模式(sx/xs/s4/s6/x/x4/x6等)
 #   - 设置Xray/Sing-box的域名解析策略
+#   - 支持ippref变量控制非Warp出站路由
+#   - 支持wippref变量控制Warp出站路由
 # 依赖: uuid(可能由insuuid生成)
 # =============================================================================
 v4v6(){
@@ -280,6 +283,7 @@ echo "UUID密码：$uuid"
 #   - 配置VMess-WS(已被xrsbvm接管,此处仅保留结构)
 #   - 配置SOCKS5代理(已被xrsbso接管)
 #   - 自动生成或读取Reality密钥对
+#   - 支持VLESS ENC加密(vlpt_enc/xhpt_enc/vxpt_enc/vwpt_enc)
 # 条件: 仅当启用xhp/vlp/vxp时调用
 # 注意: VMess-WS和SOCKS5配置已移至xrsbvm/xrsbso
 # =============================================================================
@@ -1111,9 +1115,7 @@ cat >> "$HOME/agsbx/sb.json" <<EOF
         "outbound": "${s1outtag}"
       }
     ],
-    "final": "${s2outtag}",
-    "auto_detect_interface": true,
-    "override_android_vpn": false
+    "final": "${s2outtag}"
   },
   "experimental": {
     "cache_file": {
@@ -1327,11 +1329,17 @@ fi
 }
 
 # =============================================================================
-# SECTION 10: argosbxstatus - 内核进程状态查询
+# SECTION 11: cip - 节点信息输出与命名规范化
 # 功能:
-#   - 检查Sing-box/Xray/Argo三大内核进程是否运行
-#   - 显示各内核版本号和运行状态
-# 输出: "内核名 (版本Vx.x.x): 运行中/未启用"
+#   - 统一命名规范: 实现 [prefix]_[country]_[protocol]_[hostname] 格式输出
+#   - 动态地址替换: 
+#     * argoip: 全局替换 Argo/CDN 节点的优选 IP
+#     * nodeaddr: 全局替换所有直连节点的服务器 IP
+#   - 地理位置感知: 自动获取出口国家代码并注入节点 Tag
+#   - 数据持久化: 汇总所有链接到 $HOME/agsbx/jh.txt
+#   - ippz控制: 节点地址显示IPv4/IPv6
+#   - ippref控制: 非Warp出站路由策略
+#   - enc控制: VLESS协议ENC加密
 # =============================================================================
 argosbxstatus(){
 echo "=========当前三大内核运行状态========="
@@ -1627,10 +1635,8 @@ argodomain=$(cat "$HOME/agsbx/sbargoym.log" 2>/dev/null)
 # Argo链接的address: 优先用argoip(用户指定), 其次用固定隧道域名, 最后用临时隧道域名解析的IP
 if [ -n "$argoip" ]; then
   argo_address="$argoip"
-elif [ -n "$argodomain" ] && [ -f "$HOME/agsbx/sbargoym.log" ]; then
-  argo_address="$argodomain"
 else
-  argo_address="$preferred_ip"
+  argo_address="$argodomain"
 fi
 if [ -n "$argodomain" ]; then
 vlvm=$(cat $HOME/agsbx/vlvm 2>/dev/null)
