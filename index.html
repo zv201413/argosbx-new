@@ -159,7 +159,7 @@
     }
     .protocol-grid {
       display: grid;
-      grid-template-columns: auto 1fr; 
+      grid-template-columns: auto 1fr auto;
       gap: 10px 16px;
       align-items: center;
     }
@@ -234,18 +234,21 @@
     .switch.on {
       background: var(--acc);
     }
-    .switch.on::after {
+.switch.on::after {
       left: auto;
       right: 3px;
-.enc-label {
+    }
+    .enc-label {
       margin-left: 8px;
       white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
     }
     .enc-label input[type="checkbox"] {
       width: 16px;
       height: 16px;
       margin: 0;
-    }
     }
     .pill {
       display: inline-block;
