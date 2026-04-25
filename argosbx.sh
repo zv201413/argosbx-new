@@ -1298,13 +1298,23 @@ SCRIPT_PATH="$HOME/bin/agsbx"
 mkdir -p "$HOME/bin"
 (command -v curl >/dev/null 2>&1 && curl -sL "$agsbxurl" -o "$SCRIPT_PATH") || (command -v wget >/dev/null 2>&1 && wget -qO "$SCRIPT_PATH" "$agsbxurl")
 chmod +x "$SCRIPT_PATH"
-if ! pidof systemd >/dev/null 2>&1 && ! command -v rc-service >/dev/null 2>&1; then
-echo "if ! find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null | grep -Eq 'agsbx/(s|x)' && ! pgrep -f 'agsbx/(s|x)' >/dev/null 2>&1; then echo '检测到系统可能中断过，或者变量格式错误？建议在SSH对话框输入 reboot 重启下服务器。现在自动执行Argosbx脚本的节点恢复操作，请稍等……'; sleep 6; export cdnym=\"${cdnym}\" name=\"${name}\" ippz=\"${ippz}\" ippref=\"${ippref}\" wippref=\"${wippref}\" argo=\"${argo}\" uuid=\"${uuid}\" warp=\"${warp}\" xhpt=\"${port_xh}\" vxpt=\"${port_vx}\" sspt=\"${port_ss}\" sopt=\"${port_so}\" anpt=\"${port_an}\" arpt=\"${port_ar}\" vlpt=\"${port_vl_re}\" vwpt=\"${port_vw}\" vmpt=\"${port_vm_ws}\" hypt=\"${port_hy2}\" tupt=\"${port_tu}\" reym=\"${ym_vl_re}\" agn=\"${ARGO_DOMAIN}\" agk=\"${ARGO_AUTH}\" argoip=\"${argoip}\" gh_token=\"${gh_token}\" gh_gist_id=\"${gh_gist_id}\" nodeaddr=\"${nodeaddr}\" vlpt_enc=\"${vlpt_enc}\" xhpt_enc=\"${xhpt_enc}\" vxpt_enc=\"${vxpt_enc}\" vwpt_enc=\"${vwpt_enc}\"; bash "$HOME/bin/agsbx"; fi" >> ~/.bashrc
-fi
+# 添加PATH到多个位置，确保不同shell环境都能找到
 sed -i '/export PATH="\$HOME\/bin:\$PATH"/d' ~/.bashrc
 echo 'export PATH="$HOME/bin:$PATH"' >> "$HOME/.bashrc"
+# Alpine默认使用ash，需要添加到~/.profile
+if [ -f "$HOME/.profile" ]; then
+  sed -i '/export PATH="\$HOME\/bin:\$PATH"/d' "$HOME/.profile"
+  echo 'export PATH="$HOME/bin:$PATH"' >> "$HOME/.profile"
+else
+  echo 'export PATH="$HOME/bin:$PATH"' >> "$HOME/.profile"
+fi
+# 尝试添加到全局profile（如果存在）
+if [ -d /etc/profile.d ]; then
+  echo 'export PATH="$HOME/bin:$PATH"' > /etc/profile.d/agsbx.sh
+fi
 grep -qxF 'source ~/.bashrc' ~/.bash_profile 2>/dev/null || echo 'source ~/.bashrc' >> ~/.bash_profile
 . ~/.bashrc 2>/dev/null
+. ~/.profile 2>/dev/null
 crontab -l > /tmp/crontab.tmp 2>/dev/null
 if ! pidof systemd >/dev/null 2>&1 && ! command -v rc-service >/dev/null 2>&1; then
 sed -i '/agsbx\/sing-box/d' /tmp/crontab.tmp
