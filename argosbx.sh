@@ -857,7 +857,7 @@ dec_vw="$dekey"
 else
 dec_vw="none"
 fi
-cat >> "$HOME/agsbx/xr.json" <<'EOF'
+cat >> "$HOME/agsbx/xr.json" <<EOF
         {
             "tag": "vless-ws-xr",
             "listen": "::",
@@ -1490,7 +1490,7 @@ sxname=$(cat "$HOME/agsbx/name" 2>/dev/null | sed 's/-/_/g')
 xvvmcdnym=$(cat "$HOME/agsbx/cdnym" 2>/dev/null)
 
 # 获取国家代码
-country=$(curl -s ip-api.com/json/?fields=countryCode 2>/dev/null)
+country=$(curl -s ip-api.com/json/?fields=countryCode 2>/dev/null | sed 's/[{}"]//g; s/countryCode://g')
 [ -z "$country" ] && country=""
 
 # 优先使用用户指定的argoip，否则自动获取Argo域名作为备用IP
