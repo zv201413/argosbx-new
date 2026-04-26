@@ -1412,6 +1412,61 @@ fi
 else
 ipbest
 fi
+# =============================================================================
+# SECTION 11.3: ipchange - IP信息显示函数
+# 功能:
+#   - 显示VPS本地IPv4/IPv6地址
+#   - 显示服务器地区
+#   - 检测WARP IP
+#   - 保存server_ip到日志文件
+# =============================================================================
+ipchange(){
+v4v6
+if [ -z "$v4" ]; then
+vps_ipv4='无IPV4'
+vps_ipv6="$v6"
+location="$v6dq"
+elif [ -n "$v4" ] && [ -n "$v6" ]; then
+vps_ipv4="$v4"
+vps_ipv6="$v6"
+location="$v4dq"
+else
+vps_ipv4="$v4"
+vps_ipv6='无IPV6'
+location="$v4dq"
+fi
+if echo "$v6" | grep -q '^2a09'; then
+w6="【WARP】"
+fi
+if echo "$v4" | grep -q '^104.28'; then
+w4="【WARP】"
+fi
+echo
+echo "=========当前服务器本地IP情况========="
+echo "本地IPV4地址：$vps_ipv4 $w4"
+echo "本地IPV6地址：$vps_ipv6 $w6"
+echo "服务器地区：$location"
+echo
+sleep 2
+if [ "$ippz" = "4" ]; then
+if [ -z "$v4" ]; then
+ipbest
+else
+server_ip="$v4"
+echo "$server_ip" > "$HOME/agsbx/server_ip.log"
+fi
+elif [ "$ippz" = "6" ]; then
+if [ -z "$v6" ]; then
+ipbest6
+else
+server_ip="[$v6]"
+echo "$server_ip" > "$HOME/agsbx/server_ip.log"
+fi
+else
+ipbest
+fi
+}
+
 cfip() { echo $((RANDOM % 13 + 1)); }
 ipchange
 rm -rf "$HOME/agsbx/jh.txt"
@@ -1737,6 +1792,68 @@ rc-service "$svc" stop >/dev/null 2>&1
 rc-update del "$svc" default >/dev/null 2>&1
 done
 rm -rf /etc/init.d/sing-box /etc/init.d/xray /etc/init.d/argo 2>/dev/null
+fi
+}
+
+# =============================================================================
+# SECTION 10.5: xrestart/sbrestart - 内核重启函数
+# 功能:
+#   - xrestart(): 重启Xray内核
+#   - sbrestart(): 重启Sing-box内核
+#   - 支持systemd/openrc/直接nohup三种启动方式
+# =============================================================================
+xrestart(){
+kill -15 $(pgrep -f 'agsbx/x' 2>/dev/null) >/dev/null 2>&1
+if pidof systemd >/dev/null 2>&1; then
+systemctl restart xr >/dev/null 2>&1
+elif command -v rc-service >/dev/null 2>&1; then
+rc-service xray restart >/dev/null 2>&1
+else
+nohup "$HOME/agsbx/xray" run -c "$HOME/agsbx/xr.json" >/dev/null 2>&1 &
+fi
+}
+sbrestart(){
+kill -15 $(pgrep -f 'agsbx/s' 2>/dev/null) >/dev/null 2>&1
+if pidof systemd >/dev/null 2>&1; then
+systemctl restart sb >/dev/null 2>&1
+elif command -v rc-service >/dev/null 2>&1; then
+rc-service sing-box restart >/dev/null 2>&1
+else
+nohup "$HOME/agsbx/sing-box" run -c "$HOME/agsbx/sb.json" >/dev/null 2>&1 &
+fi
+}
+
+# =============================================================================
+# SECTION 10.6: push_gist - 自动化节点订阅推送
+# 功能:
+#   - 读取 $HOME/agsbx/gh_token 和 $HOME/agsbx/gh_gist_id
+#   - 将节点信息推送到GitHub Gist
+# =============================================================================
+push_gist(){
+gh_token=$(cat "$HOME/agsbx/gh_token" 2>/dev/null)
+gh_gist_id=$(cat "$HOME/agsbx/gh_gist_id" 2>/dev/null)
+if [ -z "$gh_token" ]; then
+return 1
+fi
+node_content=$(cat "$HOME/agsbx/jh.txt" 2>/dev/null)
+if [ -z "$node_content" ]; then
+return 1
+fi
+if [ -n "$gh_gist_id" ]; then
+response=$(curl -s -X PATCH "https://api.github.com/gists/$gh_gist_id" \
+-H "Authorization: token $gh_token" \
+-H "Content-Type: application/json" \
+-d "{\"description\": \"Argosbx Nodes\",\"public\": false,\"files\": {\"nodes.txt\": {\"content\": \"$node_content\"}}}")
+else
+response=$(curl -s -X POST "https://api.github.com/gists" \
+-H "Authorization: token $gh_token" \
+-H "Content-Type: application/json" \
+-d "{\"description\": \"Argosbx Nodes\",\"public\": false,\"files\": {\"nodes.txt\": {\"content\": \"$node_content\"}}}")
+new_gist_id=$(echo "$response" | grep -o '"id": "[^"]*"' | head -1 | cut -d'"' -f4)
+if [ -n "$new_gist_id" ]; then
+echo "$new_gist_id" > "$HOME/agsbx/gh_gist_id"
+echo "Gist ID 已保存: $new_gist_id"
+fi
 fi
 }
 
