@@ -1705,6 +1705,42 @@ echo
 #   - 地理位置感知: 自动获取出口国家代码并注入节点 Tag
 #   - 数据持久化: 汇总所有链接到 $HOME/agsbx/jh.txt
 # =============================================================================
+# SECTION 9.1: cleandel - 卸载清理函数
+# 功能:
+#   - 杀掉 agsbx 残留进程
+#   - 清理 crontab 定时任务
+#   - 删除 systemd/openrc 服务
+#   - 清理 bashrc 环境变量
+# =============================================================================
+cleandel(){
+for P in /proc/[0-9]*; do if [ -L "$P/exe" ]; then TARGET=$(readlink -f "$P/exe" 2>/dev/null); if echo "$TARGET" | grep -qE '/agsbx/c|/agsbx/s|/agsbx/x'; then PID=$(basename "$P"); kill "$PID" 2>/dev/null; fi; fi; done
+kill -15 $(pgrep -f 'agsbx/s' 2>/dev/null) $(pgrep -f 'agsbx/c' 2>/dev/null) $(pgrep -f 'agsbx/x' 2>/dev/null) >/dev/null 2>&1
+sed -i '/agsbx/d' ~/.bashrc 2>/dev/null
+sed -i '/export PATH="\$HOME\/bin:\$PATH"/d' ~/.bashrc 2>/dev/null
+. ~/.bashrc 2>/dev/null
+crontab -l > /tmp/crontab.tmp 2>/dev/null
+sed -i '/agsbx\/sing-box/d' /tmp/crontab.tmp 2>/dev/null
+sed -i '/agsbx\/xray/d' /tmp/crontab.tmp 2>/dev/null
+sed -i '/agsbx\/cloudflared/d' /tmp/crontab.tmp 2>/dev/null
+crontab /tmp/crontab.tmp >/dev/null 2>&1
+rm /tmp/crontab.tmp 2>/dev/null
+rm -rf "$HOME/bin/agsbx" 2>/dev/null
+if pidof systemd >/dev/null 2>&1; then
+for svc in xr sb argo; do
+systemctl stop "$svc" >/dev/null 2>&1
+systemctl disable "$svc" >/dev/null 2>&1
+done
+rm -rf /etc/systemd/system/xr.service /etc/systemd/system/sb.service /etc/systemd/system/argo.service 2>/dev/null
+elif command -v rc-service >/dev/null 2>&1; then
+for svc in sing-box xray argo; do
+rc-service "$svc" stop >/dev/null 2>&1
+rc-update del "$svc" default >/dev/null 2>&1
+done
+rm -rf /etc/init.d/sing-box /etc/init.d/xray /etc/init.d/argo 2>/dev/null
+fi
+}
+
+# =============================================================================
 # SECTION 10: 命令行参数路由处理
 # 使用: ./argosbx.sh [del|rep|list|upx|ups|res|help]
 # =============================================================================
