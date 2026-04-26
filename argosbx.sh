@@ -1748,7 +1748,7 @@ if [ "$1" = "del" ]; then
 cleandel
 rm -rf sbx_update "$HOME/agsbx" "$HOME/agsb"
 echo "卸载完成"
-echo "欢迎继续下次使用：https://zv201413.github.io/argosbx-new" && sleep 2
+echo "欢迎下次继续使用：https://zv201413.github.io/argosbx-new" && sleep 2
 echo
 exit
 elif [ "$1" = "help" ] || [ "$1" = "-h" ]; then
