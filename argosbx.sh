@@ -1698,16 +1698,14 @@ echo "$vmatls_link1" >> "$HOME/agsbx/jh.txt"
 vma_link7="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vmess-ws-argo-$hostname-80\", \"add\": \"$argodomain\", \"port\": \"80\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$argodomain\", \"path\": \"/$uuid-vm\", \"tls\": \"\"}" | base64 -w0)"
 echo "$vma_link7" >> "$HOME/agsbx/jh.txt"
 elif [ "$vlvm" = "Vless" ]; then
-if [ -n "$port_vw_enc" ]; then
+if [ -n "$port_vw_enc" ] || [ "$vwpt_enc" = "y" ]; then
 en_vw="$enkey"
-vw_flow="&flow=xtls-rprx-vision"
 else
 en_vw="none"
-vw_flow=""
 fi
-vwatls_link1="vless://$uuid@$argodomain:443?encryption=$en_vw&type=ws&host=$argodomain&path=%2F${uuid}-vw${vw_flow}&security=tls&sni=$argodomain&fp=chrome&insecure=0&allowInsecure=0#${sxname}${country}_vl_ws_tls_argo_$hostname"
+vwatls_link1="vless://$uuid@$argodomain:443?encryption=$en_vw&type=ws&host=$argodomain&path=%2F${uuid}-vw&security=tls&sni=$argodomain&fp=chrome&insecure=0&allowInsecure=0#${sxname}${country}_vl_ws_tls_argo_$hostname"
 echo "$vwatls_link1" >> "$HOME/agsbx/jh.txt"
-vwa_link2="vless://$uuid@$argodomain:80?encryption=$en_vw&type=ws&host=$argodomain&path=%2F${uuid}-vw${vw_flow}&security=none#${sxname}${country}_vl_ws_argo_$hostname"
+vwa_link2="vless://$uuid@$argodomain:80?encryption=$en_vw&type=ws&host=$argodomain&path=%2F${uuid}-vw&security=none#${sxname}${country}_vl_ws_argo_$hostname"
 echo "$vwa_link2" >> "$HOME/agsbx/jh.txt"
 fi
 sbtk=$(cat "$HOME/agsbx/sbargotoken.log" 2>/dev/null)
