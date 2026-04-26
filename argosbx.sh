@@ -343,7 +343,7 @@ public_key_x=$(cat "$HOME/agsbx/xrk/public_key")
 short_id_x=$(cat "$HOME/agsbx/xrk/short_id")
 fi
 
-if [ -n "$port_vl_re_enc" ] || [ -n "$port_xh_enc" ] || [ -n "$port_vx_enc" ] || [ -n "$port_vw_enc" ]; then
+if [ -n "$port_vl_re_enc" ] || [ -n "$port_xh_enc" ] || [ -n "$port_vx_enc" ] || [ -n "$port_vw_enc" ] || [ "$vlpt_enc" = "y" ] || [ "$xhpt_enc" = "y" ] || [ "$vxpt_enc" = "y" ] || [ "$vwpt_enc" = "y" ]; then
 if [ ! -e "$HOME/agsbx/xrk/dekey" ]; then
 vlkey=$("$HOME/agsbx/xray" vlessenc)
 dekey=$(echo "$vlkey" | grep '"decryption":' | sed -n '2p' | cut -d' ' -f2- | tr -d '"')
@@ -1505,7 +1505,7 @@ if grep vless-ws "$HOME/agsbx/xr.json" >/dev/null 2>&1 || grep vless-ws-sb "$HOM
 echo "💣【 Vless-ws 】节点信息如下："
 port_vw=$(cat "$HOME/agsbx/port_vw")
 display_port_vw="${port_vw_ext:-${port_vw}}"
-if [ -n "$port_vw_enc" ]; then
+if [ -n "$port_vw_enc" ] || [ "$vwpt_enc" = "y" ]; then
 en_vw="$enkey"
 vw_flow="&flow=xtls-rprx-vision"
 else
@@ -1519,7 +1519,7 @@ echo
 if [ -f "$HOME/agsbx/cdnym" ]; then
 echo "💣【 Vless-ws-cdn 】节点信息如下："
 echo "注：可自行更换优选IP域名，如是回源端口需手动修改443或者80系端口"
-if [ -n "$port_vw_enc" ]; then
+if [ -n "$port_vw_enc" ] || [ "$vwpt_enc" = "y" ]; then
 vl_vw_cdn_link="vless://$uuid@$preferred_ip:$display_port_vw?encryption=$en_vw${vw_flow}&type=ws&host=$xvvmcdnym&path=%2F${uuid}-vw#${sxname}${country}_vl_ws_cdn_$hostname"
 else
 vl_vw_cdn_link="vless://$uuid@$preferred_ip:$display_port_vw?encryption=none&type=ws&host=$xvvmcdnym&path=%2F${uuid}-vw#${sxname}${country}_vl_ws_cdn_$hostname"
