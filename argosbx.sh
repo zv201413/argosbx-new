@@ -1975,12 +1975,14 @@ node_output
 if [ -n "$gh_token" ]; then
   push_gist
 fi
+showmode
 echo
 else
 echo "Argosbx脚本已安装"
 echo
 cip
 node_output
+showmode
 echo
 exit
 fi
