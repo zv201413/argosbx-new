@@ -1531,9 +1531,9 @@ echo "💣【 Vless-xhttp-reality 】节点信息如下："
 port_xh=$(cat "$HOME/agsbx/port_xh")
 display_port_xh="${port_xh_ext:-${port_xh}}"
 if [ -n "$port_xh_enc" ]; then
-vl_xh_link="vless://$uuid@$server_ip:$display_port_xh?encryption=$enkey&flow=xtls-rprx-vision&security=reality&sni=$ym_vl_re&fp=chrome&pbk=$public_key_x&sid=$short_id_x&type=xhttp&path=/xhttp&mode=auto#${sxname}${country}_vl_xhttp_reality_$hostname"
+vl_xh_link="vless://$uuid@$server_ip:$display_port_xh?encryption=$enkey&security=reality&sni=$ym_vl_re&fp=chrome&pbk=$public_key_x&sid=$short_id_x&type=xhttp&path=/xhttp&mode=auto#${sxname}${country}_vl_xhttp_reality_$hostname"
 else
-vl_xh_link="vless://$uuid@$server_ip:$display_port_xh?encryption=none&flow=xtls-rprx-vision&security=reality&sni=$ym_vl_re&fp=chrome&pbk=$public_key_x&sid=$short_id_x&type=xhttp&path=/xhttp&mode=auto#${sxname}${country}_vl_xhttp_reality_$hostname"
+vl_xh_link="vless://$uuid@$server_ip:$display_port_xh?encryption=none&security=reality&sni=$ym_vl_re&fp=chrome&pbk=$public_key_x&sid=$short_id_x&type=xhttp&path=/xhttp&mode=auto#${sxname}${country}_vl_xhttp_reality_$hostname"
 fi
 echo "$vl_xh_link" >> "$HOME/agsbx/jh.txt"
 echo "$vl_xh_link"
@@ -1574,12 +1574,10 @@ port_vw=$(cat "$HOME/agsbx/port_vw")
 display_port_vw="${port_vw_ext:-${port_vw}}"
 if [ -n "$port_vw_enc" ] || [ "$vwpt_enc" = "y" ]; then
 en_vw="$enkey"
-vw_flow="&flow=xtls-rprx-vision"
 else
 en_vw="none"
-vw_flow=""
 fi
-vl_vw_link="vless://$uuid@$server_ip:$display_port_vw?encryption=$en_vw${vw_flow}&type=ws&path=%2F${uuid}-vw#${sxname}${country}_vl_ws_$hostname"
+vl_vw_link="vless://$uuid@$server_ip:$display_port_vw?encryption=$en_vw&type=ws&path=%2F${uuid}-vw#${sxname}${country}_vl_ws_$hostname"
 echo "$vl_vw_link" >> "$HOME/agsbx/jh.txt"
 echo "$vl_vw_link"
 echo
@@ -1587,7 +1585,7 @@ if [ -f "$HOME/agsbx/cdnym" ]; then
 echo "💣【 Vless-ws-cdn 】节点信息如下："
 echo "注：可自行更换优选IP域名，如是回源端口需手动修改443或者80系端口"
 if [ -n "$port_vw_enc" ] || [ "$vwpt_enc" = "y" ]; then
-vl_vw_cdn_link="vless://$uuid@$preferred_ip:$display_port_vw?encryption=$en_vw${vw_flow}&type=ws&host=$xvvmcdnym&path=%2F${uuid}-vw#${sxname}${country}_vl_ws_cdn_$hostname"
+vl_vw_cdn_link="vless://$uuid@$preferred_ip:$display_port_vw?encryption=$en_vw&type=ws&host=$xvvmcdnym&path=%2F${uuid}-vw#${sxname}${country}_vl_ws_cdn_$hostname"
 else
 vl_vw_cdn_link="vless://$uuid@$preferred_ip:$display_port_vw?encryption=none&type=ws&host=$xvvmcdnym&path=%2F${uuid}-vw#${sxname}${country}_vl_ws_cdn_$hostname"
 fi
@@ -1603,9 +1601,9 @@ echo "💣【 Vless-tcp-reality-vision 】节点信息如下："
 port_vl_re=$(cat "$HOME/agsbx/port_vl_re")
 display_port_vl_re="${port_vl_re_ext:-${port_vl_re}}"
 if [ -n "$port_vl_re_enc" ]; then
-vl_link="vless://$uuid@$server_ip:$display_port_vl_re?encryption=$enkey&flow=xtls-rprx-vision&security=reality&sni=$ym_vl_re&fp=chrome&pbk=$public_key_x&sid=$short_id_x&type=tcp&headerType=none#${sxname}${country}_vl_reality_vision_$hostname"
+vl_link="vless://$uuid@$server_ip:$display_port_vl_re?encryption=$enkey&security=reality&sni=$ym_vl_re&fp=chrome&pbk=$public_key_x&sid=$short_id_x&type=tcp&headerType=none#${sxname}${country}_vl_reality_vision_$hostname"
 else
-vl_link="vless://$uuid@$server_ip:$display_port_vl_re?encryption=none&flow=xtls-rprx-vision&security=reality&sni=$ym_vl_re&fp=chrome&pbk=$public_key_x&sid=$short_id_x&type=tcp&headerType=none#${sxname}${country}_vl_reality_vision_$hostname"
+vl_link="vless://$uuid@$server_ip:$display_port_vl_re?encryption=none&security=reality&sni=$ym_vl_re&fp=chrome&pbk=$public_key_x&sid=$short_id_x&type=tcp&headerType=none#${sxname}${country}_vl_reality_vision_$hostname"
 fi
 echo "$vl_link" >> "$HOME/agsbx/jh.txt"
 echo "$vl_link"
