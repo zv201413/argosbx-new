@@ -6,54 +6,22 @@
 ## 建议配合SSH一键脚本命令生成器网页使用：https://zv201413.github.io/argosbx-new/
 
 ----------------------------------------------------------
-## 原版对比优化说明
 
-| 优化项 | 原版 | 新版 |
-|:---|:---|:---|
-| 国家代码检测 | ❌ 无 | ✅ 自动检测并添加节点前缀 |
-| GitHub Gist推送 | ❌ 无 | ✅ 支持节点订阅推送 |
-| 优选IP/域名 | ❌ 无 | ✅ argoip变量支持 |
-| 直连节点地址 | ❌ 无 | ✅ nodeaddr变量支持 |
-| IPv4/IPv6出站 | ❌ 无 | ✅ ippref变量支持 |
-| WARP出站控制 | 基础 | ✅ wippref变量增强 |
-| VLESS ENC加密 | ✅ 支持 | ✅ 支持（按需启用Xray） |
-| Vless-ws绑定 | 强制跟随Xray | ✅ 按需启动，独立运行 |
-| 节点地址切换 | ippz | 优化为Address选项 |
-| IPv6优先回退 | ❌ 无 | ✅ ippz=6支持回退 |
-| 容器兼容性 | ❌ 无检测 | ✅ 自动检测，回退Xray |
+#### 1、基于甬哥Argosbx原版优化，保留核心功能，新增实用特性
 
-### 容器兼容性自动回退
+#### 2、三内核自动分配：Sing-box + Xray + Cloudflared-Argo
 
-原版在某些容器环境下可能无法正常运行Sing-box（需要netlink支持）。
+#### 3、支持各种容器系统，自动检测容器兼容性
 
-新版新增自动检测逻辑：
-- 自动检测容器是否支持Sing-box路由订阅
-- 不支持时自动切换到Xray模式
-- 无需手动干预，确保脚本在任何环境下都能运行
+#### 4、【新增】支持节点订阅推送到GitHub Gist
 
-### ENC加密说明
+#### 5、【新增】支持国家代码自动检测，节点名称自动添加地区前缀
 
-新版支持VLESS ENC加密，但采用了不同的实现方式：
+#### 6、【新增】支持优选IP/域名指定
 
-**原版问题**：ENC加密强制使用Xray内核，即使只启用Sing-box协议也会启动Xray，导致资源浪费。
+#### 7、【新增】支持直连节点自定义地址
 
-**新版方案**：
-- ENC加密只在用户需要时启用
-- 启用ENC时会自动按需启动Xray内核
-- 不启用ENC时，Vless-ws默认使用Sing-box运行，减少资源占用
-
-**支持的ENC协议**：
-- Vless-tcp-reality-vision（vlpt）
-- Vless-xhttp-reality（xhpt）
-- Vless-xhttp（vxpt）
-- Vless-ws（vwpt）
-
-### Vless-ws按需启动
-
-原版中Vless-ws必须跟随Xray内核运行，新版可以：
-- 独立使用Sing-box运行
-- 按需启用，不强制绑定Xray
-- 减少资源占用
+#### 8、【新增】Argo 隧道智能协议选择：自动检测 UDP 连通性，优选 QUIC (UDP)，受限时自动切换 HTTP2 (TCP)
 
 ----------------------------------------------------------
 
@@ -174,5 +142,81 @@ ippz=4 agsbx list    # 切换到IPv4
 - 如果服务商端口转发正常工作 → 使用默认设置
 - 如果AnyTLS等协议不通 → 尝试 `ippz=6`
 - 如果只需要单一端口 → IPv6是最简单的解决方案
+
+---------------------------------------------------------
+
+## 四、原版对比优化说明
+
+| 优化项 | 原版 | 新版 |
+|:---|:---|:---|
+| 国家代码检测 | ❌ 无 | ✅ 自动检测并添加节点前缀 |
+| GitHub Gist推送 | ❌ 无 | ✅ 支持节点订阅推送（含快捷命令） |
+| 优选IP/域名 | ❌ 无 | ✅ argoip变量支持 |
+| 直连节点地址 | ❌ 无 | ✅ nodeaddr变量支持 |
+| IPv4/IPv6出站 | ❌ 无 | ✅ ippref变量支持 |
+| WARP出站控制 | 基础 | ✅ wippref变量增强 |
+| VLESS ENC加密 | ✅ 支持 | ✅ 支持（按需启用Xray） |
+| Vless-ws绑定 | 强制跟随Xray | ✅ 按需启动，独立运行 |
+| 节点地址切换 | ippz | 优化为Address选项 |
+| IPv6优先回退 | ❌ 无 | ✅ ippz=6支持回退 |
+| 容器兼容性 | ❌ 无检测 | ✅ 自动检测，回退Xray |
+| 快捷命令 | ❌ 无效 | ✅ 修复PATH问题，agsbx list等命令可用 |
+| HTML界面 | 基础 | ✅ 新增ENC勾选框 |
+| help命令 | ❌ 无 | ✅ 支持 agsbx help 查看使用帮助 |
+
+### 容器兼容性自动回退
+
+原版在某些容器环境下可能无法正常运行Sing-box（需要netlink支持）。
+
+新版新增自动检测逻辑：
+- 自动检测容器是否支持Sing-box路由订阅
+- 不支持时自动切换到Xray模式
+- 无需手动干预，确保脚本在任何环境下都能运行
+
+### 快捷命令修复
+
+**原版问题**：安装后 `agsbx list` 等快捷命令无法使用，原因是 PATH 没有正确添加到系统。
+
+**新版修复**：
+- 添加 PATH 到 `~/.bashrc`
+- 添加 PATH 到 `~/.profile`（适配 Alpine ash）
+- 添加 PATH 到 `/etc/profile.d/`（全局生效）
+- 安装后自动 source 让配置立即生效
+- 支持 `agsbx help` 查看使用帮助
+
+**使用示例**：
+```bash
+agsbx list          # 查看节点信息（包含Gist推送）
+agsbx help          # 查看帮助信息
+agsbx rep           # 重置协议配置
+agsbx upx           # 更新Xray内核
+agsbx ups           # 更新Singbox内核
+agsbx res           # 重启脚本
+agsbx del           # 卸载脚本
+```
+
+### ENC加密说明
+
+新版支持VLESS ENC加密，但采用了不同的实现方式：
+
+**原版问题**：ENC加密强制使用Xray内核，即使只启用Sing-box协议也会启动Xray，导致资源浪费。
+
+**新版方案**：
+- ENC加密只在用户需要时启用
+- 启用ENC时会自动按需启动Xray内核
+- 不启用ENC时，Vless-ws默认使用Sing-box运行，减少资源占用
+
+**支持的ENC协议**：
+- Vless-tcp-reality-vision（vlpt）
+- Vless-xhttp-reality（xhpt）
+- Vless-xhttp（vxpt）
+- Vless-ws（vwpt）
+
+### Vless-ws按需启动
+
+原版中Vless-ws必须跟随Xray内核运行，新版可以：
+- 独立使用Sing-box运行
+- 按需启用，不强制绑定Xray
+- 减少资源占用
 
 ---------------------------------------------------------
