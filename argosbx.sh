@@ -1881,10 +1881,11 @@ response=$(curl -s -X POST "https://api.github.com/gists" \
 fi
 
 if echo "$response" | grep -q '"id":'; then
-  new_gist_id=$(echo "$response" | grep -o '"id": "[^"]*"' | head -1 | cut -d'"' -f4)
-  [ -z "$gh_gist_id" ] && echo "$new_gist_id" > "$HOME/agsbx/gh_gist_id"
-  # 精确提取对应文件的 raw_url
-  raw_url=$(echo "$response" | sed -n "/\"$gist_filename\"/,/\"raw_url\"/p" | grep -o '"raw_url": "[^"]*"' | cut -d'"' -f4)
+  gist_id=$(echo "$response" | grep -o '"id": "[^"]*"' | head -1 | cut -d'"' -f4)
+  gh_user=$(echo "$response" | grep -o '"login": "[^"]*"' | head -1 | cut -d'"' -f4)
+  [ -z "$gh_gist_id" ] && echo "$gist_id" > "$HOME/agsbx/gh_gist_id"
+  # 按照用户指定的格式手动构造订阅链接
+  raw_url="https://gist.github.com/${gh_user}/${gist_id}/raw/${gist_filename}"
   echo "Gist 推送成功"
   echo "订阅链接 (Raw): $raw_url"
 else
