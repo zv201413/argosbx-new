@@ -1351,8 +1351,8 @@ if [ -f "$HOME/.profile" ]; then
 else
   echo 'export PATH="$HOME/bin:$PATH"' >> "$HOME/.profile"
 fi
-# 尝试添加到全局profile（如果存在）
-if [ -d /etc/profile.d ]; then
+# 尝试添加到全局profile（如果存在且有权限）
+if [ -d /etc/profile.d ] && [ "$EUID" -eq 0 ]; then
   echo 'export PATH="$HOME/bin:$PATH"' > /etc/profile.d/agsbx.sh
 fi
 grep -qxF 'source ~/.bashrc' ~/.bash_profile 2>/dev/null || echo 'source ~/.bashrc' >> ~/.bash_profile
@@ -1861,6 +1861,11 @@ response=$(curl -s -X PATCH "https://api.github.com/gists/$gh_gist_id" \
 -H "Authorization: token $gh_token" \
 -H "Content-Type: application/json" \
 -d "{\"description\": \"Argosbx Nodes\",\"public\": false,\"files\": {\"nodes.txt\": {\"content\": \"$node_content\"}}}")
+if echo "$response" | grep -q '"id":'; then
+  echo "Gist 已成功更新: https://gist.github.com/$gh_gist_id"
+else
+  echo "Gist 更新失败，请检查 Token 权限或 Gist ID 是否正确"
+fi
 else
 response=$(curl -s -X POST "https://api.github.com/gists" \
 -H "Authorization: token $gh_token" \
