@@ -1856,13 +1856,20 @@ node_content=$(cat "$HOME/agsbx/jh.txt" 2>/dev/null)
 if [ -z "$node_content" ]; then
 return 1
 fi
+# 使用节点前缀作为文件名，默认为 nodes
+gist_filename=$(cat "$HOME/agsbx/name" 2>/dev/null | sed 's/-/_/g')
+[ -z "$gist_filename" ] && gist_filename="nodes"
+gist_filename="${gist_filename}.txt"
+
 if [ -n "$gh_gist_id" ]; then
 response=$(curl -s -X PATCH "https://api.github.com/gists/$gh_gist_id" \
 -H "Authorization: token $gh_token" \
 -H "Content-Type: application/json" \
--d "{\"description\": \"Argosbx Nodes\",\"public\": false,\"files\": {\"nodes.txt\": {\"content\": \"$node_content\"}}}")
+-d "{\"description\": \"Argosbx Nodes\",\"public\": false,\"files\": {\"$gist_filename\": {\"content\": \"$node_content\"}}}")
 if echo "$response" | grep -q '"id":'; then
-  echo "Gist 已成功更新: https://gist.github.com/$gh_gist_id"
+  raw_url=$(echo "$response" | grep -o '"raw_url": "[^"]*"' | head -1 | cut -d'"' -f4)
+  echo "Gist 已成功更新"
+  echo "订阅链接 (Raw): $raw_url"
 else
   echo "Gist 更新失败，请检查 Token 权限或 Gist ID 是否正确"
 fi
@@ -1870,11 +1877,13 @@ else
 response=$(curl -s -X POST "https://api.github.com/gists" \
 -H "Authorization: token $gh_token" \
 -H "Content-Type: application/json" \
--d "{\"description\": \"Argosbx Nodes\",\"public\": false,\"files\": {\"nodes.txt\": {\"content\": \"$node_content\"}}}")
+-d "{\"description\": \"Argosbx Nodes\",\"public\": false,\"files\": {\"$gist_filename\": {\"content\": \"$node_content\"}}}")
 new_gist_id=$(echo "$response" | grep -o '"id": "[^"]*"' | head -1 | cut -d'"' -f4)
 if [ -n "$new_gist_id" ]; then
-echo "$new_gist_id" > "$HOME/agsbx/gh_gist_id"
-echo "Gist ID 已保存: $new_gist_id"
+  echo "$new_gist_id" > "$HOME/agsbx/gh_gist_id"
+  raw_url=$(echo "$response" | grep -o '"raw_url": "[^"]*"' | head -1 | cut -d'"' -f4)
+  echo "Gist 已保存，ID: $new_gist_id"
+  echo "订阅链接 (Raw): $raw_url"
 fi
 fi
 }
