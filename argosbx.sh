@@ -1883,7 +1883,8 @@ fi
 if echo "$response" | grep -q '"id":'; then
   new_gist_id=$(echo "$response" | grep -o '"id": "[^"]*"' | head -1 | cut -d'"' -f4)
   [ -z "$gh_gist_id" ] && echo "$new_gist_id" > "$HOME/agsbx/gh_gist_id"
-  raw_url=$(echo "$response" | grep -o '"raw_url": "[^"]*"' | head -1 | cut -d'"' -f4)
+  # 精确提取对应文件的 raw_url
+  raw_url=$(echo "$response" | sed -n "/\"$gist_filename\"/,/\"raw_url\"/p" | grep -o '"raw_url": "[^"]*"' | cut -d'"' -f4)
   echo "Gist 推送成功"
   echo "订阅链接 (Raw): $raw_url"
 else
