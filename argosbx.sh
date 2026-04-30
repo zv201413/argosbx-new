@@ -1856,6 +1856,9 @@ node_content=$(cat "$HOME/agsbx/jh.txt" 2>/dev/null)
 if [ -z "$node_content" ]; then
 return 1
 fi
+# JSON 内容转义处理 (处理换行和引号)
+escaped_content=$(echo "$node_content" | sed 's/\\/\\\\/g; s/"/\\"/g' | awk '{printf "%s\\n", $0}' | sed 's/\\n$//')
+
 # 生成详细的文件名: [prefix]_[country]_[protocol]_[hostname].txt
 gist_prefix=$(cat "$HOME/agsbx/name" 2>/dev/null | sed 's/-/_/g')
 [ -z "$gist_prefix" ] && gist_prefix="agsbx"
@@ -1866,19 +1869,15 @@ if [ -e "$HOME/agsbx/sing-box" ] && [ -e "$HOME/agsbx/xray" ]; then gist_proto="
 gist_filename="${gist_prefix}_${gist_country}_${gist_proto}_${hostname}.txt"
 
 if [ -n "$gh_gist_id" ]; then
-# 如果有旧文件，先删除旧文件以保持文件名唯一（或者直接更新）
-# Gist PATCH 逻辑：如果文件名改变，会增加一个新文件。为了保持只有一个文件，我们需要显式删除旧文件名（如果知道的话）。
-# 但由于我们只有一个文件，最简单的方法是获取当前的 filename 并覆盖它。
-# 为了简化，我们直接用新名称 PATCH，如果名称变了，Gist 会有两个文件。
 response=$(curl -s -X PATCH "https://api.github.com/gists/$gh_gist_id" \
 -H "Authorization: token $gh_token" \
 -H "Content-Type: application/json" \
--d "{\"description\": \"Argosbx Nodes\",\"public\": false,\"files\": {\"$gist_filename\": {\"content\": \"$node_content\"}}}")
+-d "{\"description\": \"Argosbx Nodes\",\"public\": false,\"files\": {\"$gist_filename\": {\"content\": \"$escaped_content\"}}}")
 else
 response=$(curl -s -X POST "https://api.github.com/gists" \
 -H "Authorization: token $gh_token" \
 -H "Content-Type: application/json" \
--d "{\"description\": \"Argosbx Nodes\",\"public\": false,\"files\": {\"$gist_filename\": {\"content\": \"$node_content\"}}}")
+-d "{\"description\": \"Argosbx Nodes\",\"public\": false,\"files\": {\"$gist_filename\": {\"content\": \"$escaped_content\"}}}")
 fi
 
 if echo "$response" | grep -q '"id":'; then
