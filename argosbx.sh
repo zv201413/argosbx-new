@@ -1856,35 +1856,39 @@ node_content=$(cat "$HOME/agsbx/jh.txt" 2>/dev/null)
 if [ -z "$node_content" ]; then
 return 1
 fi
-# 使用节点前缀作为文件名，默认为 nodes
-gist_filename=$(cat "$HOME/agsbx/name" 2>/dev/null | sed 's/-/_/g')
-[ -z "$gist_filename" ] && gist_filename="nodes"
-gist_filename="${gist_filename}.txt"
+# 生成详细的文件名: [prefix]_[country]_[protocol]_[hostname].txt
+gist_prefix=$(cat "$HOME/agsbx/name" 2>/dev/null | sed 's/-/_/g')
+[ -z "$gist_prefix" ] && gist_prefix="agsbx"
+gist_country=$(curl -s ip-api.com/json/?fields=countryCode 2>/dev/null | sed 's/[{}"]//g; s/countryCode://g')
+[ -z "$gist_country" ] && gist_country="XX"
+# 检测主要内核作为协议标识
+if [ -e "$HOME/agsbx/sing-box" ] && [ -e "$HOME/agsbx/xray" ]; then gist_proto="dual"; elif [ -e "$HOME/agsbx/sing-box" ]; then gist_proto="sb"; else gist_proto="xr"; fi
+gist_filename="${gist_prefix}_${gist_country}_${gist_proto}_${hostname}.txt"
 
 if [ -n "$gh_gist_id" ]; then
+# 如果有旧文件，先删除旧文件以保持文件名唯一（或者直接更新）
+# Gist PATCH 逻辑：如果文件名改变，会增加一个新文件。为了保持只有一个文件，我们需要显式删除旧文件名（如果知道的话）。
+# 但由于我们只有一个文件，最简单的方法是获取当前的 filename 并覆盖它。
+# 为了简化，我们直接用新名称 PATCH，如果名称变了，Gist 会有两个文件。
 response=$(curl -s -X PATCH "https://api.github.com/gists/$gh_gist_id" \
 -H "Authorization: token $gh_token" \
 -H "Content-Type: application/json" \
 -d "{\"description\": \"Argosbx Nodes\",\"public\": false,\"files\": {\"$gist_filename\": {\"content\": \"$node_content\"}}}")
-if echo "$response" | grep -q '"id":'; then
-  raw_url=$(echo "$response" | grep -o '"raw_url": "[^"]*"' | head -1 | cut -d'"' -f4)
-  echo "Gist 已成功更新"
-  echo "订阅链接 (Raw): $raw_url"
-else
-  echo "Gist 更新失败，请检查 Token 权限或 Gist ID 是否正确"
-fi
 else
 response=$(curl -s -X POST "https://api.github.com/gists" \
 -H "Authorization: token $gh_token" \
 -H "Content-Type: application/json" \
 -d "{\"description\": \"Argosbx Nodes\",\"public\": false,\"files\": {\"$gist_filename\": {\"content\": \"$node_content\"}}}")
-new_gist_id=$(echo "$response" | grep -o '"id": "[^"]*"' | head -1 | cut -d'"' -f4)
-if [ -n "$new_gist_id" ]; then
-  echo "$new_gist_id" > "$HOME/agsbx/gh_gist_id"
-  raw_url=$(echo "$response" | grep -o '"raw_url": "[^"]*"' | head -1 | cut -d'"' -f4)
-  echo "Gist 已保存，ID: $new_gist_id"
-  echo "订阅链接 (Raw): $raw_url"
 fi
+
+if echo "$response" | grep -q '"id":'; then
+  new_gist_id=$(echo "$response" | grep -o '"id": "[^"]*"' | head -1 | cut -d'"' -f4)
+  [ -z "$gh_gist_id" ] && echo "$new_gist_id" > "$HOME/agsbx/gh_gist_id"
+  raw_url=$(echo "$response" | grep -o '"raw_url": "[^"]*"' | head -1 | cut -d'"' -f4)
+  echo "Gist 推送成功"
+  echo "订阅链接 (Raw): $raw_url"
+else
+  echo "Gist 推送失败，请检查 Token 权限或网络连接"
 fi
 }
 
