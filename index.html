@@ -423,9 +423,9 @@
         <div class="protocol-group separator">
           <h3>Xray可选协议：</h3>
           <div class="protocol-grid">
-            <label><input type="checkbox" data-proto="vlpt"> Vless-tcp-reality-vision <span class="pill">vlpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="vlpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="vlpt"></div><label><input type="checkbox" data-enc="vlpt"> <span class="pill">ENC加密</span></label>
-            <label><input type="checkbox" data-proto="xhpt"> Vless-xhttp-reality <span class="pill">xhpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="xhpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="xhpt"></div><label><input type="checkbox" data-enc="xhpt"> <span class="pill">ENC加密</span></label>
-            <label><input type="checkbox" data-proto="vxpt"> Vless-xhttp <span class="pill">vxpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="vxpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="vxpt"></div><label><input type="checkbox" data-enc="vxpt"> <span class="pill">ENC加密</span></label>
+            <label><input type="checkbox" data-proto="vlpt"> Vless-tcp-reality-vision <span class="pill">vlpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="vlpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="vlpt"></div><label><input type="checkbox" data-enc="vlpt"> ENC加密</label>
+            <label><input type="checkbox" data-proto="xhpt"> Vless-xhttp-reality <span class="pill">xhpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="xhpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="xhpt"></div><label><input type="checkbox" data-enc="xhpt"> ENC加密</label>
+            <label><input type="checkbox" data-proto="vxpt"> Vless-xhttp <span class="pill">vxpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="vxpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="vxpt"></div><label><input type="checkbox" data-enc="vxpt"> ENC加密</label>
           </div>
         </div>
         <div class="protocol-group separator">
@@ -441,7 +441,7 @@
         <div class="protocol-group separator">
           <h3>Xray/Singbox自动分配协议：</h3>
           <div class="protocol-grid">
-            <label><input type="checkbox" data-proto="vwpt"> Vless-ws <span class="pill">vwpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="vwpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="vwpt"></div><label><input type="checkbox" data-enc="vwpt"> <span class="pill">ENC加密</span></label>
+            <label><input type="checkbox" data-proto="vwpt"> Vless-ws <span class="pill">vwpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="vwpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="vwpt"></div><label><input type="checkbox" data-enc="vwpt"> ENC加密</label>
             <label><input type="checkbox" data-proto="vmpt"> Vmess-ws <span class="pill">vmpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="vmpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="vmpt"></div><label></label>
             <label><input type="checkbox" data-proto="sopt"> Socks5 <span class="pill">sopt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="sopt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="sopt"></div><label></label>
           </div>
@@ -549,7 +549,12 @@
         <div class="tabs">
           <h2>进入服务器的SSH界面，复制下方生成的一键脚本命令，回车一次搞定</h2>
         </div>
-        <div class="command-type-row">
+        <div class="command-type-row env-mode-row" style="margin-top:8px;">
+            <label>环境模式选择：</label>
+            <label title="适用于标准 VPS，直接执行"><input type="radio" name="envMode" value="std" checked> 标准环境</label>
+            <label title="解决 /dev/fd/63 报错，保存文件执行"><input type="radio" name="envMode" value="res"> 受限环境</label>
+        </div>
+        <div class="command-type-row" style="margin-top:0;">
             <label>命令类型选择：</label>
             <label style="margin-bottom: 0;"><input type="radio" name="commandType" value="curl" checked> curl</label>
             <label style="margin-bottom: 0;"><input type="radio" name="commandType" value="wget"> wget</label>
@@ -570,8 +575,21 @@
 
 <script>
 (function(){
-  const CURL = 'bash <(curl -Ls https://raw.githubusercontent.com/zv201413/argosbx-new/main-new/argosbx.sh)';
-  const WGET = 'bash <(wget -qO- https://raw.githubusercontent.com/zv201413/argosbx-new/main-new/argosbx.sh)';
+  const SCRIPT_URL = 'https://raw.githubusercontent.com/zv201413/argosbx-new/main-new/argosbx.sh';
+
+  // Templates for two modes (standard vs restricted)
+  const TEMPLATES = {
+    std: {
+      curl: `bash <(curl -Ls ${SCRIPT_URL})`,
+      wget: `bash <(wget -qO- ${SCRIPT_URL})`,
+      exec: ""
+    },
+    res: {
+      curl: `curl -Lso argosbx.sh ${SCRIPT_URL} &&`,
+      wget: `wget -qO argosbx.sh ${SCRIPT_URL} &&`,
+      exec: `bash argosbx.sh`
+    }
+  };
 const protoKeys = ['sopt','vmpt','vlpt','xhpt','vxpt','vwpt','arpt','anpt','hypt','tupt','sspt'];
 const optIds = ['warp','ippz','ippref','wippref','uuid','reym','cdnym', 'name', 'oap', 'argoip', 'nodeaddr', 'gh_token', 'gh_gist_id'];
 
@@ -808,6 +826,11 @@ document.getElementById('uuid').value = '';
     radio.addEventListener('change', render);
   });
 
+  // Also re-render when environment mode changes
+  document.querySelectorAll('input[name="envMode"]').forEach(radio => {
+    radio.addEventListener('change', render);
+  });
+
   function collectVars(){
     const m = {};
     protoKeys.forEach(k => {
@@ -875,8 +898,15 @@ document.getElementById('uuid').value = '';
   function render(){
     const m = collectVars();
     const vars = toBashVars(m);
-    const selectedCommand = document.querySelector('input[name="commandType"]:checked').value === 'curl' ? CURL : WGET;
-    output.value = (vars ? vars + ' ' : '') + selectedCommand;
+    const mode = document.querySelector('input[name="envMode"]:checked').value;
+    const type = document.querySelector('input[name="commandType"]:checked').value;
+    const template = TEMPLATES[mode][type];
+    const exec = TEMPLATES[mode].exec;
+    if (mode === 'std') {
+      output.value = (vars ? vars + ' ' : '') + template;
+    } else {
+      output.value = `${template} ${vars ? vars + ' ' : ''}${exec}`;
+    }
   }
 
   initTheme();
@@ -892,13 +922,15 @@ document.getElementById('uuid').value = '';
     btn.addEventListener('click', () => {
       const command = btn.getAttribute('data-command');
       const ippzValue = ippzSelect.value;
-      const selectedCommand = document.querySelector('input[name="commandType"]:checked').value === 'curl' ? CURL : WGET;
+      const mode = document.querySelector('input[name="envMode"]:checked').value;
+      const type = document.querySelector('input[name="commandType"]:checked').value;
+      const template = TEMPLATES[mode][type];
+      const exec = TEMPLATES[mode].exec;
       const shouldPreserveIppz = (command === 'list' && (ippzValue === '4' || ippzValue === '6'));
 
       if (command === 'rep') {
-        const m = collectVars();
-        const vars = toBashVars(m);
-        output.value = (vars ? vars + ' ' : '') + selectedCommand + ' rep';
+        render();
+        output.value += ' rep';
       } else {
         resetForm(shouldPreserveIppz);
         if (shouldPreserveIppz) {
@@ -906,9 +938,13 @@ document.getElementById('uuid').value = '';
           const m = collectVars();
           m['ippz'] = ippzValue;
           const vars = toBashVars(m);
-          output.value = `${vars} ${selectedCommand} ${command}`;
+          output.value = `${vars} ${template} ${command}`;
         } else {
-          output.value = `${selectedCommand} ${command}`;
+          if (mode === 'std') {
+            output.value = `${template} ${command}`;
+          } else {
+            output.value = `${template} ${exec} ${command}`;
+          }
         }
       }
     });
