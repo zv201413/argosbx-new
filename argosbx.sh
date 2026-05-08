@@ -73,6 +73,10 @@ export gh_token=${gh_token:-''}
 export gh_gist_id=${gh_gist_id:-''}
 export nodeaddr=${nodeaddr:-''}
 export wippref=${wippref:-''}
+export nz_host=${nz_host:-''}
+export nz_port=${nz_port:-'5555'}
+export nz_sec=${nz_sec:-''}
+export nz_tls=${nz_tls:-''}
 v46url="https://icanhazip.com"
 agsbxurl="https://raw.githubusercontent.com/zv201413/argosbx-new/main-new/argosbx.sh"
 
@@ -1199,6 +1203,65 @@ fi
 #   - 故障自愈: 修正 .bashrc 恢复语句中的变量键名错误，确保 SSH 重连可正确找回协议
 #   - 持久化配置: 写入 crontab 和 bashrc 配置别名
 # =============================================================================
+
+insnezha(){
+  if [ -n "$nz_host" ] && [ -n "$nz_sec" ]; then
+    echo "=========启用 哪吒探针 (Nezha Agent)========="
+    
+    NEZHA_DIR="$HOME/agsbx/nezha"
+    NEZHA_BIN="${NEZHA_DIR}/nezha-agent"
+    
+    mkdir -p "$NEZHA_DIR"
+    if [ ! -e "$NEZHA_BIN" ]; then
+      case "$(uname -m)" in
+        x86_64|amd64) nz_arch="amd64" ;;
+        aarch64|arm64) nz_arch="arm64" ;;
+        armv7l|armv7) nz_arch="armv7" ;;
+        armv5*) nz_arch="armv5" ;;
+        s390x) nz_arch="s390x" ;;
+        *) echo "未知架构，跳过安装探针"; return 1 ;;
+      esac
+      
+      nz_url=$(curl -s "https://api.github.com/repos/nezhahq/agent/releases/latest" | grep "browser_download_url" | grep "linux-${nz_arch}.zip" | cut -d '"' -f 4)
+      echo "正在下载哪吒探针内核 (${nz_arch})..."
+      (command -v curl >/dev/null 2>&1 && curl -Lo "${NEZHA_DIR}/nezha.zip" -# --retry 2 "$nz_url") || wget -O "${NEZHA_DIR}/nezha.zip" --tries=2 "$nz_url"
+      unzip -q -o "${NEZHA_DIR}/nezha.zip" -d "$NEZHA_DIR/" 2>/dev/null
+      rm -f "${NEZHA_DIR}/nezha.zip"
+      chmod +x "$NEZHA_BIN"
+    fi
+
+    kill -15 $(pgrep -f 'nezha-agent' 2>/dev/null) >/dev/null 2>&1
+
+    local tls_flag=""
+    [ "$nz_tls" = "--tls" ] && tls_flag="--tls"
+
+    local safe_flags=""
+    if [ "$EUID" -ne 0 ]; then
+        safe_flags="--disable-auto-update --disable-command-execute"
+        echo "⚠️ 检测到非 Root 环境，已自动启用探针安全限制模式。"
+    fi
+
+    nohup "$NEZHA_BIN" -s "${nz_host}:${nz_port}" -p "${nz_sec}" ${tls_flag} ${safe_flags} >/dev/null 2>&1 &
+    
+    sleep 3
+    if pgrep -f 'nezha-agent' >/dev/null 2>&1; then
+        echo "✅ 哪吒探针启动成功！"
+    else
+        echo "❌ 哪吒探针启动失败，请检查参数或网络环境。"
+    fi
+
+    if command -v crontab >/dev/null 2>&1; then
+        crontab -l > /tmp/crontab.tmp 2>/dev/null
+        sed -i '/nezha-agent/d' /tmp/crontab.tmp
+        echo "@reboot sleep 15 && /bin/sh -c \"nohup ${NEZHA_BIN} -s ${nz_host}:${nz_port} -p ${nz_sec} ${tls_flag} ${safe_flags} >/dev/null 2>&1 &\"" >> /tmp/crontab.tmp
+        crontab /tmp/crontab.tmp >/dev/null 2>&1
+        rm -f /tmp/crontab.tmp
+    else
+        echo "⚠️ 提示：当前环境无 crontab 权限，探针无法设置开机自启，但本次已成功运行。"
+    fi
+  fi
+}
+
 ins(){
 # =============================================================================
 # 安装模式判断逻辑：
@@ -1381,6 +1444,7 @@ fi
 fi
 crontab /tmp/crontab.tmp >/dev/null 2>&1
 rm /tmp/crontab.tmp
+insnezha
 echo "Argosbx脚本进程启动成功，安装完毕" && sleep 2
 else
 echo "Argosbx脚本进程未启动，安装失败" && exit
@@ -1407,6 +1471,11 @@ if echo "$procs" | grep -Eq 'agsbx/c' || pgrep -f 'agsbx/c' >/dev/null 2>&1; the
 echo "Argo (版本V$("$HOME/agsbx/cloudflared" version 2>/dev/null | awk '{print $3}'))：运行中"
 else
 echo "Argo：未启用"
+fi
+if pgrep -f 'nezha-agent' >/dev/null 2>&1; then
+  echo "哪吒探针：运行中"
+else
+  echo "哪吒探针：未启用"
 fi
 }
 
@@ -1503,19 +1572,20 @@ country=$(curl -s ip-api.com/json/?fields=countryCode 2>/dev/null | sed 's/[{}"]
 [ -z "$country" ] && country=""
 
 # 优先使用用户指定的argoip，否则自动获取Argo域名作为备用IP
-preferred_ip=
+preferred_ips=()
 if [ -n "$argoip" ]; then
-  preferred_ip="$argoip"
+  # 用 ; 分割多个优选IP/域名
+  IFS=';' read -ra preferred_ips <<< "$argoip"
 else
   _argo_domain=$(cat $HOME/agsbx/sbargoym.log 2>/dev/null || grep -a trycloudflare.com $HOME/agsbx/argo.log 2>/dev/null | awk 'NR==2{print}' | awk -F// '{print $2}' | awk '{print $1}')
   [ -n "$_argo_domain" ] && {
     resolved_ip=$(getent ahosts "$_argo_domain" 2>/dev/null | grep STREAM | head -1 | awk '{print $1}')
     [ -z "$resolved_ip" ] && resolved_ip=$(nslookup "$_argo_domain" 2>/dev/null | grep Address | tail -1 | awk '{print $2}')
-    [ -n "$resolved_ip" ] && preferred_ip="$resolved_ip"
+    [ -n "$resolved_ip" ] && preferred_ips+=("$resolved_ip")
   }
 fi
 # 如果还是没有，生成一个随机的优选IP
-[ -z "$preferred_ip" ] && preferred_ip="104.28.$(cfip).1"
+[ ${#preferred_ips[@]} -eq 0 ] && preferred_ips+=("104.28.$(cfip).1")
 
 echo "*********************************************************"
 
@@ -1565,13 +1635,19 @@ echo
 if [ -f "$HOME/agsbx/cdnym" ]; then
 echo "💣【 Vless-xhttp-cdn 】节点信息如下："
 echo "注：可自行更换优选IP域名，如是回源端口需手动修改443或者80系端口"
-if [ -n "$port_vx_enc" ]; then
-vl_vx_cdn_link="vless://$uuid@$preferred_ip:$display_port_vx?encryption=$enkey&type=xhttp&host=$xvvmcdnym&path=/xhttp&mode=auto#${sxname}${country}_vl_xhttp_cdn_$hostname"
+idx=1
+for ip in "${preferred_ips[@]}"; do
+  ip_suffix=""
+  [ ${#preferred_ips[@]} -gt 1 ] && ip_suffix="-$idx"
+  if [ -n "$port_vx_enc" ]; then
+vl_vx_cdn_link="vless://$uuid@$ip:$display_port_vx?encryption=$enkey&type=xhttp&host=$xvvmcdnym&path=/xhttp&mode=auto#${sxname}${country}_vl_xhttp_cdn_${hostname}${ip_suffix}"
 else
-vl_vx_cdn_link="vless://$uuid@$preferred_ip:$display_port_vx?encryption=none&type=xhttp&host=$xvvmcdnym&path=/xhttp&mode=auto#${sxname}${country}_vl_xhttp_cdn_$hostname"
+vl_vx_cdn_link="vless://$uuid@$ip:$display_port_vx?encryption=none&type=xhttp&host=$xvvmcdnym&path=/xhttp&mode=auto#${sxname}${country}_vl_xhttp_cdn_${hostname}${ip_suffix}"
 fi
-echo "$vl_vx_cdn_link" >> "$HOME/agsbx/jh.txt"
-echo "$vl_vx_cdn_link"
+  echo "$vl_vx_cdn_link" >> "$HOME/agsbx/jh.txt"
+  echo "$vl_vx_cdn_link"
+  idx=$((idx+1))
+done
 echo
 fi
 fi
@@ -1593,13 +1669,19 @@ echo
 if [ -f "$HOME/agsbx/cdnym" ]; then
 echo "💣【 Vless-ws-cdn 】节点信息如下："
 echo "注：可自行更换优选IP域名，如是回源端口需手动修改443或者80系端口"
-if [ -n "$port_vw_enc" ] || [ "$vwpt_enc" = "y" ]; then
-vl_vw_cdn_link="vless://$uuid@$preferred_ip:$display_port_vw?encryption=$en_vw&type=ws&host=$xvvmcdnym&path=%2F${uuid}-vw#${sxname}${country}_vl_ws_cdn_$hostname"
+idx=1
+for ip in "${preferred_ips[@]}"; do
+  ip_suffix=""
+  [ ${#preferred_ips[@]} -gt 1 ] && ip_suffix="-$idx"
+  if [ -n "$port_vw_enc" ] || [ "$vwpt_enc" = "y" ]; then
+vl_vw_cdn_link="vless://$uuid@$ip:$display_port_vw?encryption=$en_vw&type=ws&host=$xvvmcdnym&path=%2F${uuid}-vw#${sxname}${country}_vl_ws_cdn_${hostname}${ip_suffix}"
 else
-vl_vw_cdn_link="vless://$uuid@$preferred_ip:$display_port_vw?encryption=none&type=ws&host=$xvvmcdnym&path=%2F${uuid}-vw#${sxname}${country}_vl_ws_cdn_$hostname"
+vl_vw_cdn_link="vless://$uuid@$ip:$display_port_vw?encryption=none&type=ws&host=$xvvmcdnym&path=%2F${uuid}-vw#${sxname}${country}_vl_ws_cdn_${hostname}${ip_suffix}"
 fi
-echo "$vl_vw_cdn_link" >> "$HOME/agsbx/jh.txt"
-echo "$vl_vw_cdn_link"
+  echo "$vl_vw_cdn_link" >> "$HOME/agsbx/jh.txt"
+  echo "$vl_vw_cdn_link"
+  idx=$((idx+1))
+done
 echo
 fi
 fi
@@ -1641,9 +1723,15 @@ echo
 if [ -f "$HOME/agsbx/cdnym" ]; then
 echo "💣【 Vmess-ws-cdn 】节点信息如下："
 echo "注：可自行更换优选IP域名，如是回源端口需手动修改443或者80系端口"
-vm_cdn_link="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}${country}_vm_ws_cdn_$hostname\", \"add\": \"$preferred_ip\", \"port\": \"$display_port_vm\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$xvvmcdnym\", \"path\": \"/$uuid-vm\", \"tls\": \"\"}" | base64 -w0)"
-echo "$vm_cdn_link" >> "$HOME/agsbx/jh.txt"
-echo "$vm_cdn_link"
+idx=1
+for ip in "${preferred_ips[@]}"; do
+  ip_suffix=""
+  [ ${#preferred_ips[@]} -gt 1 ] && ip_suffix="-$idx"
+  vm_cdn_link="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}${country}_vm_ws_cdn_${hostname}${ip_suffix}\", \"add\": \"$ip\", \"port\": \"$display_port_vm\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$xvvmcdnym\", \"path\": \"/$uuid-vm\", \"tls\": \"\"}" | base64 -w0)"
+  echo "$vm_cdn_link" >> "$HOME/agsbx/jh.txt"
+  echo "$vm_cdn_link"
+  idx=$((idx+1))
+done
 echo
 fi
 fi
@@ -1794,9 +1882,12 @@ crontab -l > /tmp/crontab.tmp 2>/dev/null
 sed -i '/agsbx\/sing-box/d' /tmp/crontab.tmp 2>/dev/null
 sed -i '/agsbx\/xray/d' /tmp/crontab.tmp 2>/dev/null
 sed -i '/agsbx\/cloudflared/d' /tmp/crontab.tmp 2>/dev/null
+sed -i '/nezha-agent/d' /tmp/crontab.tmp 2>/dev/null
 crontab /tmp/crontab.tmp >/dev/null 2>&1
 rm /tmp/crontab.tmp 2>/dev/null
 rm -rf "$HOME/bin/agsbx" 2>/dev/null
+kill -15 $(pgrep -f 'nezha-agent' 2>/dev/null) >/dev/null 2>&1
+rm -rf "$HOME/agsbx/nezha" 2>/dev/null
 if pidof systemd >/dev/null 2>&1; then
 for svc in xr sb argo; do
 systemctl stop "$svc" >/dev/null 2>&1

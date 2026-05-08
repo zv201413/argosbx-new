@@ -513,7 +513,7 @@
             <div class="name-preview" id="namePreview" style="margin-top: 5px; font-size: 12px; color: var(--sub);"></div>
           </div>
         </div>
-  <div class="row"><label>Argo优选IP/域名 <span class="pill">argoip</span></label><input id="argoip" type="text" placeholder="留空则默认使用yg数字.ygkkk.dpdns.org"/></div>
+  <div class="row"><label>Argo优选IP/域名 <span class="pill">argoip</span></label><input id="argoip" type="text" placeholder="多个用 ; 分隔，如 ip1;ip2;domain1"/></div>
   <div class="row"><label>直连节点自定义地址 <span class="pill">nodeaddr</span></label><input id="nodeaddr" type="text" placeholder="hy2/tuic等直连节点地址，留空则使用VPS IP"/></div>
   </section>
 
@@ -531,6 +531,29 @@
   <div class="row"><label>固定隧道Token <span class="pill">agk</span></label><input id="agk" type="text" placeholder="Zero Trust已提取ey开头的秘钥，留空则临时隧道" disabled></div>
   <div class="row"><label>Gist ID <span class="pill">gh_gist_id</span></label><input id="gh_gist_id" type="text" placeholder="已有Gist ID可填，留空则新建"/></div>
   <div class="row"><label>GitHub Token <span class="pill">gh_token</span></label><input id="gh_token" type="text" placeholder="推送Gist用，留空则不推送"/></div>
+  </section>
+
+  <section class="card nezha-agent">
+    <h2>哪吒探针 (Nezha Agent) 配置：</h2>
+    <div class="row">
+      <label>面板服务器地址 <span class="pill">nz_host</span></label>
+      <input id="nz_host" type="text" placeholder="如: nezha.domain.com (留空不安装)"/>
+    </div>
+    <div class="row">
+      <label>面板RPC端口 <span class="pill">nz_port</span></label>
+      <input id="nz_port" type="text" placeholder="默认为 5555"/>
+    </div>
+    <div class="row">
+      <label>Agent 密钥 <span class="pill">nz_sec</span></label>
+      <input id="nz_sec" type="text" placeholder="探针的通信密钥 (非节点UUID)"/>
+    </div>
+    <div class="row">
+      <label>启用 TLS <span class="pill">nz_tls</span></label>
+      <select id="nz_tls">
+        <option value="">关闭 (默认)</option>
+        <option value="--tls">开启 (RPC走CDN/反代时选用)</option>
+      </select>
+    </div>
   </section>
 
       <section class="card shortcut-commands-card">
@@ -591,7 +614,7 @@
     }
   };
 const protoKeys = ['sopt','vmpt','vlpt','xhpt','vxpt','vwpt','arpt','anpt','hypt','tupt','sspt'];
-const optIds = ['warp','ippz','ippref','wippref','uuid','reym','cdnym', 'name', 'oap', 'argoip', 'nodeaddr', 'gh_token', 'gh_gist_id'];
+const optIds = ['warp','ippz','ippref','wippref','uuid','reym','cdnym', 'name', 'oap', 'argoip', 'nodeaddr', 'gh_token', 'gh_gist_id', 'nz_host', 'nz_port', 'nz_sec', 'nz_tls'];
 
   const argoSelect = document.getElementById('argoSelect');
   const agn = document.getElementById('agn');
