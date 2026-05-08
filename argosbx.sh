@@ -118,7 +118,7 @@ check_netlink_full_support(){
 }
 
 SB_SUPPORTED=1
-check_netlink_full_support || SB_SUPPORTED=0
+#check_netlink_full_support || SB_SUPPORTED=0
 
 if [ "$SB_SUPPORTED" = 0 ]; then
     SB_SKIP_REASON=""
