@@ -1799,21 +1799,35 @@ argodomain=$(cat "$HOME/agsbx/sbargoym.log" 2>/dev/null)
 
 if [ -n "$argodomain" ]; then
 vlvm=$(cat $HOME/agsbx/vlvm 2>/dev/null)
+
 if [ "$vlvm" = "Vmess" ]; then
-vmatls_link1="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vmess-ws-tls-argo-$hostname-443\", \"add\": \"$argodomain\", \"port\": \"443\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$argodomain\", \"path\": \"/$uuid-vm\", \"tls\": \"tls\", \"sni\": \"$argodomain\", \"alpn\": \"\", \"fp\": \"chrome\"}" | base64 -w0)"
-echo "$vmatls_link1" >> "$HOME/agsbx/jh.txt"
-vma_link7="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vmess-ws-argo-$hostname-80\", \"add\": \"$argodomain\", \"port\": \"80\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$argodomain\", \"path\": \"/$uuid-vm\", \"tls\": \"\"}" | base64 -w0)"
-echo "$vma_link7" >> "$HOME/agsbx/jh.txt"
+idx=1
+for ip in "${preferred_ips[@]}"; do
+  ip_suffix=""
+  [ ${#preferred_ips[@]} -gt 1 ] && ip_suffix="-$idx"
+  vmatls_link1="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vmess-ws-tls-argo-${hostname}${ip_suffix}\", \"add\": \"$ip\", \"port\": \"443\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$argodomain\", \"path\": \"/$uuid-vm\", \"tls\": \"tls\", \"sni\": \"$argodomain\", \"alpn\": \"\", \"fp\": \"chrome\"}" | base64 -w0)"
+  echo "$vmatls_link1" >> "$HOME/agsbx/jh.txt"
+  vma_link7="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vmess-ws-argo-${hostname}${ip_suffix}\", \"add\": \"$ip\", \"port\": \"80\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$argodomain\", \"path\": \"/$uuid-vm\", \"tls\": \"\"}" | base64 -w0)"
+  echo "$vma_link7" >> "$HOME/agsbx/jh.txt"
+  idx=$((idx+1))
+done
+
 elif [ "$vlvm" = "Vless" ]; then
 if [ -n "$port_vw_enc" ] || [ "$vwpt_enc" = "y" ]; then
 en_vw="$enkey"
 else
 en_vw="none"
 fi
-vwatls_link1="vless://$uuid@$argodomain:443?encryption=$en_vw&type=ws&host=$argodomain&path=%2F${uuid}-vw&security=tls&sni=$argodomain&fp=chrome&insecure=0&allowInsecure=0#${sxname}${country}_vl_ws_tls_argo_$hostname"
-echo "$vwatls_link1" >> "$HOME/agsbx/jh.txt"
-vwa_link2="vless://$uuid@$argodomain:80?encryption=$en_vw&type=ws&host=$argodomain&path=%2F${uuid}-vw&security=none#${sxname}${country}_vl_ws_argo_$hostname"
-echo "$vwa_link2" >> "$HOME/agsbx/jh.txt"
+idx=1
+for ip in "${preferred_ips[@]}"; do
+  ip_suffix=""
+  [ ${#preferred_ips[@]} -gt 1 ] && ip_suffix="-$idx"
+  vwatls_link1="vless://$uuid@$ip:443?encryption=$en_vw&type=ws&host=$argodomain&path=%2F${uuid}-vw&security=tls&sni=$argodomain&fp=chrome&insecure=0&allowInsecure=0#${sxname}${country}_vl_ws_tls_argo_${hostname}${ip_suffix}"
+  echo "$vwatls_link1" >> "$HOME/agsbx/jh.txt"
+  vwa_link2="vless://$uuid@$ip:80?encryption=$en_vw&type=ws&host=$argodomain&path=%2F${uuid}-vw&security=none#${sxname}${country}_vl_ws_argo_${hostname}${ip_suffix}"
+  echo "$vwa_link2" >> "$HOME/agsbx/jh.txt"
+  idx=$((idx+1))
+done
 fi
 sbtk=$(cat "$HOME/agsbx/sbargotoken.log" 2>/dev/null)
 if [ -n "$sbtk" ]; then
@@ -1824,19 +1838,25 @@ echo "Argo隧道端口正在使用${vlvm}-ws主协议端口：$(cat $HOME/agsbx/
 echo "Argo域名：$argodomain"
 echo "$nametn"
 echo
-if [ "$vlvm" = "Vmess" ]; then
-echo "1、💣443端口的Vmess-ws-tls-argo节点"
-echo "$vmatls_link1"
-echo
-echo "2、💣80端口的Vmess-ws-argo节点"
-echo "$vma_link7"
-elif [ "$vlvm" = "Vless" ]; then
-echo "1、💣443端口的Vless-ws-tls-argo节点"
-echo "$vwatls_link1"
-echo
-echo "2、💣80端口的Vless-ws-argo节点"
-echo "$vwa_link2"
-fi
+idx=1
+for ip in "${preferred_ips[@]}"; do
+  ip_suffix=""
+  [ ${#preferred_ips[@]} -gt 1 ] && ip_suffix="-$idx"
+  if [ "$vlvm" = "Vmess" ]; then
+    echo "💣${idx}、443端口Vmess-ws-tls-argo节点${ip_suffix}"
+    echo "$ip (使用域名$argodomain)"
+    echo
+    echo "💣${idx}、80端口Vmess-ws-argo节点${ip_suffix}"
+    echo "$ip (使用域名$argodomain)"
+  elif [ "$vlvm" = "Vless" ]; then
+    echo "💣${idx}、443端口Vless-ws-tls-argo节点${ip_suffix}"
+    echo "$ip (使用域名$argodomain)"
+    echo
+    echo "💣${idx}、80端口Vless-ws-argo节点${ip_suffix}"
+    echo "$ip (使用域名$argodomain)"
+  fi
+  idx=$((idx+1))
+done
 fi
 echo "---------------------------------------------------------"
 echo "聚合节点信息，请进入 $HOME/agsbx/jh.txt 文件目录查看或者运行 cat $HOME/agsbx/jh.txt 查看"
