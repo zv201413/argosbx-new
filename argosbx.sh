@@ -1572,20 +1572,19 @@ country=$(curl -s ip-api.com/json/?fields=countryCode 2>/dev/null | sed 's/[{}"]
 [ -z "$country" ] && country=""
 
 # 优先使用用户指定的argoip，否则自动获取Argo域名作为备用IP
-preferred_ips=()
+preferred_ips=""
 if [ -n "$argoip" ]; then
-  # 用 ; 分割多个优选IP/域名
-  IFS=';' read -ra preferred_ips <<< "$argoip"
+  preferred_ips=$(echo "$argoip" | tr ';' ' ')
 else
   _argo_domain=$(cat $HOME/agsbx/sbargoym.log 2>/dev/null || grep -a trycloudflare.com $HOME/agsbx/argo.log 2>/dev/null | awk 'NR==2{print}' | awk -F// '{print $2}' | awk '{print $1}')
-  [ -n "$_argo_domain" ] && {
+  if [ -n "$_argo_domain" ]; then
     resolved_ip=$(getent ahosts "$_argo_domain" 2>/dev/null | grep STREAM | head -1 | awk '{print $1}')
     [ -z "$resolved_ip" ] && resolved_ip=$(nslookup "$_argo_domain" 2>/dev/null | grep Address | tail -1 | awk '{print $2}')
-    [ -n "$resolved_ip" ] && preferred_ips+=("$resolved_ip")
-  }
+    [ -n "$resolved_ip" ] && preferred_ips="$resolved_ip"
+  fi
 fi
-# 如果还是没有，生成一个随机的优选IP
-[ ${#preferred_ips[@]} -eq 0 ] && preferred_ips+=("104.28.$(cfip).1")
+[ -z "$preferred_ips" ] && preferred_ips="104.28.$(cfip).1"
+ip_count=$(echo "$preferred_ips" | wc -w)
 
 echo "*********************************************************"
 
@@ -1636,9 +1635,9 @@ if [ -f "$HOME/agsbx/cdnym" ]; then
 echo "💣【 Vless-xhttp-cdn 】节点信息如下："
 echo "注：可自行更换优选IP域名，如是回源端口需手动修改443或者80系端口"
 idx=1
-for ip in "${preferred_ips[@]}"; do
+for ip in $preferred_ips; do
   ip_suffix=""
-  [ ${#preferred_ips[@]} -gt 1 ] && ip_suffix="-$idx"
+  [ "$ip_count" -gt 1 ] && ip_suffix="-$idx"
   if [ -n "$port_vx_enc" ]; then
 vl_vx_cdn_link="vless://$uuid@$ip:$display_port_vx?encryption=$enkey&type=xhttp&host=$xvvmcdnym&path=/xhttp&mode=auto#${sxname}${country}_vl_xhttp_cdn_${hostname}${ip_suffix}"
 else
@@ -1670,9 +1669,9 @@ if [ -f "$HOME/agsbx/cdnym" ]; then
 echo "💣【 Vless-ws-cdn 】节点信息如下："
 echo "注：可自行更换优选IP域名，如是回源端口需手动修改443或者80系端口"
 idx=1
-for ip in "${preferred_ips[@]}"; do
+for ip in $preferred_ips; do
   ip_suffix=""
-  [ ${#preferred_ips[@]} -gt 1 ] && ip_suffix="-$idx"
+  [ "$ip_count" -gt 1 ] && ip_suffix="-$idx"
   if [ -n "$port_vw_enc" ] || [ "$vwpt_enc" = "y" ]; then
 vl_vw_cdn_link="vless://$uuid@$ip:$display_port_vw?encryption=$en_vw&type=ws&host=$xvvmcdnym&path=%2F${uuid}-vw#${sxname}${country}_vl_ws_cdn_${hostname}${ip_suffix}"
 else
@@ -1724,9 +1723,9 @@ if [ -f "$HOME/agsbx/cdnym" ]; then
 echo "💣【 Vmess-ws-cdn 】节点信息如下："
 echo "注：可自行更换优选IP域名，如是回源端口需手动修改443或者80系端口"
 idx=1
-for ip in "${preferred_ips[@]}"; do
+for ip in $preferred_ips; do
   ip_suffix=""
-  [ ${#preferred_ips[@]} -gt 1 ] && ip_suffix="-$idx"
+  [ "$ip_count" -gt 1 ] && ip_suffix="-$idx"
   vm_cdn_link="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}${country}_vm_ws_cdn_${hostname}${ip_suffix}\", \"add\": \"$ip\", \"port\": \"$display_port_vm\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$xvvmcdnym\", \"path\": \"/$uuid-vm\", \"tls\": \"\"}" | base64 -w0)"
   echo "$vm_cdn_link" >> "$HOME/agsbx/jh.txt"
   echo "$vm_cdn_link"
@@ -1802,9 +1801,9 @@ vlvm=$(cat $HOME/agsbx/vlvm 2>/dev/null)
 
 if [ "$vlvm" = "Vmess" ]; then
 idx=1
-for ip in "${preferred_ips[@]}"; do
+for ip in $preferred_ips; do
   ip_suffix=""
-  [ ${#preferred_ips[@]} -gt 1 ] && ip_suffix="-$idx"
+  [ "$ip_count" -gt 1 ] && ip_suffix="-$idx"
   vmatls_link1="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vmess-ws-tls-argo-${hostname}${ip_suffix}\", \"add\": \"$ip\", \"port\": \"443\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$argodomain\", \"path\": \"/$uuid-vm\", \"tls\": \"tls\", \"sni\": \"$argodomain\", \"alpn\": \"\", \"fp\": \"chrome\"}" | base64 -w0)"
   echo "$vmatls_link1" >> "$HOME/agsbx/jh.txt"
   vma_link7="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vmess-ws-argo-${hostname}${ip_suffix}\", \"add\": \"$ip\", \"port\": \"80\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$argodomain\", \"path\": \"/$uuid-vm\", \"tls\": \"\"}" | base64 -w0)"
@@ -1819,9 +1818,9 @@ else
 en_vw="none"
 fi
 idx=1
-for ip in "${preferred_ips[@]}"; do
+for ip in $preferred_ips; do
   ip_suffix=""
-  [ ${#preferred_ips[@]} -gt 1 ] && ip_suffix="-$idx"
+  [ "$ip_count" -gt 1 ] && ip_suffix="-$idx"
   vwatls_link1="vless://$uuid@$ip:443?encryption=$en_vw&type=ws&host=$argodomain&path=%2F${uuid}-vw&security=tls&sni=$argodomain&fp=chrome&insecure=0&allowInsecure=0#${sxname}${country}_vl_ws_tls_argo_${hostname}${ip_suffix}"
   echo "$vwatls_link1" >> "$HOME/agsbx/jh.txt"
   vwa_link2="vless://$uuid@$ip:80?encryption=$en_vw&type=ws&host=$argodomain&path=%2F${uuid}-vw&security=none#${sxname}${country}_vl_ws_argo_${hostname}${ip_suffix}"
@@ -1839,9 +1838,9 @@ echo "Argo域名：$argodomain"
 echo "$nametn"
 echo
 idx=1
-for ip in "${preferred_ips[@]}"; do
+for ip in $preferred_ips; do
   ip_suffix=""
-  [ ${#preferred_ips[@]} -gt 1 ] && ip_suffix="-$idx"
+  [ "$ip_count" -gt 1 ] && ip_suffix="-$idx"
   if [ "$vlvm" = "Vmess" ]; then
     echo "💣${idx}、443端口Vmess-ws-tls-argo节点${ip_suffix}"
     echo "$ip (使用域名$argodomain)"
