@@ -1057,7 +1057,7 @@ cat >> "$HOME/agsbx/xr.json" <<EOF
   }
 }
 EOF
-if pidof systemd >/dev/null 2>&1 && [ "$EUID" -eq 0 ]; then
+if pidof systemd >/dev/null 2>&1 && [ "$(id -u)" -eq 0 ]; then
 cat > /etc/systemd/system/xr.service <<EOF
 [Unit]
 Description=xr service
@@ -1077,7 +1077,7 @@ EOF
 systemctl daemon-reload >/dev/null 2>&1
 systemctl enable xr >/dev/null 2>&1
 systemctl start xr >/dev/null 2>&1
-elif command -v rc-service >/dev/null 2>&1 && [ "$EUID" -eq 0 ]; then
+elif command -v rc-service >/dev/null 2>&1 && [ "$(id -u)" -eq 0 ]; then
 cat > /etc/init.d/xray <<EOF
 #!/sbin/openrc-run
 description="xr service"
@@ -1153,7 +1153,7 @@ cat >> "$HOME/agsbx/sb.json" <<EOF
   }
 }
 EOF
-if pidof systemd >/dev/null 2>&1 && [ "$EUID" -eq 0 ]; then
+if pidof systemd >/dev/null 2>&1 && [ "$(id -u)" -eq 0 ]; then
 cat > /etc/systemd/system/sb.service <<EOF
 [Unit]
 Description=sb service
@@ -1173,7 +1173,7 @@ EOF
 systemctl daemon-reload >/dev/null 2>&1
 systemctl enable sb >/dev/null 2>&1
 systemctl start sb >/dev/null 2>&1
-elif command -v rc-service >/dev/null 2>&1 && [ "$EUID" -eq 0 ]; then
+elif command -v rc-service >/dev/null 2>&1 && [ "$(id -u)" -eq 0 ]; then
 cat > /etc/init.d/sing-box <<EOF
 #!/sbin/openrc-run
 description="sb service"
@@ -1236,7 +1236,7 @@ insnezha(){
     [ "$nz_tls" = "--tls" ] && tls_flag="--tls"
 
     local safe_flags=""
-    if [ "$EUID" -ne 0 ]; then
+    if [ "$(id -u)" -ne 0 ]; then
         safe_flags="--disable-auto-update --disable-command-execute"
         echo "⚠️ 检测到非 Root 环境，已自动启用探针安全限制模式。"
     fi
@@ -1310,9 +1310,9 @@ fi
 # 启动Xray内核（如果xr.json存在但Xray未启动）
 if [ -f "$HOME/agsbx/xr.json" ]; then
 if ! find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null | grep -q 'agsbx/x' && ! pgrep -f 'agsbx/x' >/dev/null 2>&1; then
-if pidof systemd >/dev/null 2>&1 && [ "$EUID" -eq 0 ]; then
+if pidof systemd >/dev/null 2>&1 && [ "$(id -u)" -eq 0 ]; then
 systemctl start xr >/dev/null 2>&1
-elif command -v rc-service >/dev/null 2>&1 && [ "$EUID" -eq 0 ]; then
+elif command -v rc-service >/dev/null 2>&1 && [ "$(id -u)" -eq 0 ]; then
 rc-service xray start >/dev/null 2>&1
 else
 nohup "$HOME/agsbx/xray" run -c "$HOME/agsbx/xr.json" >/dev/null 2>&1 &
@@ -1340,7 +1340,7 @@ echo "$argoproto" > "$HOME/agsbx/argoproto.log"
 
 if [ -n "${ARGO_DOMAIN}" ] && [ -n "${ARGO_AUTH}" ]; then
 argoname='固定'
-if pidof systemd >/dev/null 2>&1 && [ "$EUID" -eq 0 ]; then
+if pidof systemd >/dev/null 2>&1 && [ "$(id -u)" -eq 0 ]; then
 cat > /etc/systemd/system/argo.service <<EOF
 [Unit]
 Description=argo service
@@ -1358,7 +1358,7 @@ EOF
 systemctl daemon-reload >/dev/null 2>&1
 systemctl enable argo >/dev/null 2>&1
 systemctl start argo >/dev/null 2>&1
-elif command -v rc-service >/dev/null 2>&1 && [ "$EUID" -eq 0 ]; then
+elif command -v rc-service >/dev/null 2>&1 && [ "$(id -u)" -eq 0 ]; then
 cat > /etc/init.d/argo <<EOF
 #!/sbin/openrc-run
 description="argo service"
@@ -1415,7 +1415,7 @@ else
   echo 'export PATH="$HOME/bin:$PATH"' >> "$HOME/.profile"
 fi
 # 尝试添加到全局profile（如果存在且有权限）
-if [ -d /etc/profile.d ] && [ "$EUID" -eq 0 ]; then
+if [ -d /etc/profile.d ] && [ "$(id -u)" -eq 0 ]; then
   echo 'export PATH="$HOME/bin:$PATH"' > /etc/profile.d/agsbx.sh
 fi
 grep -qxF 'source ~/.bashrc' ~/.bash_profile 2>/dev/null || echo 'source ~/.bashrc' >> ~/.bash_profile
