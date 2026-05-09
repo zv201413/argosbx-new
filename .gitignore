@@ -1,0 +1,22 @@
+# .gitignore (模板版)
+# 复制到新项目后，将自动保护归档元数据不被误上传
+
+# 1. 归档元数据
+manifest.yaml
+archive_gen.py
+deploy.sh
+Project_Summary.md
+Archive_Log.md
+
+# 2. 知识库目录
+_Archive/
+_Notebook/
+
+# 3. 系统垃圾与临时文件
+node_modules/
+.env
+*.log
+*.tmp
+__pycache__/
+*:Zone.Identifier
+.DS_Store
