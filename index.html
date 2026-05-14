@@ -395,16 +395,20 @@
     }
     .input-with-preview {
       display: flex;
-      flex-direction: column;
+      align-items: center;
+      gap: 8px;
       width: 100%;
     }
+    .input-with-preview input {
+      flex: 0 0 180px;
+    }
     .name-preview {
-      margin-top: 5px;
+      white-space: nowrap;
       padding: 5px 8px;
       background: rgba(79, 124, 255, 0.1);
       border-radius: 6px;
       font-size: 12px;
-      color: var(--acc);
+      color: var(--sub);
     }
     .protocol-group {
       margin-bottom: 16px;
@@ -556,10 +560,9 @@
 <div class="row"><label>节点名称前缀 <span class="pill">name</span></label>
           <div class="input-with-preview">
             <input id="name" type="text" placeholder="留空则默认协议名前缀"/>
-            <div class="name-preview" id="namePreview" style="margin-top: 5px; font-size: 12px; color: var(--sub);"></div>
+            <div class="name-preview" id="namePreview"></div>
           </div>
         </div>
-  <div class="row"><label>Argo优选IP/域名 <span class="pill">argoip</span></label><input id="argoip" type="text" placeholder="多个用 ; 分隔，如 ip1;ip2;domain1"/></div>
   <div class="row"><label>直连节点自定义地址 <span class="pill">nodeaddr</span></label><input id="nodeaddr" type="text" placeholder="hy2/tuic等直连节点地址，留空则使用VPS IP"/></div>
   </section>
 
@@ -578,22 +581,23 @@
   <div class="row"><label>固定隧道Token <span class="pill">agk</span></label><input id="agk" type="text" placeholder="Zero Trust已提取ey开头的秘钥，留空则临时隧道" disabled></div>
   <div class="row"><label>Gist ID <span class="pill">gh_gist_id</span></label><input id="gh_gist_id" type="text" placeholder="已有Gist ID可填，留空则新建"/></div>
   <div class="row"><label>GitHub Token <span class="pill">gh_token</span></label><input id="gh_token" type="text" placeholder="推送Gist用，留空则不推送"/></div>
+  <div class="row"><label>Argo优选IP/域名 <span class="pill">argoip</span></label><input id="argoip" type="text" placeholder="多个用 ; 分隔，如 ip1;ip2;domain1"/></div>
   </div></details>
 
   <details class="card nezha-agent">
     <summary>哪吒探针 (Nezha Agent) 配置</summary>
     <div class="card-body">
-    <div class="row">
-      <label>服务器地址 <span class="pill">nz_server</span></label>
-      <input id="nz_server" type="text" placeholder="域名:端口，如 nezha.domain.com:443 (留空不安装)"/>
+    <div style="display:flex;gap:16px;margin-bottom:8px;">
+      <div style="flex:1;">
+        <label style="display:flex;align-items:center;gap:6px;margin-bottom:4px;white-space:nowrap;">服务器地址 <span class="pill">nz_server</span></label>
+        <input id="nz_server" type="text" placeholder="域名:端口，如 nezha.domain.com:443" style="width:100%;"/>
+      </div>
+      <div style="flex:1;">
+        <label style="display:flex;align-items:center;gap:6px;margin-bottom:4px;white-space:nowrap;">Agent 密钥 <span class="pill">nz_sec</span></label>
+        <input id="nz_sec" type="text" placeholder="面板设置中的 agent_secret_key" style="width:100%;"/>
+      </div>
     </div>
-    <div class="row">
-      <label>Agent 密钥 <span class="pill">nz_sec</span></label>
-      <input id="nz_sec" type="text" placeholder="面板设置中的 agent_secret_key"/>
-    </div>
-    <div class="row" style="color:var(--sub);font-size:13px;">
-      <span>🔒 TLS：端口为 443/8443/2096/2087/2083/2053 时自动开启</span>
-    </div>
+    <div style="color:var(--sub);font-size:13px;line-height:1;">🔒 TLS：端口为 443/8443/2096/2087/2083/2053 时自动开启</div>
   </div></details>
 
   <details class="card shortcut-commands-card">
