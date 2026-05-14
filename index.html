@@ -623,6 +623,9 @@
         <input id="nezhaImportInput" type="text" placeholder="粘贴面板复制的安装命令自动解析..." style="flex:1; padding:8px 10px; background:var(--input-bg); color:var(--ink); border:1px solid var(--line); border-radius:8px; font-size:13px; outline:none; margin:0;"/>
       </div>
       <div style="color:var(--sub); font-size:12px; line-height:1; margin-top:-2px;">🔒 TLS：端口为 443/8443/2096/2087/2083/2053 时自动开启</div>
+      <div style="margin-top: 4px;">
+        <button id="generateNohupBtn" type="button" style="padding:8px 12px; font-size:13px; width:100%; border-radius:8px; border:1px dashed var(--line); background:rgba(79, 124, 255, 0.05); color:var(--ink); cursor:pointer; transition:0.3s;">⚡ 生成独立免 systemd 运行命令 (Nohup)</button>
+      </div>
     </div>
   </details>
 
@@ -1046,6 +1049,33 @@ document.getElementById('uuid').value = '';
     if (server) nzServerInput.value = server;
     if (secret) nzSecInput.value = secret;
     if (server || secret) render();
+  });
+
+  const generateNohupBtn = document.getElementById('generateNohupBtn');
+  generateNohupBtn.addEventListener('click', () => {
+    const server = nzServerInput.value.trim();
+    const secret = nzSecInput.value.trim();
+    if (!server || !secret) {
+      showToast('❌ 请先填写服务器地址和密钥，或粘贴安装命令导入');
+      return;
+    }
+    
+    let host = server;
+    let port = '443';
+    if (server.includes(':')) {
+      const parts = server.split(':');
+      host = parts[0];
+      port = parts[1];
+    }
+    
+    // 自动判定 TLS 
+    const tlsPorts = ['443','8443','2096','2087','2083','2053'];
+    const tls = tlsPorts.includes(port) ? '--tls' : '';
+    
+    const nohupCmd = `wget -qO komari-agent https://github.com/komari-monitor/komari-agent/releases/latest/download/komari-agent-linux-amd64 && chmod +x komari-agent && nohup ./komari-agent -e ${host}:${port} -t ${secret} ${tls} --disable-auto-update > agent.log 2>&1 &`;
+    
+    output.value = nohupCmd;
+    showToast('✅ Nohup 免 systemd 命令已生成在下方');
   });
 
   initTheme();
