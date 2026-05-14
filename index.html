@@ -154,6 +154,13 @@
     details.card[open] {
       padding: 0;
     }
+    /* 嵌套折叠箭头旋转 */
+    details summary span:first-child {
+      display:inline-block;transition:transform 0.2s;
+    }
+    details[open] > summary > span:first-child {
+      transform: rotate(90deg);
+    }
     .card {
       background: rgba(255, 255, 255, .04);
       backdrop-filter: blur(6px);
@@ -508,7 +515,6 @@
           </div>
         </div>
         <div class="row"><label>Reality 域名 <span class="pill">reym</span></label><input id="reym" type="text" placeholder="留空则默认apple.com"/></div>
-        <div class="row"><label>CF解析IP的域名<span class="pill">cdnym</span></label><input id="cdnym" type="text" placeholder="Vmess-ws、Vless-xhttp/ws启用80、回源CDN时可用" disabled/></div>
         <div class="row"><label>套WARP-IP出站 <span class="pill">warp</span></label>
           <select id="warp">
             <option value="">默认 服务器本地IP出站</option>
@@ -566,9 +572,8 @@
   <div class="row"><label>直连节点自定义地址 <span class="pill">nodeaddr</span></label><input id="nodeaddr" type="text" placeholder="hy2/tuic等直连节点地址，留空则使用VPS IP"/></div>
   </section>
 
-  <details class="card argo-tunnel" open>
-    <summary>Argo 临时/固定隧道 CDN</summary>
-    <div class="card-body">
+  <section class="card argo-tunnel">
+    <h2>Argo 临时/固定隧道 CDN</h2>
         <div class="row">
           <label>启用Argo隧道开关 <span class="pill">argo</span></label>
           <select id="argoSelect">
@@ -579,10 +584,18 @@
         </div>
 <div class="row"><label>固定隧道CF域名 <span class="pill">agn</span></label><input id="agn" type="text" placeholder="Zero Trust已设置有子域名称的CF域名，留空则临时隧道" disabled></div>
   <div class="row"><label>固定隧道Token <span class="pill">agk</span></label><input id="agk" type="text" placeholder="Zero Trust已提取ey开头的秘钥，留空则临时隧道" disabled></div>
-  <div class="row"><label>Gist ID <span class="pill">gh_gist_id</span></label><input id="gh_gist_id" type="text" placeholder="已有Gist ID可填，留空则新建"/></div>
-  <div class="row"><label>GitHub Token <span class="pill">gh_token</span></label><input id="gh_token" type="text" placeholder="推送Gist用，留空则不推送"/></div>
   <div class="row"><label>Argo优选IP/域名 <span class="pill">argoip</span></label><input id="argoip" type="text" placeholder="多个用 ; 分隔，如 ip1;ip2;domain1"/></div>
-  </div></details>
+  <details style="margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:0;">
+    <summary style="cursor:pointer;padding:10px 14px;color:var(--sub);font-size:14px;user-select:none;list-style:none;display:flex;align-items:center;gap:6px;">
+      <span style="font-size:10px;transition:transform 0.2s;">▶</span> CDN 回源 &amp; Gist 同步（高级）
+    </summary>
+    <div style="padding:0 14px 14px;">
+    <div class="row"><label>CF解析IP的域名 <span class="pill">cdnym</span></label><input id="cdnym" type="text" placeholder="Vmess-ws、Vless-xhttp/ws启用80、回源CDN时可用" disabled/></div>
+    <div class="row"><label>Gist ID <span class="pill">gh_gist_id</span></label><input id="gh_gist_id" type="text" placeholder="已有Gist ID可填，留空则新建"/></div>
+    <div class="row"><label>GitHub Token <span class="pill">gh_token</span></label><input id="gh_token" type="text" placeholder="推送Gist用，留空则不推送"/></div>
+    </div>
+  </details>
+  </section>
 
   <details class="card nezha-agent">
     <summary>哪吒探针 (Nezha Agent) 配置</summary>
