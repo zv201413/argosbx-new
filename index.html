@@ -514,7 +514,12 @@
             <button id="generateUuidBtn" type="button" class="primary">生成 UUID</button>
           </div>
         </div>
-        <div class="row"><label>Reality 域名 <span class="pill">reym</span></label><input id="reym" type="text" placeholder="留空则默认apple.com"/></div>
+<div class="row"><label>节点名称前缀 <span class="pill">name</span></label>
+          <div class="input-with-preview">
+            <input id="name" type="text" placeholder="留空则默认协议名前缀"/>
+            <div class="name-preview" id="namePreview"></div>
+          </div>
+        </div>
         <div class="row"><label>套WARP-IP出站 <span class="pill">warp</span></label>
           <select id="warp">
             <option value="">默认 服务器本地IP出站</option>
@@ -556,20 +561,23 @@
             <option value="sx4">双核ipv4出站</option>
           </select>
         </div>
-        <div class="row">
-          <label>当前系统开放所有端口 <span class="pill">oap</span></label>
-          <select id="oap">
-            <option value="">默认 关闭</option>
-            <option value="y">开启 执行一次即可关闭</option>
-          </select>
-        </div>
-<div class="row"><label>节点名称前缀 <span class="pill">name</span></label>
-          <div class="input-with-preview">
-            <input id="name" type="text" placeholder="留空则默认协议名前缀"/>
-            <div class="name-preview" id="namePreview"></div>
-          </div>
-        </div>
   <div class="row"><label>直连节点自定义地址 <span class="pill">nodeaddr</span></label><input id="nodeaddr" type="text" placeholder="hy2/tuic等直连节点地址，留空则使用VPS IP"/></div>
+
+  <details style="margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:0;">
+    <summary style="cursor:pointer;padding:10px 14px;color:var(--sub);font-size:14px;user-select:none;list-style:none;display:flex;align-items:center;gap:6px;">
+      <span style="font-size:10px;">▶</span> 高级选项
+    </summary>
+    <div style="padding:0 14px 14px;">
+    <div class="row"><label>Reality 域名 <span class="pill">reym</span></label><input id="reym" type="text" placeholder="留空则默认apple.com"/></div>
+    <div class="row">
+      <label>当前系统开放所有端口 <span class="pill">oap</span></label>
+      <select id="oap">
+        <option value="">默认 关闭</option>
+        <option value="y">开启 执行一次即可关闭</option>
+      </select>
+    </div>
+    </div>
+  </details>
   </section>
 
   <section class="card argo-tunnel">
