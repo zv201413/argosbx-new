@@ -89,7 +89,7 @@
     @media (max-width: 1100px) {
       .grid {
         grid-template-columns: 1fr;
-        grid-template-rows: auto auto auto;
+      grid-template-rows: auto auto auto auto auto;
       }
     }
     .protocol-port {
@@ -106,11 +106,53 @@
     }
     .shortcut-commands-card {
       grid-column: 1 / 3;
-      grid-row: 3;
     }
     .out {
       grid-column: 1 / 3;
-      grid-row: 4;
+    }
+    .nezha-agent {
+      grid-column: 1 / 3;
+    }
+    .out {
+      grid-column: 1 / 3;
+    }
+    .shortcut-commands-card {
+      grid-column: 1 / 3;
+    }
+    details.card {
+      display: block;
+      padding: 0;
+      overflow: hidden;
+    }
+    details.card summary {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      padding: 20px;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--ink);
+      user-select: none;
+      list-style: none;
+    }
+    details.card summary::-webkit-details-marker {
+      display: none;
+    }
+    details.card summary::before {
+      content: "▶";
+      font-size: 12px;
+      transition: transform 0.2s;
+      color: var(--acc);
+    }
+    details.card[open] summary::before {
+      transform: rotate(90deg);
+    }
+    details.card .card-body {
+      padding: 0 20px 20px;
+    }
+    details.card[open] {
+      padding: 0;
     }
     .card {
       background: rgba(255, 255, 255, .04);
@@ -521,8 +563,9 @@
   <div class="row"><label>直连节点自定义地址 <span class="pill">nodeaddr</span></label><input id="nodeaddr" type="text" placeholder="hy2/tuic等直连节点地址，留空则使用VPS IP"/></div>
   </section>
 
-  <section class="card argo-tunnel">
-        <h2>Argo临时/固定隧道CDN：</h2>
+  <details class="card argo-tunnel" open>
+    <summary>Argo 临时/固定隧道 CDN</summary>
+    <div class="card-body">
         <div class="row">
           <label>启用Argo隧道开关 <span class="pill">argo</span></label>
           <select id="argoSelect">
@@ -535,42 +578,37 @@
   <div class="row"><label>固定隧道Token <span class="pill">agk</span></label><input id="agk" type="text" placeholder="Zero Trust已提取ey开头的秘钥，留空则临时隧道" disabled></div>
   <div class="row"><label>Gist ID <span class="pill">gh_gist_id</span></label><input id="gh_gist_id" type="text" placeholder="已有Gist ID可填，留空则新建"/></div>
   <div class="row"><label>GitHub Token <span class="pill">gh_token</span></label><input id="gh_token" type="text" placeholder="推送Gist用，留空则不推送"/></div>
-  </section>
+  </div></details>
 
-  <section class="card nezha-agent">
-    <h2>哪吒探针 (Nezha Agent) 配置：</h2>
+  <details class="card nezha-agent">
+    <summary>哪吒探针 (Nezha Agent) 配置</summary>
+    <div class="card-body">
     <div class="row">
-      <label>面板服务器地址 <span class="pill">nz_host</span></label>
-      <input id="nz_host" type="text" placeholder="如: nezha.domain.com (留空不安装)"/>
-    </div>
-    <div class="row">
-      <label>面板RPC端口 <span class="pill">nz_port</span></label>
-      <input id="nz_port" type="text" placeholder="默认为 5555"/>
+      <label>服务器地址 <span class="pill">nz_server</span></label>
+      <input id="nz_server" type="text" placeholder="域名:端口，如 nezha.domain.com:443 (留空不安装)"/>
     </div>
     <div class="row">
       <label>Agent 密钥 <span class="pill">nz_sec</span></label>
-      <input id="nz_sec" type="text" placeholder="探针的通信密钥 (非节点UUID)"/>
+      <input id="nz_sec" type="text" placeholder="面板设置中的 agent_secret_key"/>
     </div>
-    <div class="row">
-      <label>启用 TLS <span class="pill">nz_tls</span></label>
-      <select id="nz_tls">
-        <option value="">关闭 (默认)</option>
-        <option value="--tls">开启 (RPC走CDN/反代时选用)</option>
-      </select>
+    <div class="row" style="color:var(--sub);font-size:13px;">
+      <span>🔒 TLS：端口为 443/8443/2096/2087/2083/2053 时自动开启</span>
     </div>
-  </section>
+  </div></details>
 
-      <section class="card shortcut-commands-card">
-        <h2>如已安装脚本，可用以下快捷方式：</h2>
-        <div class="shortcut-commands-content">
-          <button class="command-button" data-command="list">节点显示命令：list</button>
-          <button class="command-button" data-command="del">卸载脚本命令：del</button>
-          <button class="command-button" data-command="upx">升级Xray内核：upx</button>
-          <button class="command-button" data-command="ups">升级Singbox内核：ups</button>
-          <button class="command-button" data-command="res">重启脚本命令：res</button>
-          <button class="command-button" data-command="rep">调整变量、更新脚本命令（注:变量设置完成后再点击）：rep</button>
-        </div>
-      </section>
+  <details class="card shortcut-commands-card">
+    <summary>快捷命令</summary>
+    <div class="card-body">
+    <div class="shortcut-commands-content">
+      <button class="command-button" data-command="list">节点显示命令：list</button>
+      <button class="command-button" data-command="del">卸载脚本命令：del</button>
+      <button class="command-button" data-command="upx">升级Xray内核：upx</button>
+      <button class="command-button" data-command="ups">升级Singbox内核：ups</button>
+      <button class="command-button" data-command="res">重启脚本命令：res</button>
+      <button class="command-button" data-command="rep">调整变量、更新脚本命令（注:变量设置完成后再点击）：rep</button>
+    </div>
+    </div>
+  </details>
 
       <section class="card out">
         <div class="tabs">
@@ -618,7 +656,7 @@
     }
   };
 const protoKeys = ['sopt','vmpt','vlpt','xhpt','vxpt','vwpt','arpt','anpt','hypt','tupt','sspt'];
-const optIds = ['warp','ippz','ippref','wippref','uuid','reym','cdnym', 'name', 'oap', 'argoip', 'nodeaddr', 'gh_token', 'gh_gist_id', 'nz_host', 'nz_port', 'nz_sec', 'nz_tls'];
+const optIds = ['warp','ippz','ippref','wippref','uuid','reym','cdnym', 'name', 'oap', 'argoip', 'nodeaddr', 'gh_token', 'gh_gist_id', 'nz_server', 'nz_sec'];
 
   const argoSelect = document.getElementById('argoSelect');
   const agn = document.getElementById('agn');
@@ -682,6 +720,8 @@ document.getElementById('uuid').value = '';
   document.getElementById('name').value = '';
   document.getElementById('argoip').value = '';
   document.getElementById('nodeaddr').value = '';
+  document.getElementById('nz_server').value = '';
+  document.getElementById('nz_sec').value = '';
   document.getElementById('gh_token').value = '';
   document.getElementById('gh_gist_id').value = '';
   argoSelect.value = '';
@@ -910,9 +950,25 @@ document.getElementById('uuid').value = '';
     if (keys.includes('agn')) ordered.push('agn');
     if (keys.includes('agk')) ordered.push('agk');
     if (keys.includes('oap')) ordered.push('oap');
-    keys.forEach(k => { if (!ordered.includes(k)) ordered.push(k); });
+
+    // 处理 nz_server → 拆分为 nz_host + nz_port + nz_tls
+    if (keys.includes('nz_server') && m['nz_server']) {
+      const parts = m['nz_server'].split(':');
+      const host = parts[0];
+      const port = parts[1] || '443';
+      // 自动 TLS：端口在列表中自动开启
+      const tlsPorts = ['443','8443','2096','2087','2083','2053'];
+      const tls = tlsPorts.includes(port) ? '--tls' : '';
+      ordered.push(`nz_host="${host}"`);
+      ordered.push(`nz_port="${port}"`);
+      if (tls) ordered.push(`nz_tls="${tls}"`);
+    }
+    if (keys.includes('nz_sec')) ordered.push(`nz_sec="${m['nz_sec']}"`);
+
+    keys.forEach(k => { if (!ordered.includes(k) && k !== 'nz_server' && k !== 'nz_sec') ordered.push(k); });
 
     return ordered.map(k => {
+      if (k.includes('=')) return k;  // 已经是 key="val" 格式（nz_host/nz_port/nz_tls/nz_sec）
       const val = m[k];
       if (val === '') return `${k}=""`;
       if (/[^\w\-\.:/]/.test(val)) {
