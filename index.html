@@ -619,6 +619,10 @@
       </div>
     </div>
     <div style="color:var(--sub);font-size:13px;line-height:1;">🔒 TLS：端口为 443/8443/2096/2087/2083/2053 时自动开启</div>
+    <div style="margin-top:10px;">
+      <span id="nezhaImportToggle" style="color:var(--acc);font-size:13px;cursor:pointer;user-select:none;">📥 从安装命令导入</span>
+      <textarea id="nezhaImportInput" style="display:none;margin-top:6px;width:100%;min-height:50px;background:var(--input-bg);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px;font-size:12px;resize:vertical;" placeholder="粘贴面板复制的安装命令，自动填写上方字段..."></textarea>
+    </div>
   </div></details>
 
   <details class="card shortcut-commands-card">
@@ -1016,6 +1020,27 @@ document.getElementById('uuid').value = '';
       output.value = `${template} ${vars ? vars + ' ' : ''}${exec}`;
     }
   }
+
+  // 哪吒安装命令导入
+  const nezhaImportToggle = document.getElementById('nezhaImportToggle');
+  const nezhaImportInput = document.getElementById('nezhaImportInput');
+  const nzServerInput = document.getElementById('nz_server');
+  const nzSecInput = document.getElementById('nz_sec');
+
+  nezhaImportToggle.addEventListener('click', () => {
+    const hidden = nezhaImportInput.style.display === 'none';
+    nezhaImportInput.style.display = hidden ? 'block' : 'none';
+    if (hidden) nezhaImportInput.focus();
+  });
+
+  nezhaImportInput.addEventListener('input', () => {
+    const text = nezhaImportInput.value;
+    const server = text.match(/NZ_SERVER=([^\s]+)/)?.[1];
+    const secret = text.match(/NZ_CLIENT_SECRET=([^\s]+)/)?.[1];
+    if (server) nzServerInput.value = server;
+    if (secret) nzSecInput.value = secret;
+    if (server || secret) render();
+  });
 
   initTheme();
   updateCdnymState();
