@@ -608,15 +608,13 @@
   <details class="card nezha-agent">
     <summary>哪吒探针 (Nezha Agent) 配置</summary>
     <div class="card-body">
-    <div style="display:flex;gap:12px;margin-bottom:8px;">
-      <div style="flex:1;">
-        <label style="display:block;margin-bottom:3px;font-size:14px;color:var(--ink);">服务器地址 <span class="pill">nz_server</span></label>
-        <input id="nz_server" type="text" placeholder="域名:端口，如 nezha.domain.com:443" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--input-bg);color:var(--ink);outline:none;"/>
-      </div>
-      <div style="flex:1;">
-        <label style="display:block;margin-bottom:3px;font-size:14px;color:var(--ink);">Agent 密钥 <span class="pill">nz_sec</span></label>
-        <input id="nz_sec" type="text" placeholder="面板设置中的 agent_secret_key" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--input-bg);color:var(--ink);outline:none;"/>
-      </div>
+    <div class="row">
+      <label>服务器地址 <span class="pill">nz_server</span></label>
+      <input id="nz_server" type="text" placeholder="域名:端口，如 nezha.domain.com:443"/>
+    </div>
+    <div class="row">
+      <label>Agent 密钥 <span class="pill">nz_sec</span></label>
+      <input id="nz_sec" type="text" placeholder="面板设置中的 agent_secret_key"/>
     </div>
     <div style="color:var(--sub);font-size:13px;line-height:1;">🔒 TLS：端口为 443/8443/2096/2087/2083/2053 时自动开启</div>
     <div style="display:flex;align-items:center;gap:8px;margin-top:10px;">
