@@ -606,7 +606,7 @@
   </section>
 
   <details class="card nezha-agent">
-    <summary>哪吒探针 (Nezha Agent) 配置</summary>
+    <summary>哪吒 / Komari 探针配置</summary>
     <div class="card-body" style="display:flex; flex-direction:column; gap:10px;">
       <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
         <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:220px;">
@@ -1022,15 +1022,27 @@ document.getElementById('uuid').value = '';
     }
   }
 
-  // 哪吒安装命令导入
+  // 哪吒/Komari 安装命令导入
   const nezhaImportInput = document.getElementById('nezhaImportInput');
   const nzServerInput = document.getElementById('nz_server');
   const nzSecInput = document.getElementById('nz_sec');
 
   nezhaImportInput.addEventListener('input', () => {
     const text = nezhaImportInput.value;
-    const server = text.match(/NZ_SERVER=([^\s]+)/)?.[1];
-    const secret = text.match(/NZ_CLIENT_SECRET=([^\s]+)/)?.[1];
+    
+    // 匹配哪吒格式
+    let server = text.match(/NZ_SERVER=([^\s"']+)/)?.[1];
+    let secret = text.match(/NZ_CLIENT_SECRET=([^\s"']+)/)?.[1];
+    
+    // 如果没有，尝试匹配 Komari 格式 (-e 和 -t)
+    if (!server) {
+      server = text.match(/-e\s+([^\s"']+)/)?.[1];
+      if (server) server = server.replace(/^https?:\/\//, ''); // 去除http前缀以适配 host:port 格式
+    }
+    if (!secret) {
+      secret = text.match(/-t\s+([^\s"']+)/)?.[1];
+    }
+
     if (server) nzServerInput.value = server;
     if (secret) nzSecInput.value = secret;
     if (server || secret) render();
