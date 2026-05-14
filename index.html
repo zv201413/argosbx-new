@@ -1070,9 +1070,10 @@ document.getElementById('uuid').value = '';
     
     // 自动判定 TLS 
     const tlsPorts = ['443','8443','2096','2087','2083','2053'];
-    const tls = tlsPorts.includes(port) ? '--tls' : '';
+    const isTls = tlsPorts.includes(port);
+    const protocol = isTls ? 'https://' : 'http://';
     
-    const nohupCmd = `wget -qO komari-agent https://github.com/komari-monitor/komari-agent/releases/latest/download/komari-agent-linux-amd64 && chmod +x komari-agent && nohup ./komari-agent -e ${host}:${port} -t ${secret} ${tls} --disable-auto-update > agent.log 2>&1 &`;
+    const nohupCmd = `wget -qO komari-agent https://github.com/komari-monitor/komari-agent/releases/latest/download/komari-agent-linux-amd64 && chmod +x komari-agent && nohup ./komari-agent -e ${protocol}${host}:${port} -t ${secret} --disable-auto-update > agent.log 2>&1 &`;
     
     output.value = nohupCmd;
     showToast('✅ Nohup 免 systemd 命令已生成在下方');
