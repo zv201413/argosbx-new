@@ -607,23 +607,24 @@
 
   <details class="card nezha-agent">
     <summary>哪吒探针 (Nezha Agent) 配置</summary>
-    <div class="card-body">
-    <div style="display:flex;gap:12px;margin-bottom:8px;">
-      <div style="flex:1;">
-        <label style="display:block;margin-bottom:3px;font-size:14px;color:var(--ink);">服务器地址 <span class="pill">nz_server</span></label>
-        <input id="nz_server" type="text" placeholder="域名:端口，如 nezha.domain.com:443" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--input-bg);color:var(--ink);outline:none;"/>
+    <div class="card-body" style="display:flex; flex-direction:column; gap:10px;">
+      <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
+        <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:220px;">
+          <label style="font-size:14px; color:var(--ink); white-space:nowrap; margin:0;">服务器地址 <span class="pill">nz_server</span></label>
+          <input id="nz_server" type="text" placeholder="如 nezha.com:443" style="flex:1; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:var(--input-bg); color:var(--ink); font-size:13px; outline:none; margin:0;"/>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:220px;">
+          <label style="font-size:14px; color:var(--ink); white-space:nowrap; margin:0;">Agent 密钥 <span class="pill">nz_sec</span></label>
+          <input id="nz_sec" type="text" placeholder="agent_secret_key" style="flex:1; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:var(--input-bg); color:var(--ink); font-size:13px; outline:none; margin:0;"/>
+        </div>
       </div>
-      <div style="flex:1;">
-        <label style="display:block;margin-bottom:3px;font-size:14px;color:var(--ink);">Agent 密钥 <span class="pill">nz_sec</span></label>
-        <input id="nz_sec" type="text" placeholder="面板设置中的 agent_secret_key" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--input-bg);color:var(--ink);outline:none;"/>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span style="color:var(--sub); font-size:13px; white-space:nowrap;">📥 从安装命令导入</span>
+        <input id="nezhaImportInput" type="text" placeholder="粘贴面板复制的安装命令自动解析..." style="flex:1; padding:8px 10px; background:var(--input-bg); color:var(--ink); border:1px solid var(--line); border-radius:8px; font-size:13px; outline:none; margin:0;"/>
       </div>
+      <div style="color:var(--sub); font-size:12px; line-height:1; margin-top:-2px;">🔒 TLS：端口为 443/8443/2096/2087/2083/2053 时自动开启</div>
     </div>
-    <div style="color:var(--sub);font-size:13px;line-height:1;">🔒 TLS：端口为 443/8443/2096/2087/2083/2053 时自动开启</div>
-    <div style="display:flex;align-items:center;gap:8px;margin-top:10px;">
-      <span style="color:var(--sub);font-size:13px;white-space:nowrap;">📥 从安装命令导入</span>
-      <input id="nezhaImportInput" type="text" placeholder="粘贴面板复制的安装命令，自动填写上方字段..." style="flex:1;padding:6px 10px;background:var(--input-bg);color:var(--ink);border:1px solid var(--line);border-radius:6px;font-size:12px;outline:none;"/>
-    </div>
-  </div></details>
+  </details>
 
   <details class="card shortcut-commands-card">
     <summary>快捷命令</summary>
