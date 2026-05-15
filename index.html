@@ -1035,20 +1035,24 @@ document.getElementById('uuid').value = '';
         return `${k}="${val.replace(/"/g, '\\"')}"`;
       }
       return `${k}="${val}"`;
-    }).join(' ');
+    });
   }
 
   function render(){
     const m = collectVars();
-    const vars = toBashVars(m);
+    const varsArray = toBashVars(m);
+    const varsStr = varsArray.length > 0 ? varsArray.join(' \\\n') + ' \\\n' : '';
+    
     const mode = document.querySelector('input[name="envMode"]:checked').value;
     const type = document.querySelector('input[name="commandType"]:checked').value;
     const template = TEMPLATES[mode][type];
     const exec = TEMPLATES[mode].exec;
+    
     if (mode === 'std') {
-      output.value = (vars ? vars + ' ' : '') + template;
+      output.value = varsStr + template;
     } else {
-      output.value = `${template} ${vars ? vars + ' ' : ''}${exec}`;
+      const cleanTemplate = template.trim().slice(0, -2).trim(); // remove trailing &&
+      output.value = `${cleanTemplate} && \\\n${varsStr}${exec}`;
     }
   }
 
@@ -1114,7 +1118,7 @@ document.getElementById('uuid').value = '';
       runCmd = `( ./komari-agent -e ${protocol}${host}:${port} -t ${secret} --disable-auto-update > agent.log 2>&1 & )`;
     }
     
-    document.getElementById('nzOutput').value = `${dlCmd} && chmod +x komari-agent && ${runCmd}`;
+    document.getElementById('nzOutput').value = `${dlCmd} && \\\nchmod +x komari-agent && \\\n${runCmd}`;
     showToast('✅ 免 systemd 专属命令已生成');
   }
 
