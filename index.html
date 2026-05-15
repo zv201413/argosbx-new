@@ -622,17 +622,27 @@
         <span style="color:var(--sub); font-size:13px; white-space:nowrap;">📥 从安装命令导入</span>
         <input id="nezhaImportInput" type="text" placeholder="粘贴面板复制的安装命令自动解析..." style="flex:1; padding:8px 10px; background:var(--input-bg); color:var(--ink); border:1px solid var(--line); border-radius:8px; font-size:13px; outline:none; margin:0;"/>
       </div>
-      <div style="display:flex; justify-content:center; margin-top:4px;">
-        <button id="generateNohupBtn" type="button" style="padding:8px 24px; font-size:14px; border-radius:8px; border:1px dashed var(--line); background:rgba(79, 124, 255, 0.05); color:var(--ink); cursor:pointer; transition:0.3s; font-weight:bold;">⚡ 生成独立免 systemd 运行命令</button>
-      </div>
-      <div style="display:flex; flex-direction:column; gap:12px; margin-top:10px;">
-        <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
-          <button id="copySchemeA" type="button" style="padding:8px 12px; font-size:12px; min-width:320px; border-radius:8px; border:1px solid var(--line); background:var(--button-bg-dark); color:var(--ink); cursor:pointer; text-align:left; transition:0.3s;">📄 复制方案 A：标准 PaaS / Docker (依赖 wget 和 nohup)</button>
-          <textarea id="nohupOutA" readonly style="flex:1; min-width:300px; min-height:48px; padding:8px; font-size:12px; font-family:monospace; background:var(--input-bg); color:var(--ink); border:1px solid var(--line); border-radius:8px; resize:vertical;"></textarea>
+      <div style="display:flex; gap:16px; margin-top: 12px; align-items:stretch; flex-wrap:wrap;">
+        <div style="flex:0 0 240px; display:flex; flex-direction:column; justify-content:space-between; padding:16px; background:rgba(255,255,255,0.02); border:1px solid var(--line); border-radius:8px;">
+          <div>
+            <div style="font-size:13px; color:var(--sub); margin-bottom:8px; font-weight:bold;">环境模式</div>
+            <div style="display:flex; gap:16px; margin-bottom:12px; font-size:13px;">
+              <label><input type="radio" name="nzEnvMode" value="std" checked> 标准环境</label>
+              <label><input type="radio" name="nzEnvMode" value="res"> 受限环境</label>
+            </div>
+            <div style="font-size:13px; color:var(--sub); margin-bottom:8px; font-weight:bold;">命令类型</div>
+            <div style="display:flex; gap:16px; margin-bottom:16px; font-size:13px;">
+              <label><input type="radio" name="nzCmdType" value="curl" checked> curl</label>
+              <label><input type="radio" name="nzCmdType" value="wget"> wget</label>
+            </div>
+          </div>
+          <div style="display:flex; gap:10px;">
+            <button id="copyNzBtn" type="button" class="primary" style="flex:1; padding:8px 0; font-size:13px; border-radius:6px;">复制</button>
+            <button id="generateNzBtn" type="button" style="flex:1; padding:8px 0; font-size:13px; border-radius:6px;">生成命令</button>
+          </div>
         </div>
-        <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
-          <button id="copySchemeB" type="button" style="padding:8px 12px; font-size:12px; min-width:320px; border-radius:8px; border:1px solid var(--line); background:var(--button-bg-dark); color:var(--ink); cursor:pointer; text-align:left; transition:0.3s;">📄 复制方案 B：极度受限环境如 Serv00 (无 wget / nohup)</button>
-          <textarea id="nohupOutB" readonly style="flex:1; min-width:300px; min-height:48px; padding:8px; font-size:12px; font-family:monospace; background:var(--input-bg); color:var(--ink); border:1px solid var(--line); border-radius:8px; resize:vertical;"></textarea>
+        <div style="flex:1; min-width:300px; display:flex;">
+          <textarea id="nzOutput" readonly style="width:100%; min-height:130px; padding:12px; font-size:13px; font-family:monospace; background:var(--input-bg); color:var(--ink); border:1px solid var(--line); border-radius:8px; resize:vertical; margin:0;"></textarea>
         </div>
       </div>
     </div>
@@ -656,20 +666,28 @@
         <div class="tabs">
           <h2>进入服务器的SSH界面，复制下方生成的一键脚本命令，回车一次搞定</h2>
         </div>
-        <div class="command-type-row env-mode-row" style="margin-top:8px;">
-            <label>环境模式选择：</label>
-            <label title="适用于标准 VPS，直接执行"><input type="radio" name="envMode" value="std" checked> 标准环境</label>
-            <label title="解决 /dev/fd/63 报错，保存文件执行"><input type="radio" name="envMode" value="res"> 受限环境</label>
-        </div>
-        <div class="command-type-row" style="margin-top:0;">
-            <label>命令类型选择：</label>
-            <label style="margin-bottom: 0;"><input type="radio" name="commandType" value="curl" checked> curl</label>
-            <label style="margin-bottom: 0;"><input type="radio" name="commandType" value="wget"> wget</label>
-        </div>
-        <textarea id="output" spellcheck="false"></textarea>
-        <div class="actions">
-          <button id="reset">重置</button>
-          <button id="copy">复制</button>
+        <div style="display:flex; gap:16px; margin-top: 12px; align-items:stretch; flex-wrap:wrap;">
+          <div style="flex:0 0 240px; display:flex; flex-direction:column; justify-content:space-between; padding:16px; background:rgba(255,255,255,0.02); border:1px solid var(--line); border-radius:8px;">
+            <div>
+              <div style="font-size:13px; color:var(--sub); margin-bottom:8px; font-weight:bold;">环境模式</div>
+              <div style="display:flex; gap:16px; margin-bottom:12px; font-size:13px;">
+                <label title="适用于标准 VPS，直接执行"><input type="radio" name="envMode" value="std" checked> 标准环境</label>
+                <label title="解决 /dev/fd/63 报错，保存文件执行"><input type="radio" name="envMode" value="res"> 受限环境</label>
+              </div>
+              <div style="font-size:13px; color:var(--sub); margin-bottom:8px; font-weight:bold;">命令类型</div>
+              <div style="display:flex; gap:16px; margin-bottom:16px; font-size:13px;">
+                <label><input type="radio" name="commandType" value="curl" checked> curl</label>
+                <label><input type="radio" name="commandType" value="wget"> wget</label>
+              </div>
+            </div>
+            <div style="display:flex; gap:10px;">
+              <button id="copy" type="button" class="primary" style="flex:1; padding:8px 0; font-size:13px; border-radius:6px;">复制</button>
+              <button id="reset" type="button" style="flex:1; padding:8px 0; font-size:13px; border-radius:6px;">重置</button>
+            </div>
+          </div>
+          <div style="flex:1; min-width:300px; display:flex;">
+            <textarea id="output" spellcheck="false" style="width:100%; min-height:130px; margin:0; padding:12px; font-size:13px; font-family:monospace; background:var(--input-bg); color:var(--ink); border:1px solid var(--line); border-radius:8px; resize:vertical;"></textarea>
+          </div>
         </div>
         <p style="margin-top: 10px;">相关细节说明，请参考Argosbx-new项目💣：<a href="https://github.com/zv201413/argosbx-new" target="_blank">github.com/zv201413/argosbx-new</a></p>
         安卓手机客户端推荐：<a href="https://github.com/starifly/NekoBoxForAndroid/releases" target="_blank">Nekobox-starifly版 (全协议支持)</a>、<a href="https://github.com/2dust/v2rayNG/releases" target="_blank">V2rayNG官方版</a><br>
@@ -1060,8 +1078,7 @@ document.getElementById('uuid').value = '';
     if (server || secret) render();
   });
 
-  const generateNohupBtn = document.getElementById('generateNohupBtn');
-  generateNohupBtn.addEventListener('click', () => {
+  function generateNzCommand() {
     const server = nzServerInput.value.trim();
     const secret = nzSecInput.value.trim();
     if (!server || !secret) {
@@ -1077,30 +1094,47 @@ document.getElementById('uuid').value = '';
       port = parts[1];
     }
     
-    // 自动判定 TLS 
     const tlsPorts = ['443','8443','2096','2087','2083','2053'];
-    const isTls = tlsPorts.includes(port);
-    const protocol = isTls ? 'https://' : 'http://';
+    const protocol = tlsPorts.includes(port) ? 'https://' : 'http://';
     
-    const cmdA = `wget -qO komari-agent https://github.com/komari-monitor/komari-agent/releases/latest/download/komari-agent-linux-amd64 && chmod +x komari-agent && nohup ./komari-agent -e ${protocol}${host}:${port} -t ${secret} --disable-auto-update > agent.log 2>&1 &`;
+    const env = document.querySelector('input[name="nzEnvMode"]:checked').value;
+    const cmd = document.querySelector('input[name="nzCmdType"]:checked').value;
     
-    const cmdB = `curl -sL https://github.com/komari-monitor/komari-agent/releases/latest/download/komari-agent-linux-amd64 -o komari-agent && chmod +x komari-agent && ( ./komari-agent -e ${protocol}${host}:${port} -t ${secret} --disable-auto-update > agent.log 2>&1 & )`;
+    let dlCmd = '';
+    if (cmd === 'curl') {
+      dlCmd = `curl -sL https://github.com/komari-monitor/komari-agent/releases/latest/download/komari-agent-linux-amd64 -o komari-agent`;
+    } else {
+      dlCmd = `wget -qO komari-agent https://github.com/komari-monitor/komari-agent/releases/latest/download/komari-agent-linux-amd64`;
+    }
     
-    document.getElementById('nohupOutA').value = cmdA;
-    document.getElementById('nohupOutB').value = cmdB;
+    let runCmd = '';
+    if (env === 'std') {
+      runCmd = `nohup ./komari-agent -e ${protocol}${host}:${port} -t ${secret} --disable-auto-update > agent.log 2>&1 &`;
+    } else {
+      runCmd = `( ./komari-agent -e ${protocol}${host}:${port} -t ${secret} --disable-auto-update > agent.log 2>&1 & )`;
+    }
+    
+    document.getElementById('nzOutput').value = `${dlCmd} && chmod +x komari-agent && ${runCmd}`;
     showToast('✅ 免 systemd 专属命令已生成');
+  }
+
+  document.getElementById('generateNzBtn').addEventListener('click', generateNzCommand);
+
+  document.querySelectorAll('input[name="nzEnvMode"], input[name="nzCmdType"]').forEach(el => {
+    el.addEventListener('change', () => {
+      if (nzServerInput.value.trim() && nzSecInput.value.trim()) {
+        generateNzCommand();
+      }
+    });
   });
 
-  document.getElementById('copySchemeA').addEventListener('click', () => {
-    const text = document.getElementById('nohupOutA').value;
-    if(!text) return;
-    navigator.clipboard.writeText(text).then(() => showToast('✅ 方案 A 命令已复制'));
-  });
-
-  document.getElementById('copySchemeB').addEventListener('click', () => {
-    const text = document.getElementById('nohupOutB').value;
-    if(!text) return;
-    navigator.clipboard.writeText(text).then(() => showToast('✅ 方案 B 命令已复制'));
+  document.getElementById('copyNzBtn').addEventListener('click', () => {
+    const text = document.getElementById('nzOutput').value;
+    if(!text) {
+      showToast('❌ 请先点击生成命令');
+      return;
+    }
+    navigator.clipboard.writeText(text).then(() => showToast('✅ 探针命令已复制'));
   });
 
   initTheme();
