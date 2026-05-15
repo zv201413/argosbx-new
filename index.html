@@ -623,8 +623,18 @@
         <input id="nezhaImportInput" type="text" placeholder="粘贴面板复制的安装命令自动解析..." style="flex:1; padding:8px 10px; background:var(--input-bg); color:var(--ink); border:1px solid var(--line); border-radius:8px; font-size:13px; outline:none; margin:0;"/>
       </div>
       <div style="color:var(--sub); font-size:12px; line-height:1; margin-top:-2px;">🔒 TLS：端口为 443/8443/2096/2087/2083/2053 时自动开启</div>
-      <div style="margin-top: 4px;">
-        <button id="generateNohupBtn" type="button" style="padding:8px 12px; font-size:13px; width:100%; border-radius:8px; border:1px dashed var(--line); background:rgba(79, 124, 255, 0.05); color:var(--ink); cursor:pointer; transition:0.3s;">⚡ 生成独立免 systemd 运行命令 (Nohup)</button>
+      <div style="display:flex; gap:16px; margin-top: 10px; align-items:flex-start; flex-wrap:wrap;">
+        <button id="generateNohupBtn" type="button" style="padding:8px 12px; font-size:13px; min-width:220px; border-radius:8px; border:1px dashed var(--line); background:rgba(79, 124, 255, 0.05); color:var(--ink); cursor:pointer; transition:0.3s; height: fit-content; align-self: stretch;">⚡ 生成独立免 systemd 运行命令</button>
+        <div style="flex:1; display:flex; flex-direction:column; gap:8px; min-width:300px;">
+          <div>
+            <div style="font-size:12px; color:var(--sub); margin-bottom:4px;">方案 A：标准 PaaS / Docker (依赖 wget 和 nohup)</div>
+            <textarea id="nohupOutA" readonly style="width:100%; min-height:48px; padding:8px; font-size:12px; font-family:monospace; background:var(--input-bg); color:var(--ink); border:1px solid var(--line); border-radius:8px; resize:vertical;"></textarea>
+          </div>
+          <div>
+            <div style="font-size:12px; color:var(--sub); margin-bottom:4px;">方案 B：极度受限环境专用如 Serv00 (无 wget / nohup)</div>
+            <textarea id="nohupOutB" readonly style="width:100%; min-height:48px; padding:8px; font-size:12px; font-family:monospace; background:var(--input-bg); color:var(--ink); border:1px solid var(--line); border-radius:8px; resize:vertical;"></textarea>
+          </div>
+        </div>
       </div>
     </div>
   </details>
@@ -1073,10 +1083,13 @@ document.getElementById('uuid').value = '';
     const isTls = tlsPorts.includes(port);
     const protocol = isTls ? 'https://' : 'http://';
     
-    const nohupCmd = `wget -qO komari-agent https://github.com/komari-monitor/komari-agent/releases/latest/download/komari-agent-linux-amd64 && chmod +x komari-agent && nohup ./komari-agent -e ${protocol}${host}:${port} -t ${secret} --disable-auto-update > agent.log 2>&1 &`;
+    const cmdA = `wget -qO komari-agent https://github.com/komari-monitor/komari-agent/releases/latest/download/komari-agent-linux-amd64 && chmod +x komari-agent && nohup ./komari-agent -e ${protocol}${host}:${port} -t ${secret} --disable-auto-update > agent.log 2>&1 &`;
     
-    output.value = nohupCmd;
-    showToast('✅ Nohup 免 systemd 命令已生成在下方');
+    const cmdB = `curl -sL https://github.com/komari-monitor/komari-agent/releases/latest/download/komari-agent-linux-amd64 -o komari-agent && chmod +x komari-agent && ( ./komari-agent -e ${protocol}${host}:${port} -t ${secret} --disable-auto-update > agent.log 2>&1 & )`;
+    
+    document.getElementById('nohupOutA').value = cmdA;
+    document.getElementById('nohupOutB').value = cmdB;
+    showToast('✅ 免 systemd 专属命令已生成');
   });
 
   initTheme();
