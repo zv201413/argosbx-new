@@ -186,3 +186,37 @@ ippz=4 agsbx list    # 切换到IPv4
 - 如果只需要单一端口 → IPv6是最简单的解决方案
 
 ---------------------------------------------------------
+
+## 四、探针卸载指南
+
+无论你是部署的哪吒探针还是 Komari 探针，请根据你的**初始安装方式**选择对应的清理流程：
+
+### 1. 真实 VPS（使用官方 `.sh` 脚本安装的）
+官方脚本会自动把探针塞进系统服务里（systemd）并安装到 `/opt` 目录。在当前目录执行 `rm` 是没用的！
+
+**正确卸载方式**：
+```bash
+# 停止并禁用服务（如果是 komari 请替换 nezha 为 komari）
+sudo systemctl stop nezha-agent
+sudo systemctl disable nezha-agent
+
+# 删除系统服务文件并刷新
+sudo rm /etc/systemd/system/nezha-agent.service
+sudo systemctl daemon-reload
+
+# 删掉真正存放程序的安装目录（关键步骤）
+sudo rm -rf /opt/nezha    # 或者是 /opt/komari
+```
+*(注：对于哪吒探针，你也可以在原机重新运行一次官方安装命令，然后在弹出的交互菜单里选择 `卸载 Agent`)*
+
+### 2. 纯容器环境 / PaaS（使用本面板生成的 `nohup` 裸跑命令）
+使用我们面板转换出来的指令，属于“绿色免安装”模式，不触及系统服务。
+
+**正确卸载方式**：
+```bash
+# 1. 猎杀后台驻留的进程
+pkill -f nezha-agent    # 或 pkill -f komari-agent
+
+# 2. 直接删掉当前目录下下载的二进制文件及日志
+rm -f nezha-agent agent.log    # 或 komari-agent
+```
