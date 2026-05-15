@@ -622,18 +622,17 @@
         <span style="color:var(--sub); font-size:13px; white-space:nowrap;">📥 从安装命令导入</span>
         <input id="nezhaImportInput" type="text" placeholder="粘贴面板复制的安装命令自动解析..." style="flex:1; padding:8px 10px; background:var(--input-bg); color:var(--ink); border:1px solid var(--line); border-radius:8px; font-size:13px; outline:none; margin:0;"/>
       </div>
-      <div style="color:var(--sub); font-size:12px; line-height:1; margin-top:-2px;">🔒 TLS：端口为 443/8443/2096/2087/2083/2053 时自动开启</div>
-      <div style="display:flex; gap:16px; margin-top: 10px; align-items:flex-start; flex-wrap:wrap;">
-        <button id="generateNohupBtn" type="button" style="padding:8px 12px; font-size:13px; min-width:220px; border-radius:8px; border:1px dashed var(--line); background:rgba(79, 124, 255, 0.05); color:var(--ink); cursor:pointer; transition:0.3s; height: fit-content; align-self: stretch;">⚡ 生成独立免 systemd 运行命令</button>
-        <div style="flex:1; display:flex; flex-direction:column; gap:8px; min-width:300px;">
-          <div>
-            <div style="font-size:12px; color:var(--sub); margin-bottom:4px;">方案 A：标准 PaaS / Docker (依赖 wget 和 nohup)</div>
-            <textarea id="nohupOutA" readonly style="width:100%; min-height:48px; padding:8px; font-size:12px; font-family:monospace; background:var(--input-bg); color:var(--ink); border:1px solid var(--line); border-radius:8px; resize:vertical;"></textarea>
-          </div>
-          <div>
-            <div style="font-size:12px; color:var(--sub); margin-bottom:4px;">方案 B：极度受限环境专用如 Serv00 (无 wget / nohup)</div>
-            <textarea id="nohupOutB" readonly style="width:100%; min-height:48px; padding:8px; font-size:12px; font-family:monospace; background:var(--input-bg); color:var(--ink); border:1px solid var(--line); border-radius:8px; resize:vertical;"></textarea>
-          </div>
+      <div style="display:flex; justify-content:center; margin-top:4px;">
+        <button id="generateNohupBtn" type="button" style="padding:8px 24px; font-size:14px; border-radius:8px; border:1px dashed var(--line); background:rgba(79, 124, 255, 0.05); color:var(--ink); cursor:pointer; transition:0.3s; font-weight:bold;">⚡ 生成独立免 systemd 运行命令</button>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:12px; margin-top:10px;">
+        <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+          <button id="copySchemeA" type="button" style="padding:8px 12px; font-size:12px; min-width:320px; border-radius:8px; border:1px solid var(--line); background:var(--button-bg-dark); color:var(--ink); cursor:pointer; text-align:left; transition:0.3s;">📄 复制方案 A：标准 PaaS / Docker (依赖 wget 和 nohup)</button>
+          <textarea id="nohupOutA" readonly style="flex:1; min-width:300px; min-height:48px; padding:8px; font-size:12px; font-family:monospace; background:var(--input-bg); color:var(--ink); border:1px solid var(--line); border-radius:8px; resize:vertical;"></textarea>
+        </div>
+        <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+          <button id="copySchemeB" type="button" style="padding:8px 12px; font-size:12px; min-width:320px; border-radius:8px; border:1px solid var(--line); background:var(--button-bg-dark); color:var(--ink); cursor:pointer; text-align:left; transition:0.3s;">📄 复制方案 B：极度受限环境如 Serv00 (无 wget / nohup)</button>
+          <textarea id="nohupOutB" readonly style="flex:1; min-width:300px; min-height:48px; padding:8px; font-size:12px; font-family:monospace; background:var(--input-bg); color:var(--ink); border:1px solid var(--line); border-radius:8px; resize:vertical;"></textarea>
         </div>
       </div>
     </div>
@@ -1090,6 +1089,18 @@ document.getElementById('uuid').value = '';
     document.getElementById('nohupOutA').value = cmdA;
     document.getElementById('nohupOutB').value = cmdB;
     showToast('✅ 免 systemd 专属命令已生成');
+  });
+
+  document.getElementById('copySchemeA').addEventListener('click', () => {
+    const text = document.getElementById('nohupOutA').value;
+    if(!text) return;
+    navigator.clipboard.writeText(text).then(() => showToast('✅ 方案 A 命令已复制'));
+  });
+
+  document.getElementById('copySchemeB').addEventListener('click', () => {
+    const text = document.getElementById('nohupOutB').value;
+    if(!text) return;
+    navigator.clipboard.writeText(text).then(() => showToast('✅ 方案 B 命令已复制'));
   });
 
   initTheme();
