@@ -83,6 +83,7 @@
 | arpt | Any-reality | `arpt=""` 或 `arpt="443"` |
 | sspt | Shadowsocks-2022 | `sspt=""` 或 `sspt="443"` |
 | hypt | Hysteria2 | `hypt=""` 或 `hypt="443"` |
+| hyjpt | Hysteria2 端口跳跃 | `hyjpt="20000:30000 40000"` |
 | tupt | Tuic | `tupt=""` 或 `tupt="443"` |
 | sopt | Socks5 | `sopt=""` 或 `sopt="443"` |
 
@@ -117,6 +118,21 @@
 | gh_token | GitHub Token | 关闭 | `gh_token="ghp_xxx"` |
 | gh_gist_id | Gist ID | 新建 | `gh_gist_id="已有ID"` |
 | oap | 开放所有端口 | 关闭 | `oap="y"` |
+
+### Hysteria2 端口跳跃（hyjpt）
+
+仅当开启了 Hy2 协议（`hypt=""`）时才生效。格式说明：
+- 端口范围用 **冒号** 分隔，如 `20000:30000` 表示 20000～30000 的所有端口
+- 多个范围或单端口用 **空格** 分隔，如 `20000:30000 40000`
+- 脚本会自动下发 iptables DNAT 规则，将跳跃端口的 UDP 流量转发到实际监听的 Hy2 端口
+- 节点链接会自动追加 `&mport=20000-30000,40000` 参数供客户端识别
+
+**示例**：
+```bash
+hypt=yes hyjpt="20000:30000 40000" ./argosbx.sh
+```
+
+**注意**：需要 root 权限操作 iptables。生成的链接中 `mport` 参数使用连字符（`-`）而非冒号（`:`），这是客户端标准解析格式。
 
 ### WARP出站模式（warp变量）
 

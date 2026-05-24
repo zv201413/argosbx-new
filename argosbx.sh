@@ -1451,6 +1451,25 @@ echo "Argosbx脚本进程未启动，安装失败" && exit
 fi
 }
 
+if [ -n "$hyjpt" ] && [ -n "$hyp" ]; then
+    echo
+    echo "设置Hysteria2协议的跳跃端口：$hyjpt"
+    iptables -t nat -F PREROUTING >/dev/null 2>&1
+    ip6tables -t nat -F PREROUTING >/dev/null 2>&1
+    hyport=$(cat "$HOME/agsbx/port_hy2" 2>/dev/null)
+    for port in $hyjpt; do
+        iptables -t nat -A PREROUTING -p udp --dport "$port" -j DNAT --to-destination :$hyport
+        ip6tables -t nat -A PREROUTING -p udp --dport "$port" -j DNAT --to-destination :$hyport
+    done
+    netfilter-persistent save >/dev/null 2>&1
+    if command -v rc-service >/dev/null 2>&1; then
+        rc-update show default 2>/dev/null | grep -q 'iptables' || rc-update add iptables >/dev/null 2>&1
+        rc-update show default 2>/dev/null | grep -q 'ip6tables' || rc-update add ip6tables >/dev/null 2>&1
+        rc-service iptables save >/dev/null 2>&1
+        rc-service ip6tables save >/dev/null 2>&1
+    fi
+fi
+
 # =============================================================================
 # SECTION 11.1: cip - 节点信息输出与命名规范化
 # =============================================================================
@@ -1759,13 +1778,22 @@ fi
 
 # Hysteria2
 if grep hy2_sb "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
-echo "💣【 Hysteria2 】节点信息如下："
-port_hy2=$(cat "$HOME/agsbx/port_hy2")
-display_port_hy2="${port_hy2_ext:-${port_hy2}}"
-hy2_link="hysteria2://$uuid@$server_ip:$display_port_hy2?security=tls&alpn=h3&insecure=1&sni=www.bing.com#${sxname}${country}_hy2_$hostname"
-echo "$hy2_link" >> "$HOME/agsbx/jh.txt"
-echo "$hy2_link"
-echo
+    echo "💣【 Hysteria2 】节点信息如下："
+    port_hy2=$(cat "$HOME/agsbx/port_hy2")
+    display_port_hy2="${port_hy2_ext:-${port_hy2}}"
+    # 回读 iptables 提取跳跃端口（使用 --line 定位 $8 列，避免 $NF 拿到 to: 字段）
+    hy2_ports=$(iptables -t nat -nL --line 2>/dev/null | grep -w "$port_hy2" | awk '{print $8}' | sed 's/dpts://; s/dpt://' | tr '\n' ',' | sed 's/,$//')
+    if [ -n "$hy2_ports" ] && [ -n "$hyjpt" ]; then
+        echo "Hysteria2跳跃端口已开启：$hy2_ports"
+        cmhy2pt=$(echo "$hy2_ports" | tr ':' '-')
+        hyps="&mport=$cmhy2pt"
+    else
+        hyps=""
+    fi
+    hy2_link="hysteria2://$uuid@$server_ip:$display_port_hy2?security=tls&alpn=h3&insecure=1${hyps}&sni=www.bing.com#${sxname}${country}_hy2_$hostname"
+    echo "$hy2_link" >> "$HOME/agsbx/jh.txt"
+    echo "$hy2_link"
+    echo
 fi
 
 # Tuic
