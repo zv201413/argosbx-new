@@ -1593,7 +1593,7 @@ country=$(curl -s ip-api.com/json/?fields=countryCode 2>/dev/null | sed 's/[{}"]
 # 优先使用用户指定的argoip，否则自动获取Argo域名作为备用IP
 preferred_ips=""
 if [ -n "$argoip" ]; then
-  preferred_ips=$(echo "$argoip" | tr ';' ' ')
+  preferred_ips=$(echo "$argoip" | tr ';' ' ' | tr ',' ' ')
 else
   _argo_domain=$(cat $HOME/agsbx/sbargoym.log 2>/dev/null || grep -a trycloudflare.com $HOME/agsbx/argo.log 2>/dev/null | awk 'NR==2{print}' | awk -F// '{print $2}' | awk '{print $1}')
   if [ -n "$_argo_domain" ]; then
@@ -1826,22 +1826,14 @@ argodomain=$(cat "$HOME/agsbx/sbargoym.log" 2>/dev/null)
 
 if [ -n "$argodomain" ]; then
 vlvm=$(cat $HOME/agsbx/vlvm 2>/dev/null)
-if [ "$vlvm" = "Vmess" ]; then
-vmatls_link1="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vmess-ws-tls-argo-$hostname-443\", \"add\": \"$argodomain\", \"port\": \"443\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$argodomain\", \"path\": \"/$uuid-vm\", \"tls\": \"tls\", \"sni\": \"$argodomain\", \"alpn\": \"\", \"fp\": \"chrome\"}" | base64 -w0)"
-echo "$vmatls_link1" >> "$HOME/agsbx/jh.txt"
-vma_link7="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vmess-ws-argo-$hostname-80\", \"add\": \"$argodomain\", \"port\": \"80\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$argodomain\", \"path\": \"/$uuid-vm\", \"tls\": \"\"}" | base64 -w0)"
-echo "$vma_link7" >> "$HOME/agsbx/jh.txt"
-elif [ "$vlvm" = "Vless" ]; then
-if [ -n "$port_vw_enc" ] || [ "$vwpt_enc" = "y" ]; then
-en_vw="$enkey"
+if [ -n "$argoip" ]; then
+  argo_addrs="$preferred_ips"
+  argo_ip_count=$(echo "$argo_addrs" | wc -w)
 else
-en_vw="none"
+  argo_addrs="$argodomain"
+  argo_ip_count=1
 fi
-vwatls_link1="vless://$uuid@$argodomain:443?encryption=$en_vw&type=ws&host=$argodomain&path=%2F${uuid}-vw&security=tls&sni=$argodomain&fp=chrome&insecure=0&allowInsecure=0#${sxname}${country}_vl_ws_tls_argo_$hostname"
-echo "$vwatls_link1" >> "$HOME/agsbx/jh.txt"
-vwa_link2="vless://$uuid@$argodomain:80?encryption=$en_vw&type=ws&host=$argodomain&path=%2F${uuid}-vw&security=none#${sxname}${country}_vl_ws_argo_$hostname"
-echo "$vwa_link2" >> "$HOME/agsbx/jh.txt"
-fi
+
 sbtk=$(cat "$HOME/agsbx/sbargotoken.log" 2>/dev/null)
 if [ -n "$sbtk" ]; then
 nametn="Argo固定隧道token：$sbtk"
@@ -1851,18 +1843,57 @@ echo "Argo隧道端口正在使用${vlvm}-ws主协议端口：$(cat $HOME/agsbx/
 echo "Argo域名：$argodomain"
 echo "$nametn"
 echo
+
 if [ "$vlvm" = "Vmess" ]; then
 echo "1、💣443端口的Vmess-ws-tls-argo节点"
-echo "$vmatls_link1"
+idx=1
+for ip in $argo_addrs; do
+  ip_suffix=""
+  [ "$argo_ip_count" -gt 1 ] && ip_suffix="-$idx"
+  vmatls_link="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vmess-ws-tls-argo-$hostname-443${ip_suffix}\", \"add\": \"$ip\", \"port\": \"443\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$argodomain\", \"path\": \"/$uuid-vm\", \"tls\": \"tls\", \"sni\": \"$argodomain\", \"alpn\": \"\", \"fp\": \"chrome\"}" | base64 -w0)"
+  echo "$vmatls_link" >> "$HOME/agsbx/jh.txt"
+  echo "$vmatls_link"
+  idx=$((idx+1))
+done
 echo
 echo "2、💣80端口的Vmess-ws-argo节点"
-echo "$vma_link7"
+idx=1
+for ip in $argo_addrs; do
+  ip_suffix=""
+  [ "$argo_ip_count" -gt 1 ] && ip_suffix="-$idx"
+  vma_link="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vmess-ws-argo-$hostname-80${ip_suffix}\", \"add\": \"$ip\", \"port\": \"80\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$argodomain\", \"path\": \"/$uuid-vm\", \"tls\": \"\"}" | base64 -w0)"
+  echo "$vma_link" >> "$HOME/agsbx/jh.txt"
+  echo "$vma_link"
+  idx=$((idx+1))
+done
+
 elif [ "$vlvm" = "Vless" ]; then
+if [ -n "$port_vw_enc" ] || [ "$vwpt_enc" = "y" ]; then
+en_vw="$enkey"
+else
+en_vw="none"
+fi
 echo "1、💣443端口的Vless-ws-tls-argo节点"
-echo "$vwatls_link1"
+idx=1
+for ip in $argo_addrs; do
+  ip_suffix=""
+  [ "$argo_ip_count" -gt 1 ] && ip_suffix="-$idx"
+  vwatls_link="vless://$uuid@$ip:443?encryption=$en_vw&type=ws&host=$argodomain&path=%2F${uuid}-vw&security=tls&sni=$argodomain&fp=chrome&insecure=0&allowInsecure=0#${sxname}${country}_vl_ws_tls_argo_${hostname}${ip_suffix}"
+  echo "$vwatls_link" >> "$HOME/agsbx/jh.txt"
+  echo "$vwatls_link"
+  idx=$((idx+1))
+done
 echo
 echo "2、💣80端口的Vless-ws-argo节点"
-echo "$vwa_link2"
+idx=1
+for ip in $argo_addrs; do
+  ip_suffix=""
+  [ "$argo_ip_count" -gt 1 ] && ip_suffix="-$idx"
+  vwa_link="vless://$uuid@$ip:80?encryption=$en_vw&type=ws&host=$argodomain&path=%2F${uuid}-vw&security=none#${sxname}${country}_vl_ws_argo_${hostname}${ip_suffix}"
+  echo "$vwa_link" >> "$HOME/agsbx/jh.txt"
+  echo "$vwa_link"
+  idx=$((idx+1))
+done
 fi
 fi
 echo "---------------------------------------------------------"
