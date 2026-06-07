@@ -1383,11 +1383,16 @@ argoname='临时'
 nohup "$HOME/agsbx/cloudflared" tunnel ${argoproto} --url http://localhost:$(cat $HOME/agsbx/argoport.log) --edge-ip-version auto --no-autoupdate > $HOME/agsbx/argo.log 2>&1 &
 fi
 echo "申请Argo$argoname隧道中……请稍等"
-sleep 8
 if [ -n "${ARGO_DOMAIN}" ] && [ -n "${ARGO_AUTH}" ]; then
+sleep 3
 argodomain=$(cat "$HOME/agsbx/sbargoym.log" 2>/dev/null)
 else
+argodomain=""
+for i in 1 2 3 4 5 6 7 8 9 10; do
+sleep 2
 argodomain=$(grep -a trycloudflare.com "$HOME/agsbx/argo.log" 2>/dev/null | awk 'NR==2{print}' | awk -F// '{print $2}' | awk '{print $1}')
+[ -n "$argodomain" ] && break
+done
 fi
 if [ -n "${argodomain}" ]; then
 echo "Argo$argoname隧道申请成功"
@@ -1828,7 +1833,7 @@ if grep hy2_sb "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
     port_hy2=$(cat "$HOME/agsbx/port_hy2")
     display_port_hy2="${port_hy2_ext:-${port_hy2}}"
     # 回读 iptables 提取跳跃端口（使用 --line 定位 $8 列，避免 $NF 拿到 to: 字段）
-    hy2_ports=$(iptables -t nat -nL 2>/dev/null | grep -w "$port_hy2" | sed 's/.*dpts:\([0-9:-]*\).*/\1/; s/.*dpt:\([0-9]*\).*/\1/' | grep -v '^\s*$' | tr '\n' ',' | sed 's/,$//')
+    hy2_ports=$(iptables -t nat -nL 2>/dev/null | grep -w "$port_hy2" | sed 's/.*dpts:\([0-9:-]*\).*/\1/; s/.*dpt:\([0-9]*\).*/\1/' | grep -E '^[0-9]' | tr '\n' ',' | sed 's/,$//')
     if [ -n "$hy2_ports" ] && [ -n "$hyjpt" ]; then
         echo "Hysteria2跳跃端口已开启：$hy2_ports"
         cmhy2pt=$(echo "$hy2_ports" | tr ':' '-')
