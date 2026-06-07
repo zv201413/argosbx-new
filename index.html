@@ -113,12 +113,6 @@
     .nezha-agent {
       grid-column: 1 / 3;
     }
-    .out {
-      grid-column: 1 / 3;
-    }
-    .shortcut-commands-card {
-      grid-column: 1 / 3;
-    }
     details.card {
       display: block;
       padding: 0;
@@ -1074,16 +1068,16 @@ document.getElementById('uuid').value = '';
     const text = nezhaImportInput.value;
     
     // 匹配哪吒格式
-    let server = text.match(/NZ_SERVER=([^\s"']+)/)?.[1];
-    let secret = text.match(/NZ_CLIENT_SECRET=([^\s"']+)/)?.[1];
+    let server = text.match(/NZ_SERVER=["']?([^\s"'#]+)/)?.[1];
+    let secret = text.match(/NZ_CLIENT_SECRET=["']?([^\s"'#]+)/)?.[1];
     
     // 如果没有，尝试匹配 Komari 格式 (-e 和 -t)
     if (!server) {
-      server = text.match(/-e\s+([^\s"']+)/)?.[1];
+      server = text.match(/-(?:e|server)\s+["']?([^\s"'#]+)/)?.[1];
       if (server) server = server.replace(/^https?:\/\//, ''); // 去除http前缀以适配 host:port 格式
     }
     if (!secret) {
-      secret = text.match(/-t\s+([^\s"']+)/)?.[1];
+      secret = text.match(/-(?:t|secret|key)\s+["']?([^\s"'#]+)/)?.[1];
     }
 
     if (server) nzServerInput.value = server;
@@ -1115,9 +1109,9 @@ document.getElementById('uuid').value = '';
     
     let dlCmd = '';
     if (cmd === 'curl') {
-      dlCmd = `curl -sL https://github.com/komari-monitor/komari-agent/releases/latest/download/komari-agent-linux-amd64 -o komari-agent`;
+      dlCmd = `ARCH=$(uname -m) && case $ARCH in x86_64|amd64) a=amd64;; aarch64|arm64) a=arm64;; armv7l) a=armv7;; *) a=amd64;; esac && curl -sL "https://github.com/komari-monitor/komari-agent/releases/latest/download/komari-agent-linux-$a" -o komari-agent`;
     } else {
-      dlCmd = `wget -qO komari-agent https://github.com/komari-monitor/komari-agent/releases/latest/download/komari-agent-linux-amd64`;
+      dlCmd = `ARCH=$(uname -m) && case $ARCH in x86_64|amd64) a=amd64;; aarch64|arm64) a=arm64;; armv7l) a=armv7;; *) a=amd64;; esac && wget -qO komari-agent "https://github.com/komari-monitor/komari-agent/releases/latest/download/komari-agent-linux-$a"`;
     }
     
     let runCmd = '';
@@ -1179,7 +1173,8 @@ document.getElementById('uuid').value = '';
           const m = collectVars();
           m['ippz'] = ippzValue;
           const vars = toBashVars(m);
-          output.value = `${vars} ${template} ${command}`;
+          const varsStr = vars.length ? vars.join(' ') + ' ' : '';
+          output.value = `${varsStr}${template} ${command}`;
         } else {
           if (mode === 'std') {
             output.value = `${template} ${command}`;

@@ -273,13 +273,13 @@ fi
 # 依赖: upxray/upsingbox下载的内核
 # =============================================================================
 upxray(){
-url="https://github.com/yonggekkk/argosbx/releases/download/argosbx/xray-$cpu"; out="$HOME/agsbx/xray"; (command -v curl >/dev/null 2>&1 && curl -Lo "$out" -# --retry 2 "$url") || (command -v wget>/dev/null 2>&1 && timeout 3 wget -O "$out" --tries=2 "$url")
+url="https://github.com/yonggekkk/argosbx/releases/download/argosbx/xray-$cpu"; out="$HOME/agsbx/xray"; (command -v curl >/dev/null 2>&1 && curl -Lso "$out" -# --retry 2 --connect-timeout 10 "$url") || (command -v wget>/dev/null 2>&1 && timeout 10 wget -O "$out" --tries=2 "$url")
 chmod +x "$HOME/agsbx/xray"
 sbcore=$("$HOME/agsbx/xray" version 2>/dev/null | awk '/^Xray/{print $2}')
 echo "已安装Xray正式版内核：$sbcore"
 }
 upsingbox(){
-url="https://github.com/yonggekkk/argosbx/releases/download/argosbx/sing-box-$cpu"; out="$HOME/agsbx/sing-box"; (command -v curl>/dev/null 2>&1 && curl -Lo "$out" -# --retry 2 "$url") || (command -v wget>/dev/null 2>&1 && timeout 3 wget -O "$out" --tries=2 "$url")
+url="https://github.com/yonggekkk/argosbx/releases/download/argosbx/sing-box-$cpu"; out="$HOME/agsbx/sing-box"; (command -v curl>/dev/null 2>&1 && curl -Lso "$out" -# --retry 2 --connect-timeout 10 "$url") || (command -v wget>/dev/null 2>&1 && timeout 10 wget -O "$out" --tries=2 "$url")
 chmod +x "$HOME/agsbx/sing-box"
 sbcore=$("$HOME/agsbx/sing-box" version 2>/dev/null | awk '/version/{print $NF}')
 echo "已安装Sing-box正式版内核：$sbcore"
@@ -995,7 +995,7 @@ fi
 # =============================================================================
 xrsbout(){
 if [ -e "$HOME/agsbx/xr.json" ]; then
-sed -i '${s/,\s*$//}' "$HOME/agsbx/xr.json"
+sed -i '${s/,[[:space:]]*$//}' "$HOME/agsbx/xr.json"
 cat >> "$HOME/agsbx/xr.json" <<EOF
   ],
   "outbounds": [
@@ -1098,7 +1098,7 @@ nohup "$HOME/agsbx/xray" run -c "$HOME/agsbx/xr.json" >/dev/null 2>&1 &
 fi
 fi
 if [ -e "$HOME/agsbx/sb.json" ]; then
-sed -i '${s/,\s*$//}' "$HOME/agsbx/sb.json"
+sed -i '${s/,[[:space:]]*$//}' "$HOME/agsbx/sb.json"
 cat >> "$HOME/agsbx/sb.json" <<EOF
   ],
   "outbounds": [
@@ -1397,7 +1397,38 @@ fi
 fi
 sleep 5
 echo
-if find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null | grep -Eq 'agsbx/(s|x)' || pgrep -f 'agsbx/(s|x)' >/dev/null 2>&1 ; then
+_sb_up=0; _xr_up=0
+	_sb_need=0; _xr_need=0
+	[ -f "$HOME/agsbx/sb.json" ] && _sb_need=1
+	[ -f "$HOME/agsbx/xr.json" ] && _xr_need=1
+	for i in 1 2 3 4 5 6 7; do
+		[ "$_sb_need" = 1 ] && [ "$_sb_up" = 0 ] && \
+			( find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null | grep -q 'agsbx/s' || pgrep -f 'agsbx/s' >/dev/null 2>&1 ) && _sb_up=1
+		[ "$_xr_need" = 1 ] && [ "$_xr_up" = 0 ] && \
+			( find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null | grep -q 'agsbx/x' || pgrep -f 'agsbx/x' >/dev/null 2>&1 ) && _xr_up=1
+		[ "$_sb_up" = "$_sb_need" ] && [ "$_xr_up" = "$_xr_need" ] && break
+		sleep 2
+	done
+	# systemd 启动失败 → nohup 兜底
+	if [ "$_sb_need" = 1 ] && [ "$_sb_up" = 0 ]; then
+		if pidof systemd >/dev/null 2>&1 && systemctl is-failed sb >/dev/null 2>&1; then
+			echo "WARNING: systemd 启动 sing-box 失败，尝试 nohup 直接启动..."
+			systemctl reset-failed sb >/dev/null 2>&1
+			nohup "$HOME/agsbx/sing-box" run -c "$HOME/agsbx/sb.json" > "$HOME/agsbx/sing-box.log" 2>&1 &
+			sleep 3
+			( find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null | grep -q 'agsbx/s' || pgrep -f 'agsbx/s' >/dev/null 2>&1 ) && _sb_up=1
+		fi
+	fi
+	if [ "$_xr_need" = 1 ] && [ "$_xr_up" = 0 ]; then
+		if pidof systemd >/dev/null 2>&1 && systemctl is-failed xr >/dev/null 2>&1; then
+			echo "WARNING: systemd 启动 xray 失败，尝试 nohup 直接启动..."
+			systemctl reset-failed xr >/dev/null 2>&1
+			nohup "$HOME/agsbx/xray" run -c "$HOME/agsbx/xr.json" > "$HOME/agsbx/xray.log" 2>&1 &
+			sleep 3
+			( find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null | grep -q 'agsbx/x' || pgrep -f 'agsbx/x' >/dev/null 2>&1 ) && _xr_up=1
+		fi
+	fi
+	if [ "$_sb_up" = "$_sb_need" ] && [ "$_xr_up" = "$_xr_need" ]; then
 [ -f ~/.bashrc ] || touch ~/.bashrc
 sed -i '/agsbx/d' ~/.bashrc
 SCRIPT_PATH="$HOME/bin/agsbx"
@@ -1447,8 +1478,22 @@ rm /tmp/crontab.tmp
 insnezha
 echo "Argosbx脚本进程启动成功，安装完毕" && sleep 2
 else
-echo "Argosbx脚本进程未启动，安装失败" && exit
-fi
+	echo "ERROR: Argosbx script process not started, installation failed"
+	# Output diagnostic info
+	if [ -f "$HOME/agsbx/sb.json" ]; then
+		echo "sb.json last 20 lines:"
+		tail -20 "$HOME/agsbx/sb.json" 2>/dev/null
+	fi
+	if [ -f "$HOME/agsbx/xr.json" ]; then
+		echo "xr.json last 20 lines:"
+		tail -20 "$HOME/agsbx/xr.json" 2>/dev/null
+	fi
+	if pidof systemd >/dev/null 2>&1; then
+		systemctl is-failed sb >/dev/null 2>&1 && echo "sing-box service status:" && systemctl status sb --no-pager 2>&1 | tail -10
+		systemctl is-failed xr >/dev/null 2>&1 && echo "xray service status:" && systemctl status xr --no-pager 2>&1 | tail -10
+	fi
+	exit
+	fi
 }
 
 if [ -n "$hyjpt" ] && [ -n "$hyp" ]; then
@@ -1587,7 +1632,7 @@ sxname=$(cat "$HOME/agsbx/name" 2>/dev/null | sed 's/-/_/g')
 xvvmcdnym=$(cat "$HOME/agsbx/cdnym" 2>/dev/null)
 
 # 获取国家代码
-country=$(curl -s ip-api.com/json/?fields=countryCode 2>/dev/null | sed 's/[{}"]//g; s/countryCode://g')
+country=$(curl -sm5 ip-api.com/json/?fields=countryCode 2>/dev/null | sed 's/[{}"]//g; s/countryCode://g')
 [ -z "$country" ] && country=""
 
 # 优先使用用户指定的argoip，否则自动获取Argo域名作为备用IP
@@ -1723,7 +1768,8 @@ fi
 if grep ss-2022 "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
 echo "💣【 Shadowsocks-2022 】节点信息如下："
 port_ss=$(cat "$HOME/agsbx/port_ss")
-ss_link="ss://$(echo -n "2022-blake3-aes-128-gcm:$sskey@$server_ip:$port_ss" | base64 -w0)#${sxname}Shadowsocks-2022_$hostname"
+	display_port_ss="${port_ss_ext:-${port_ss}}"
+	ss_link="ss://$(echo -n "2022-blake3-aes-128-gcm:$sskey@$server_ip:$display_port_ss" | base64 -w0)#${sxname}Shadowsocks-2022_$hostname"
 echo "$ss_link" >> "$HOME/agsbx/jh.txt"
 echo "$ss_link"
 echo
@@ -1782,7 +1828,7 @@ if grep hy2_sb "$HOME/agsbx/sb.json" >/dev/null 2>&1; then
     port_hy2=$(cat "$HOME/agsbx/port_hy2")
     display_port_hy2="${port_hy2_ext:-${port_hy2}}"
     # 回读 iptables 提取跳跃端口（使用 --line 定位 $8 列，避免 $NF 拿到 to: 字段）
-    hy2_ports=$(iptables -t nat -nL --line 2>/dev/null | grep -w "$port_hy2" | awk '{print $8}' | sed 's/dpts://; s/dpt://' | tr '\n' ',' | sed 's/,$//')
+    hy2_ports=$(iptables -t nat -nL 2>/dev/null | grep -w "$port_hy2" | sed 's/.*dpts:\([0-9:-]*\).*/\1/; s/.*dpt:\([0-9]*\).*/\1/' | grep -v '^\s*$' | tr '\n' ',' | sed 's/,$//')
     if [ -n "$hy2_ports" ] && [ -n "$hyjpt" ]; then
         echo "Hysteria2跳跃端口已开启：$hy2_ports"
         cmhy2pt=$(echo "$hy2_ports" | tr ':' '-')
@@ -2011,7 +2057,7 @@ escaped_content=$(echo "$node_content" | sed 's/\\/\\\\/g; s/"/\\"/g' | awk '{pr
 # 生成详细的文件名: [prefix]_[country]_[protocol]_[hostname].txt
 gist_prefix=$(cat "$HOME/agsbx/name" 2>/dev/null | sed 's/-/_/g')
 [ -z "$gist_prefix" ] && gist_prefix="agsbx"
-gist_country=$(curl -s ip-api.com/json/?fields=countryCode 2>/dev/null | sed 's/[{}"]//g; s/countryCode://g')
+gist_country=$(curl -sm5 ip-api.com/json/?fields=countryCode 2>/dev/null | sed 's/[{}"]//g; s/countryCode://g')
 [ -z "$gist_country" ] && gist_country="XX"
 # 检测主要内核作为协议标识
 if [ -e "$HOME/agsbx/sing-box" ] && [ -e "$HOME/agsbx/xray" ]; then gist_proto="dual"; elif [ -e "$HOME/agsbx/sing-box" ]; then gist_proto="sb"; else gist_proto="xr"; fi
@@ -2129,7 +2175,7 @@ if ! find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -
 for P in /proc/[0-9]*; do if [ -L "$P/exe" ]; then TARGET=$(readlink -f "$P/exe" 2>/dev/null); if echo "$TARGET" | grep -qE '/agsbx/c|/agsbx/s|/agsbx/x'; then PID=$(basename "$P"); kill "$PID" 2>/dev/null && echo "Killed $PID ($TARGET)" || echo "Could not kill $PID ($TARGET)"; fi; fi; done
 kill -15 $(pgrep -f 'agsbx/s' 2>/dev/null) $(pgrep -f 'agsbx/c' 2>/dev/null) $(pgrep -f 'agsbx/x' 2>/dev/null) >/dev/null 2>&1
 if [ -z "$( (command -v curl >/dev/null 2>&1 && curl -s4m5 -k "$v46url" 2>/dev/null) || (command -v wget >/dev/null 2>&1 && timeout 3 wget -4 -qO- --tries=2 "$v46url" 2>/dev/null) )" ]; then
-echo -e "nameserver 2a00:1098:2b::1\nnameserver 2a00:1098:2c::1" > /etc/resolv.conf
+[ "$(id -u)" -eq 0 ] && { printf 'nameserver %s\n' '2a00:1098:2b::1' '2a00:1098:2c::1'; } > /etc/resolv.conf 2>/dev/null
 fi
 if [ -n "$( (command -v curl >/dev/null 2>&1 && curl -s6m5 -k "$v46url" 2>/dev/null) || (command -v wget >/dev/null 2>&1 && timeout 3 wget -6 -qO- --tries=2 "$v46url" 2>/dev/null) )" ]; then
 sendip="2606:4700:d0::a29f:c001"
