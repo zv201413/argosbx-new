@@ -114,7 +114,10 @@ touch sbx_update
 fi
 
 check_netlink_full_support(){
-    if python3 -c "import socket; s=socket.socket(socket.AF_NETLINK, socket.SOCK_RAW, socket.NETLINK_ROUTE); s.bind((0, 1)); print('OK')" 2>/dev/null; then
+    # 精确复现 sing-box 的 "subscribe route updates" 操作：setsockopt(SOL_NETLINK=270,
+    # NETLINK_ADD_MEMBERSHIP=1, RTNLGRP_IPV4_ROUTE=7 / RTNLGRP_IPV6_ROUTE=11)。
+    # 旧版仅 bind LINK 组(groups=1)，Modal 等容器放行 LINK、拦截 ROUTE → 假阳性漏判。
+    if python3 -c "import socket; s=socket.socket(socket.AF_NETLINK, socket.SOCK_RAW, socket.NETLINK_ROUTE); s.bind((0,0)); s.setsockopt(270,1,7); s.setsockopt(270,1,11); print('OK')" 2>/dev/null; then
         return 0
     else
         return 1
@@ -1314,8 +1317,8 @@ xrsbso
 warpsx
 xrsbout
 hyp="hyptargo"; tup="tuptargo"; anp="anptargo"; arp="arptargo"; ssp="ssptargo"; vwp="vwptargo"
-elif [ "$hyp" != yes ] && [ "$tup" != yes ] && [ "$anp" != yes ] && [ "$arp" != yes ] && [ "$ssp" != yes ] && [ "$vwp" != yes ]; then
-# 情况A: 纯Xray模式 (不启用任何SB协议，也不启用vwp)
+elif [ "$hyp" != yes ] && [ "$tup" != yes ] && [ "$anp" != yes ] && [ "$arp" != yes ] && [ "$ssp" != yes ]; then
+# 情况A: 无 sing-box 专属协议 → 纯Xray模式 (vless-ws/vmess-ws/socks5 等双栖协议改走 Xray，不依赖 netlink，容器友好)
 installxray
 xrsbvm
 xrsbso
@@ -1531,6 +1534,10 @@ else
 	if [ -f "$HOME/agsbx/sing-box.log" ]; then
 		echo "===== sing-box 运行日志 (崩溃原因看这里) ====="
 		tail -25 "$HOME/agsbx/sing-box.log" 2>/dev/null
+		if grep -q 'operation not supported' "$HOME/agsbx/sing-box.log" 2>/dev/null; then
+			echo "⚠️ 该容器不支持 sing-box 网络监控(netlink route 订阅)，故 sing-box 专属协议无法运行。"
+			echo "   解决：请勿启用 hypt/tupt/anpt/arpt/sspt；改用 vless-ws/vmess-ws/reality/socks5 等 Xray 协议(不受影响)。"
+		fi
 	fi
 	if [ -f "$HOME/agsbx/xray.log" ]; then
 		echo "===== xray 运行日志 (崩溃原因看这里) ====="
