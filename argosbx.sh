@@ -1094,7 +1094,7 @@ chmod +x /etc/init.d/xray >/dev/null 2>&1
 rc-update add xray default >/dev/null 2>&1
 rc-service xray start >/dev/null 2>&1
 else
-nohup "$HOME/agsbx/xray" run -c "$HOME/agsbx/xr.json" >/dev/null 2>&1 &
+nohup "$HOME/agsbx/xray" run -c "$HOME/agsbx/xr.json" > "$HOME/agsbx/xray.log" 2>&1 &
 fi
 fi
 if [ -e "$HOME/agsbx/sb.json" ]; then
@@ -1190,7 +1190,7 @@ chmod +x /etc/init.d/sing-box >/dev/null 2>&1
 rc-update add sing-box default >/dev/null 2>&1
 rc-service sing-box start >/dev/null 2>&1
 else
-nohup "$HOME/agsbx/sing-box" run -c "$HOME/agsbx/sb.json" >/dev/null 2>&1 &
+nohup "$HOME/agsbx/sing-box" run -c "$HOME/agsbx/sb.json" > "$HOME/agsbx/sing-box.log" 2>&1 &
 fi
 fi
 }
@@ -1492,6 +1492,14 @@ else
 	if [ -f "$HOME/agsbx/xr.json" ]; then
 		echo "xr.json last 20 lines:"
 		tail -20 "$HOME/agsbx/xr.json" 2>/dev/null
+	fi
+	if [ -f "$HOME/agsbx/sing-box.log" ]; then
+		echo "===== sing-box 运行日志 (崩溃原因看这里) ====="
+		tail -25 "$HOME/agsbx/sing-box.log" 2>/dev/null
+	fi
+	if [ -f "$HOME/agsbx/xray.log" ]; then
+		echo "===== xray 运行日志 (崩溃原因看这里) ====="
+		tail -25 "$HOME/agsbx/xray.log" 2>/dev/null
 	fi
 	if pidof systemd >/dev/null 2>&1; then
 		systemctl is-failed sb >/dev/null 2>&1 && echo "sing-box service status:" && systemctl status sb --no-pager 2>&1 | tail -10
