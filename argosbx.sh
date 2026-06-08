@@ -272,17 +272,52 @@ fi
 #   - insuuid(): 生成或读取UUID,持久化到$HOME/agsbx/uuid
 # 依赖: upxray/upsingbox下载的内核
 # =============================================================================
+# 下载二进制并校验：ELF头+体积双校验，防止504/HTML错误页被当二进制执行；直连失败自动切换GitHub加速镜像
+dl_bin(){
+_url="$1"; _out="$2"
+for _pfx in "" "https://gh-proxy.com/" "https://ghfast.top/" "https://ghproxy.net/"; do
+_full="${_pfx}${_url}"
+_n=0
+while [ "$_n" -lt 2 ]; do
+_n=$((_n+1))
+rm -f "$_out"
+if command -v curl >/dev/null 2>&1; then
+curl -fL --retry 2 --retry-all-errors --connect-timeout 15 -m 300 -o "$_out" "$_full" 2>/dev/null
+elif command -v wget >/dev/null 2>&1; then
+wget -q -O "$_out" --tries=2 --timeout=120 "$_full" 2>/dev/null
+fi
+[ -f "$_out" ] || { sleep 2; continue; }
+_sz=$(wc -c < "$_out" 2>/dev/null); _sz=${_sz:-0}
+if [ "$_sz" -gt 102400 ] && head -c 4 "$_out" 2>/dev/null | grep -q "ELF"; then
+return 0
+fi
+sleep 2
+done
+done
+rm -f "$_out"
+return 1
+}
 upxray(){
-url="https://github.com/yonggekkk/argosbx/releases/download/argosbx/xray-$cpu"; out="$HOME/agsbx/xray"; (command -v curl >/dev/null 2>&1 && curl -Lso "$out" -# --retry 2 --connect-timeout 10 "$url") || (command -v wget>/dev/null 2>&1 && timeout 10 wget -O "$out" --tries=2 "$url")
-chmod +x "$HOME/agsbx/xray"
-sbcore=$("$HOME/agsbx/xray" version 2>/dev/null | awk '/^Xray/{print $2}')
+out="$HOME/agsbx/xray"
+if dl_bin "https://github.com/yonggekkk/argosbx/releases/download/argosbx/xray-$cpu" "$out"; then
+chmod +x "$out"
+sbcore=$("$out" version 2>/dev/null | awk '/^Xray/{print $2}')
 echo "已安装Xray正式版内核：$sbcore"
+else
+echo "❌ Xray内核下载失败（已重试多镜像），请检查网络或稍后再试"
+return 1
+fi
 }
 upsingbox(){
-url="https://github.com/yonggekkk/argosbx/releases/download/argosbx/sing-box-$cpu"; out="$HOME/agsbx/sing-box"; (command -v curl>/dev/null 2>&1 && curl -Lso "$out" -# --retry 2 --connect-timeout 10 "$url") || (command -v wget>/dev/null 2>&1 && timeout 10 wget -O "$out" --tries=2 "$url")
-chmod +x "$HOME/agsbx/sing-box"
-sbcore=$("$HOME/agsbx/sing-box" version 2>/dev/null | awk '/version/{print $NF}')
+out="$HOME/agsbx/sing-box"
+if dl_bin "https://github.com/yonggekkk/argosbx/releases/download/argosbx/sing-box-$cpu" "$out"; then
+chmod +x "$out"
+sbcore=$("$out" version 2>/dev/null | awk '/version/{print $NF}')
 echo "已安装Sing-box正式版内核：$sbcore"
+else
+echo "❌ Sing-box内核下载失败（已重试多镜像），请检查网络或稍后再试"
+return 1
+fi
 }
 insuuid(){
 if [ -z "$uuid" ] && [ ! -e "$HOME/agsbx/uuid" ]; then
@@ -316,8 +351,8 @@ installxray(){
 echo
 echo "=========启用xray内核========="
 mkdir -p "$HOME/agsbx/xrk"
-if [ ! -e "$HOME/agsbx/xray" ]; then
-upxray
+if [ ! -e "$HOME/agsbx/xray" ] || ! head -c 4 "$HOME/agsbx/xray" 2>/dev/null | grep -q "ELF"; then
+upxray || { echo "Xray内核获取失败，安装中止"; exit 1; }
 fi
 cat > "$HOME/agsbx/xr.json" <<EOF
 {
@@ -544,8 +579,8 @@ if [ "$XRAY_FORCE_MODE" = 1 ]; then
 fi
 echo
 echo "=========启用Sing-box内核========="
-if [ ! -e "$HOME/agsbx/sing-box" ]; then
-upsingbox
+if [ ! -e "$HOME/agsbx/sing-box" ] || ! head -c 4 "$HOME/agsbx/sing-box" 2>/dev/null | grep -q "ELF"; then
+upsingbox || { echo "Sing-box内核获取失败，安装中止"; exit 1; }
 fi
 cat > "$HOME/agsbx/sb.json" <<EOF
 {
