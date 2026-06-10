@@ -1147,6 +1147,7 @@ EOFBAS
 	else
 	nohup "$HOME/agsbx/xray" run -c "$HOME/agsbx/xr.json" > "$HOME/agsbx/xray.log" 2>&1 &
 fi
+fi
 if [ -e "$HOME/agsbx/sb.json" ]; then
 sed -i '${s/,[[:space:]]*$//}' "$HOME/agsbx/sb.json"
 cat >> "$HOME/agsbx/sb.json" <<EOF
