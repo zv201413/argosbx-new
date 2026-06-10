@@ -572,6 +572,23 @@
     </div>
     </div>
   </details>
+  <details style="margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:0;">
+    <summary style="cursor:pointer;padding:10px 14px;color:var(--sub);font-size:14px;user-select:none;list-style:none;display:flex;align-items:center;gap:6px;">
+      <span style="font-size:10px;">▶</span> 敲门唤醒 / 进程隐身（高级，默认关闭）
+    </summary>
+    <div style="padding:0 14px 14px;">
+    <div class="row">
+      <label>敲门+空闲自关 总开关 <span class="pill">KNOCK</span></label>
+      <select id="KNOCK">
+        <option value="">默认 关闭</option>
+        <option value="1">开启 空闲关代理 / 敲门唤醒</option>
+      </select>
+    </div>
+    <div class="row"><label>敲门端口 <span class="pill">KNOCK_PORT</span></label><input id="KNOCK_PORT" type="text" placeholder="留空自动分配(20000-60000)"/></div>
+    <div class="row"><label>空闲超时(秒) <span class="pill">IDLE_TIMEOUT</span></label><input id="IDLE_TIMEOUT" type="text" placeholder="留空默认300"/></div>
+    <div class="row"><label>进程伪装名 <span class="pill">STEALTH_NAME</span></label><input id="STEALTH_NAME" type="text" placeholder="如 [kworker/2:1]，留空不伪装(需bash)"/></div>
+    </div>
+  </details>
   </section>
 
   <section class="card argo-tunnel">
@@ -710,7 +727,7 @@
     }
   };
 const protoKeys = ['sopt','vmpt','vlpt','xhpt','vxpt','vwpt','arpt','anpt','hypt','tupt','sspt'];
-const optIds = ['warp','ippz','ippref','wippref','uuid','reym','cdnym', 'name', 'oap', 'argoip', 'nodeaddr', 'hyjpt', 'gh_token', 'gh_gist_id', 'nz_server', 'nz_sec'];
+const optIds = ['warp','ippz','ippref','wippref','uuid','reym','cdnym', 'name', 'oap', 'argoip', 'nodeaddr', 'hyjpt', 'gh_token', 'gh_gist_id', 'nz_server', 'nz_sec', 'KNOCK', 'KNOCK_PORT', 'IDLE_TIMEOUT', 'STEALTH_NAME'];
 
   const argoSelect = document.getElementById('argoSelect');
   const agn = document.getElementById('agn');
@@ -779,6 +796,7 @@ document.getElementById('uuid').value = '';
   document.getElementById('nz_sec').value = '';
   document.getElementById('gh_token').value = '';
   document.getElementById('gh_gist_id').value = '';
+  document.getElementById('KNOCK').value = '';
   argoSelect.value = '';
     updateArgoState('');
     updateCdnymState();
@@ -1008,7 +1026,7 @@ document.getElementById('uuid').value = '';
     const ordered = [];
     protoKeys.forEach(k => { if (keys.includes(k)) ordered.push(k); });
     ['vlpt_enc', 'xhpt_enc', 'vxpt_enc', 'vwpt_enc'].forEach(k => { if (keys.includes(k)) ordered.push(k); });
-    ['warp', 'uuid', 'reym', 'cdnym', 'name', 'hyjpt', 'ippz', 'ippref', 'wippref', 'argoip', 'nodeaddr', 'gh_token', 'gh_gist_id'].forEach(k => { if (keys.includes(k)) ordered.push(k); });
+    ['warp', 'uuid', 'reym', 'cdnym', 'name', 'hyjpt', 'ippz', 'ippref', 'wippref', 'argoip', 'nodeaddr', 'gh_token', 'gh_gist_id', 'KNOCK', 'KNOCK_PORT', 'IDLE_TIMEOUT', 'STEALTH_NAME'].forEach(k => { if (keys.includes(k)) ordered.push(k); });
     if (keys.includes('argo')) ordered.push('argo');
     if (keys.includes('agn')) ordered.push('agn');
     if (keys.includes('agk')) ordered.push('agk');
@@ -1044,7 +1062,7 @@ document.getElementById('uuid').value = '';
   function render(){
     const m = collectVars();
     const varsArray = toBashVars(m);
-    const varsStr = varsArray.length > 0 ? varsArray.join(' \\\n') + ' \\\n' : '';
+    const varsStr = varsArray.length > 0 ? varsArray.join(' ') + ' ' : '';
     
     const mode = document.querySelector('input[name="envMode"]:checked').value;
     const type = document.querySelector('input[name="commandType"]:checked').value;
@@ -1055,7 +1073,7 @@ document.getElementById('uuid').value = '';
       output.value = varsStr + template;
     } else {
       const cleanTemplate = template.trim().slice(0, -2).trim(); // remove trailing &&
-      output.value = `${cleanTemplate} && \\\n${varsStr}${exec}`;
+      output.value = `${cleanTemplate} && ${varsStr}${exec}`;
     }
   }
 
