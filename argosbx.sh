@@ -595,11 +595,31 @@ cat > "$HOME/agsbx/sb.json" <<EOF
   "inbounds": [
 EOF
 insuuid
-command -v openssl >/dev/null 2>&1 && openssl ecparam -genkey -name prime256v1 -out "$HOME/agsbx/private.key" >/dev/null 2>&1
-command -v openssl >/dev/null 2>&1 && openssl req -new -x509 -days 36500 -key "$HOME/agsbx/private.key" -out "$HOME/agsbx/cert.pem" -subj "/CN=www.bing.com" >/dev/null 2>&1
-if [ ! -f "$HOME/agsbx/private.key" ]; then
-url="https://github.com/yonggekkk/argosbx/releases/download/argosbx/private.key"; out="$HOME/agsbx/private.key"; (command -v curl>/dev/null 2>&1 && curl -Ls -o "$out" --retry 2 "$url") || (command -v wget>/dev/null 2>&1 && timeout 3 wget -q -O "$out" --tries=2 "$url")
-url="https://github.com/yonggekkk/argosbx/releases/download/argosbx/cert.pem"; out="$HOME/agsbx/cert.pem"; (command -v curl>/dev/null 2>&1 && curl -Ls -o "$out" --retry 2 "$url") || (command -v wget>/dev/null 2>&1 && timeout 3 wget -q -O "$out" --tries=2 "$url")
+# 证书生成：三层兜底
+# 第 1 层：openssl 直接生成
+if command -v openssl >/dev/null 2>&1; then
+	openssl ecparam -genkey -name prime256v1 -out "$HOME/agsbx/private.key" >/dev/null 2>&1
+	openssl req -new -x509 -days 36500 -key "$HOME/agsbx/private.key" -out "$HOME/agsbx/cert.pem" -subj "/CN=www.bing.com" >/dev/null 2>&1
+fi
+# 第 2 层：Alpine 等无 openssl 的环境，先装再生成
+if [ ! -s "$HOME/agsbx/private.key" ] || [ ! -s "$HOME/agsbx/cert.pem" ]; then
+	command -v apk >/dev/null 2>&1 && apk add openssl >/dev/null 2>&1
+	if command -v openssl >/dev/null 2>&1; then
+		openssl ecparam -genkey -name prime256v1 -out "$HOME/agsbx/private.key" >/dev/null 2>&1
+		openssl req -new -x509 -days 36500 -key "$HOME/agsbx/private.key" -out "$HOME/agsbx/cert.pem" -subj "/CN=www.bing.com" >/dev/null 2>&1
+	fi
+fi
+# 第 3 层：无交互自签名（不依赖 /dev/urandom 以外的东西）
+if [ ! -s "$HOME/agsbx/private.key" ] || [ ! -s "$HOME/agsbx/cert.pem" ]; then
+	echo "WARNING: 证书生成失败，尝试无交互自签名..."
+	openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 \
+		-keyout "$HOME/agsbx/private.key" -out "$HOME/agsbx/cert.pem" \
+		-days 36500 -nodes -subj "/CN=www.bing.com" >/dev/null 2>&1
+fi
+# 第 4 层：下载兜底
+if [ ! -s "$HOME/agsbx/private.key" ] || [ ! -s "$HOME/agsbx/cert.pem" ]; then
+	url="https://github.com/yonggekkk/argosbx/releases/download/argosbx/private.key"; out="$HOME/agsbx/private.key"; (command -v curl>/dev/null 2>&1 && curl -Ls -o "$out" --retry 2 "$url") || (command -v wget>/dev/null 2>&1 && timeout 3 wget -q -O "$out" --tries=2 "$url")
+	url="https://github.com/yonggekkk/argosbx/releases/download/argosbx/cert.pem"; out="$HOME/agsbx/cert.pem"; (command -v curl>/dev/null 2>&1 && curl -Ls -o "$out" --retry 2 "$url") || (command -v wget>/dev/null 2>&1 && timeout 3 wget -q -O "$out" --tries=2 "$url")
 fi
 if [ -n "$hyp" ]; then
 hyp=hypt
