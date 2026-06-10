@@ -118,6 +118,20 @@
 | gh_token | GitHub Token | 关闭 | `gh_token="ghp_xxx"` |
 | gh_gist_id | Gist ID | 新建 | `gh_gist_id="已有ID"` |
 | oap | 开放所有端口 | 关闭 | `oap="y"` |
+| KNOCK | 敲门+空闲自关 总开关 | 关闭 | `KNOCK="1"` |
+| KNOCK_PORT | 敲门端口 | 自动分配 | `KNOCK_PORT="38000"` |
+| IDLE_TIMEOUT | 空闲多少秒后关代理 | 300 | `IDLE_TIMEOUT="300"` |
+| STEALTH_NAME | 进程伪装名（逗号分隔3个=sing-box,xray,cloudflared） | 不伪装 | `STEALTH_NAME="[kworker/0:1],[kworker/1:2],[kworker/2:0]"` |
+
+### 敲门唤醒 / 进程隐身（KNOCK，默认关闭）
+
+可选的隐蔽机制：空闲时自动关闭代理进程、连接前“敲门”自动拉起，配合进程改名降低被检测概率。**不传 `KNOCK` 时行为与原版完全一致。**
+
+- `KNOCK="1"` 启用。空闲超过 `IDLE_TIMEOUT` 秒（默认 300）无连接 → 关闭 sing-box/xray；连接前先敲门：`nc -w1 <服务器IP> <KNOCK_PORT>`，代理随后自动拉起。
+- `STEALTH_NAME` 填进程伪装名，**逗号分隔 3 个**依次对应 sing-box、xray、cloudflared；只填 1 个则三者共用；留空不伪装。建议用 `[kworker/x:y]` 这类内核线程名。**伪装需要 bash**（Alpine：`apk add bash`），无 bash 时不伪装但敲门/空闲自关照常。
+- 启用后由内置 watchdog 独占管理代理生命周期（不再走 systemd/OpenRC 自启）。
+
+> ⚠️ **隧道重启限制**：Cloudflare **临时隧道**（不填 `agn`/`agk`）每次启动都会分配新的 `*.trycloudflare.com` 域名，因此**重启 / 空闲关闭后无法用原域名恢复**——客户端节点会失效，需重新运行脚本。**只有固定隧道**（填 `agn`+`agk`，Zero Trust 命名隧道）域名稳定，支持随意重启 / 开机自启。要用「敲门隐蔽 + 可自动恢复」，请使用固定隧道。
 
 ### Hysteria2 端口跳跃（hyjpt）
 

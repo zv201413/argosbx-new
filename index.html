@@ -586,7 +586,7 @@
     </div>
     <div class="row"><label>敲门端口 <span class="pill">KNOCK_PORT</span></label><input id="KNOCK_PORT" type="text" placeholder="留空自动分配(20000-60000)"/></div>
     <div class="row"><label>空闲超时(秒) <span class="pill">IDLE_TIMEOUT</span></label><input id="IDLE_TIMEOUT" type="text" placeholder="留空默认300"/></div>
-    <div class="row"><label>进程伪装名 <span class="pill">STEALTH_NAME</span></label><input id="STEALTH_NAME" type="text" placeholder="如 [kworker/2:1]，留空不伪装(需bash)"/></div>
+    <div class="row"><label>进程伪装名 <span class="pill">STEALTH_NAME</span></label><input id="STEALTH_NAME" type="text" placeholder="逗号分隔3个=sing-box,xray,cloudflared(填1个则三者共用)。例 [kworker/0:1],[kworker/1:2],[kworker/2:0]  留空不伪装(需bash)"/></div>
     </div>
   </details>
   </section>

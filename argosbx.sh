@@ -1424,9 +1424,13 @@ else
 fi
 echo "$argoproto" > "$HOME/agsbx/argoproto.log"
 
+# 可选:cloudflared 进程伪装名(取 STEALTH_NAME 第3段,缺省回退第1段;首次启动即 exec -a,临时/固定隧道都适用)
+cfn=""; [ -n "$KNOCK" ] && [ -n "$STEALTH_NAME" ] && { cfn=$(printf '%s' "$STEALTH_NAME" | cut -d, -f3); [ -z "$cfn" ] && cfn=$(printf '%s' "$STEALTH_NAME" | cut -d, -f1); }
 if [ -n "${ARGO_DOMAIN}" ] && [ -n "${ARGO_AUTH}" ]; then
 argoname='固定'
-if pidof systemd >/dev/null 2>&1 && [ "$(id -u)" -eq 0 ]; then
+if [ -n "$cfn" ] && command -v bash >/dev/null 2>&1; then
+nohup bash -c 'exec -a "$1" "$HOME/agsbx/cloudflared" "${@:2}"' _ "$cfn" tunnel ${argoproto} --no-autoupdate --edge-ip-version auto run --token "${ARGO_AUTH}" >/dev/null 2>&1 &
+elif pidof systemd >/dev/null 2>&1 && [ "$(id -u)" -eq 0 ]; then
 cat > /etc/systemd/system/argo.service <<EOF
 [Unit]
 Description=argo service
@@ -1466,7 +1470,11 @@ echo "${ARGO_DOMAIN}" > "$HOME/agsbx/sbargoym.log"
 echo "${ARGO_AUTH}" > "$HOME/agsbx/sbargotoken.log"
 else
 argoname='临时'
+if [ -n "$cfn" ] && command -v bash >/dev/null 2>&1; then
+nohup bash -c 'exec -a "$1" "$HOME/agsbx/cloudflared" "${@:2}"' _ "$cfn" tunnel ${argoproto} --url "http://localhost:$(cat $HOME/agsbx/argoport.log)" --edge-ip-version auto --no-autoupdate > $HOME/agsbx/argo.log 2>&1 &
+else
 nohup "$HOME/agsbx/cloudflared" tunnel ${argoproto} --url http://localhost:$(cat $HOME/agsbx/argoport.log) --edge-ip-version auto --no-autoupdate > $HOME/agsbx/argo.log 2>&1 &
+fi
 fi
 echo "申请Argo$argoname隧道中……请稍等"
 if [ -n "${ARGO_DOMAIN}" ] && [ -n "${ARGO_AUTH}" ]; then
@@ -1565,10 +1573,10 @@ if [ -n "$KNOCK" ]; then
 	[ -z "$KNOCK_PORT" ] && KNOCK_PORT=$(shuf -i 20000-60000 -n 1 2>/dev/null || echo 38000)
 	command -v socat >/dev/null 2>&1 || { command -v apk >/dev/null 2>&1 && apk add --no-cache socat >/dev/null 2>&1; command -v apt-get >/dev/null 2>&1 && apt-get install -y socat >/dev/null 2>&1; }
 	cat > "$HOME/agsbx/watchdog.conf" <<EOF
-KNOCK_PORT=$KNOCK_PORT
-IDLE_TIMEOUT=$IDLE_TIMEOUT
-STEALTH_NAME=$STEALTH_NAME
-CLASH_API_PORT=$CLASH_API_PORT
+KNOCK_PORT="$KNOCK_PORT"
+IDLE_TIMEOUT="$IDLE_TIMEOUT"
+STEALTH_NAME="$STEALTH_NAME"
+CLASH_API_PORT="$CLASH_API_PORT"
 EOF
 	cat > "$HOME/agsbx/watchdog.sh" <<'WDEOF'
 #!/bin/sh
@@ -1576,6 +1584,10 @@ EOF
 AGSBX="$HOME/agsbx"
 [ -f "$AGSBX/watchdog.conf" ] && . "$AGSBX/watchdog.conf"
 GRACE=60
+# STEALTH_NAME 逗号分隔 → sing-box / xray / cloudflared 各自伪装名(单个则共用)
+SB_NAME=$(printf '%s' "$STEALTH_NAME" | cut -d, -f1)
+XR_NAME=$(printf '%s' "$STEALTH_NAME" | cut -d, -f2); [ -z "$XR_NAME" ] && XR_NAME="$SB_NAME"
+CF_NAME=$(printf '%s' "$STEALTH_NAME" | cut -d, -f3); [ -z "$CF_NAME" ] && CF_NAME="$SB_NAME"
 _pids() {
 	for e in /proc/[0-9]*/exe; do
 		case "$(readlink "$e" 2>/dev/null)" in
@@ -1586,8 +1598,8 @@ _pids() {
 proxy_up() { [ -n "$(_pids)" ]; }
 _run() {
 	[ -f "$AGSBX/$2" ] || return 0
-	if [ -n "$STEALTH_NAME" ] && command -v bash >/dev/null 2>&1; then
-		nohup bash -c 'exec -a "$1" "$2" run -c "$3"' _ "$STEALTH_NAME" "$AGSBX/$1" "$AGSBX/$2" >/dev/null 2>&1 &
+	if [ -n "$3" ] && command -v bash >/dev/null 2>&1; then
+		nohup bash -c 'exec -a "$1" "$2" run -c "$3"' _ "$3" "$AGSBX/$1" "$AGSBX/$2" >/dev/null 2>&1 &
 	else
 		nohup "$AGSBX/$1" run -c "$AGSBX/$2" >/dev/null 2>&1 &
 	fi
@@ -1595,8 +1607,8 @@ _run() {
 start_proxy() {
 	date +%s > "$AGSBX/.last_knock" 2>/dev/null
 	proxy_up && return 0
-	_run sing-box sb.json
-	_run xray xr.json
+	_run sing-box sb.json "$SB_NAME"
+	_run xray xr.json "$XR_NAME"
 }
 stop_proxy() {
 	pidof systemd >/dev/null 2>&1 && systemctl stop sb xr >/dev/null 2>&1
@@ -1635,7 +1647,32 @@ knock_listener() {
 		fi
 	done
 }
+_cfrun() {  # 伪装启动 cloudflared(无 CF_NAME/无 bash 则原名)
+	if [ -n "$CF_NAME" ] && command -v bash >/dev/null 2>&1; then
+		nohup bash -c 'exec -a "$1" "$HOME/agsbx/cloudflared" "${@:2}"' _ "$CF_NAME" "$@" >/dev/null 2>&1 &
+	else
+		nohup "$AGSBX/cloudflared" "$@" >/dev/null 2>&1 &
+	fi
+}
+cf_up() {
+	for e in /proc/[0-9]*/exe; do
+		case "$(readlink "$e" 2>/dev/null)" in */agsbx/cloudflared) return 0 ;; esac
+	done
+	return 1
+}
+start_cloudflared() {  # 开机/重启后伪装拉起 argo;临时隧道域名会变(仅固定隧道支持重启,见 README)
+	[ -f "$AGSBX/cloudflared" ] || return 0
+	cf_up && return 0
+	proto=$(cat "$AGSBX/argoproto.log" 2>/dev/null)
+	if [ -s "$AGSBX/sbargotoken.log" ]; then
+		_cfrun tunnel $proto --no-autoupdate --edge-ip-version auto run --token "$(cat "$AGSBX/sbargotoken.log")"
+	elif [ -f "$AGSBX/argoport.log" ]; then
+		_cfrun tunnel $proto --url "http://localhost:$(cat "$AGSBX/argoport.log")" --edge-ip-version auto --no-autoupdate
+	fi
+}
 main() {
+	echo $$ > "$AGSBX/watchdog.pid" 2>/dev/null
+	start_cloudflared
 	knock_listener &
 	idle=0
 	while :; do
@@ -1655,8 +1692,12 @@ case "$1" in
 esac
 WDEOF
 	chmod +x "$HOME/agsbx/watchdog.sh"
-	sed -i '/agsbx\/sing-box/d;/agsbx\/xray/d' /tmp/crontab.tmp 2>/dev/null
+	# B方案:watchdog 独占代理生命周期 —— 关服务管理器自启 + 删代理 @reboot(watchdog 会空闲伪装接管)
+	pidof systemd >/dev/null 2>&1 && systemctl disable sb xr argo >/dev/null 2>&1
+	command -v rc-update >/dev/null 2>&1 && { rc-update del sing-box default; rc-update del xray default; rc-update del argo default; } >/dev/null 2>&1
+	sed -i '/agsbx\/sing-box/d;/agsbx\/xray/d;/agsbx\/cloudflared/d' /tmp/crontab.tmp 2>/dev/null
 	grep -q 'agsbx/watchdog.sh' /tmp/crontab.tmp 2>/dev/null || echo '@reboot sleep 10 && /bin/sh -c "nohup $HOME/agsbx/watchdog.sh >/dev/null 2>&1 &"' >> /tmp/crontab.tmp
+	grep -q 'wd-keepalive' /tmp/crontab.tmp 2>/dev/null || echo '*/5 * * * * kill -0 $(cat $HOME/agsbx/watchdog.pid 2>/dev/null) 2>/dev/null || nohup $HOME/agsbx/watchdog.sh >/dev/null 2>&1 & # wd-keepalive' >> /tmp/crontab.tmp
 	if ! pgrep -f 'agsbx/watchdog.sh' >/dev/null 2>&1; then nohup "$HOME/agsbx/watchdog.sh" >/dev/null 2>&1 & fi
 	echo "═════ 敲门模式已启用 ═════"
 	echo "  敲门端口:$KNOCK_PORT  |  空闲 ${IDLE_TIMEOUT}s 无连接自动关闭代理"
