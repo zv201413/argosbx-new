@@ -1130,10 +1130,22 @@ need net
 EOF
 chmod +x /etc/init.d/xray >/dev/null 2>&1
 rc-update add xray default >/dev/null 2>&1
-rc-service xray start >/dev/null 2>&1
-else
-nohup "$HOME/agsbx/xray" run -c "$HOME/agsbx/xr.json" > "$HOME/agsbx/xray.log" 2>&1 &
-fi
+	rc-service xray start >/dev/null 2>&1
+	elif command -v supervisorctl >/dev/null 2>&1; then
+	SUPER_AGSBX="${SUPER_CONF_DIR:-$HOME/agsbx/supervisor}"
+	mkdir -p "$SUPER_AGSBX"
+	cat > "$SUPER_AGSBX/xray.conf" <<EOFBAS
+	[program:xray]
+	command=$HOME/agsbx/xray run -c $HOME/agsbx/xr.json
+	autostart=true
+	autorestart=true
+	startsecs=3
+	stdout_logfile=$HOME/agsbx/xray.out.log
+	stderr_logfile=$HOME/agsbx/xray.err.log
+EOFBAS
+	supervisorctl update >/dev/null 2>&1 || true
+	else
+	nohup "$HOME/agsbx/xray" run -c "$HOME/agsbx/xr.json" > "$HOME/agsbx/xray.log" 2>&1 &
 fi
 if [ -e "$HOME/agsbx/sb.json" ]; then
 sed -i '${s/,[[:space:]]*$//}' "$HOME/agsbx/sb.json"
@@ -1227,6 +1239,19 @@ EOF
 chmod +x /etc/init.d/sing-box >/dev/null 2>&1
 rc-update add sing-box default >/dev/null 2>&1
 rc-service sing-box start >/dev/null 2>&1
+elif command -v supervisorctl >/dev/null 2>&1; then
+SUPER_AGSBX="${SUPER_CONF_DIR:-$HOME/agsbx/supervisor}"
+mkdir -p "$SUPER_AGSBX"
+cat > "$SUPER_AGSBX/sing-box.conf" <<EOFBAS
+[program:sing-box]
+command=$HOME/agsbx/sing-box run -c $HOME/agsbx/sb.json
+autostart=true
+autorestart=true
+startsecs=3
+stdout_logfile=$HOME/agsbx/sing-box.out.log
+stderr_logfile=$HOME/agsbx/sing-box.err.log
+EOFBAS
+supervisorctl update >/dev/null 2>&1 || true
 else
 nohup "$HOME/agsbx/sing-box" run -c "$HOME/agsbx/sb.json" > "$HOME/agsbx/sing-box.log" 2>&1 &
 fi
@@ -1452,24 +1477,20 @@ _sb_up=0; _xr_up=0
 		[ "$_sb_up" = "$_sb_need" ] && [ "$_xr_up" = "$_xr_need" ] && break
 		sleep 2
 	done
-	# systemd 启动失败 → nohup 兜底
+	# 通用兜底：systemd/OpenRC 失败或无服务管理器 → nohup 直启
 	if [ "$_sb_need" = 1 ] && [ "$_sb_up" = 0 ]; then
-		if pidof systemd >/dev/null 2>&1 && systemctl is-failed sb >/dev/null 2>&1; then
-			echo "WARNING: systemd 启动 sing-box 失败，尝试 nohup 直接启动..."
-			systemctl reset-failed sb >/dev/null 2>&1
-			nohup "$HOME/agsbx/sing-box" run -c "$HOME/agsbx/sb.json" > "$HOME/agsbx/sing-box.log" 2>&1 &
-			sleep 3
-			( find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null | grep -q 'agsbx/s' || pgrep -f 'agsbx/s' >/dev/null 2>&1 ) && _sb_up=1
-		fi
+		echo "WARNING: sing-box 进程未检测到，尝试 nohup 直接启动..."
+		systemctl reset-failed sb >/dev/null 2>&1
+		nohup "$HOME/agsbx/sing-box" run -c "$HOME/agsbx/sb.json" > "$HOME/agsbx/sing-box.log" 2>&1 &
+		sleep 3
+		( find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null | grep -q 'agsbx/s' || pgrep -f 'agsbx/s' >/dev/null 2>&1 ) && _sb_up=1
 	fi
 	if [ "$_xr_need" = 1 ] && [ "$_xr_up" = 0 ]; then
-		if pidof systemd >/dev/null 2>&1 && systemctl is-failed xr >/dev/null 2>&1; then
-			echo "WARNING: systemd 启动 xray 失败，尝试 nohup 直接启动..."
-			systemctl reset-failed xr >/dev/null 2>&1
-			nohup "$HOME/agsbx/xray" run -c "$HOME/agsbx/xr.json" > "$HOME/agsbx/xray.log" 2>&1 &
-			sleep 3
-			( find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null | grep -q 'agsbx/x' || pgrep -f 'agsbx/x' >/dev/null 2>&1 ) && _xr_up=1
-		fi
+		echo "WARNING: xray 进程未检测到，尝试 nohup 直接启动..."
+		systemctl reset-failed xr >/dev/null 2>&1
+		nohup "$HOME/agsbx/xray" run -c "$HOME/agsbx/xr.json" > "$HOME/agsbx/xray.log" 2>&1 &
+		sleep 3
+		( find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null | grep -q 'agsbx/x' || pgrep -f 'agsbx/x' >/dev/null 2>&1 ) && _xr_up=1
 	fi
 	if [ "$_sb_up" = "$_sb_need" ] && [ "$_xr_up" = "$_xr_need" ]; then
 [ -f ~/.bashrc ] || touch ~/.bashrc
@@ -1496,7 +1517,7 @@ grep -qxF 'source ~/.bashrc' ~/.bash_profile 2>/dev/null || echo 'source ~/.bash
 . ~/.bashrc 2>/dev/null
 . ~/.profile 2>/dev/null
 crontab -l > /tmp/crontab.tmp 2>/dev/null
-if ! pidof systemd >/dev/null 2>&1 && ! command -v rc-service >/dev/null 2>&1; then
+if ! pidof systemd >/dev/null 2>&1 && ! command -v rc-service >/dev/null 2>&1 && ! command -v supervisorctl >/dev/null 2>&1; then
 sed -i '/agsbx\/sing-box/d' /tmp/crontab.tmp
 sed -i '/agsbx\/xray/d' /tmp/crontab.tmp
 if find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null | grep -q 'agsbx/s' || pgrep -f 'agsbx/s' >/dev/null 2>&1 ; then
@@ -2059,6 +2080,12 @@ rc-service "$svc" stop >/dev/null 2>&1
 rc-update del "$svc" default >/dev/null 2>&1
 done
 rm -rf /etc/init.d/sing-box /etc/init.d/xray /etc/init.d/argo 2>/dev/null
+elif command -v supervisorctl >/dev/null 2>&1; then
+for svc in sing-box xray; do
+supervisorctl stop "$svc" >/dev/null 2>&1 || true
+done
+supervisorctl reread >/dev/null 2>&1 || true
+supervisorctl update >/dev/null 2>&1 || true
 fi
 }
 
@@ -2075,6 +2102,8 @@ if pidof systemd >/dev/null 2>&1; then
 systemctl restart xr >/dev/null 2>&1
 elif command -v rc-service >/dev/null 2>&1; then
 rc-service xray restart >/dev/null 2>&1
+elif command -v supervisorctl >/dev/null 2>&1; then
+supervisorctl restart xray >/dev/null 2>&1 || nohup "$HOME/agsbx/xray" run -c "$HOME/agsbx/xr.json" >/dev/null 2>&1 &
 else
 nohup "$HOME/agsbx/xray" run -c "$HOME/agsbx/xr.json" >/dev/null 2>&1 &
 fi
@@ -2085,6 +2114,8 @@ if pidof systemd >/dev/null 2>&1; then
 systemctl restart sb >/dev/null 2>&1
 elif command -v rc-service >/dev/null 2>&1; then
 rc-service sing-box restart >/dev/null 2>&1
+elif command -v supervisorctl >/dev/null 2>&1; then
+supervisorctl restart sing-box >/dev/null 2>&1 || nohup "$HOME/agsbx/sing-box" run -c "$HOME/agsbx/sb.json" >/dev/null 2>&1 &
 else
 nohup "$HOME/agsbx/sing-box" run -c "$HOME/agsbx/sb.json" >/dev/null 2>&1 &
 fi
