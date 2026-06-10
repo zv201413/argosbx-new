@@ -77,6 +77,12 @@ export nz_host=${nz_host:-''}
 export nz_port=${nz_port:-'5555'}
 export nz_sec=${nz_sec:-''}
 export nz_tls=${nz_tls:-''}
+# ───── 可选功能(默认全关,不传则与原行为一字不差)─────
+export KNOCK=${KNOCK:-''}                       # =1 启用「敲门+空闲自关」子系统
+export KNOCK_PORT=${KNOCK_PORT:-''}             # 敲门端口(KNOCK=1 且为空时自动分配)
+export IDLE_TIMEOUT=${IDLE_TIMEOUT:-'300'}      # 空闲多少秒无连接后关闭代理进程
+export STEALTH_NAME=${STEALTH_NAME:-''}         # 进程伪装名(空=不伪装,代理按原名启动)
+export CLASH_API_PORT=${CLASH_API_PORT:-'9090'} # sing-box 本地 clash_api 端口(仅 KNOCK 时注入,供活跃检测)
 v46url="https://icanhazip.com"
 agsbxurl="https://raw.githubusercontent.com/zv201413/argosbx-new/main-new/argosbx.sh"
 
@@ -1216,6 +1222,10 @@ cat >> "$HOME/agsbx/sb.json" <<EOF
   }
 }
 EOF
+# ───── 可选:KNOCK 模式给 sing-box 注入 localhost clash_api(供 watchdog 活跃检测;非 KNOCK 不改)─────
+if [ -n "$KNOCK" ] && [ -f "$HOME/agsbx/sb.json" ]; then
+	grep -q '"clash_api"' "$HOME/agsbx/sb.json" || sed -i 's#"experimental": {#"experimental": {\n    "clash_api": { "external_controller": "127.0.0.1:'"$CLASH_API_PORT"'" },#' "$HOME/agsbx/sb.json"
+fi
 if pidof systemd >/dev/null 2>&1 && [ "$(id -u)" -eq 0 ]; then
 cat > /etc/systemd/system/sb.service <<EOF
 [Unit]
@@ -1549,6 +1559,108 @@ fi
 else
 echo '@reboot sleep 10 && /bin/sh -c "nohup $HOME/agsbx/cloudflared tunnel $(cat $HOME/agsbx/argoproto.log 2>/dev/null) --url http://localhost:$(cat $HOME/agsbx/argoport.log) --edge-ip-version auto --no-autoupdate > $HOME/agsbx/argo.log 2>&1 &"' >> /tmp/crontab.tmp
 fi
+fi
+# ═════════ 可选:敲门 + 空闲自关子系统(仅 KNOCK=1 启用;非 KNOCK 完全跳过,以下 cron 照旧)═════════
+if [ -n "$KNOCK" ]; then
+	[ -z "$KNOCK_PORT" ] && KNOCK_PORT=$(shuf -i 20000-60000 -n 1 2>/dev/null || echo 38000)
+	command -v socat >/dev/null 2>&1 || { command -v apk >/dev/null 2>&1 && apk add --no-cache socat >/dev/null 2>&1; command -v apt-get >/dev/null 2>&1 && apt-get install -y socat >/dev/null 2>&1; }
+	cat > "$HOME/agsbx/watchdog.conf" <<EOF
+KNOCK_PORT=$KNOCK_PORT
+IDLE_TIMEOUT=$IDLE_TIMEOUT
+STEALTH_NAME=$STEALTH_NAME
+CLASH_API_PORT=$CLASH_API_PORT
+EOF
+	cat > "$HOME/agsbx/watchdog.sh" <<'WDEOF'
+#!/bin/sh
+# argosbx 敲门守护(仅 KNOCK 模式生成):空闲关代理、敲门拉起代理。纯 POSIX;进程伪装需 bash。
+AGSBX="$HOME/agsbx"
+[ -f "$AGSBX/watchdog.conf" ] && . "$AGSBX/watchdog.conf"
+GRACE=60
+_pids() {
+	for e in /proc/[0-9]*/exe; do
+		case "$(readlink "$e" 2>/dev/null)" in
+			*/agsbx/sing-box|*/agsbx/xray) basename "$(dirname "$e")" ;;
+		esac
+	done
+}
+proxy_up() { [ -n "$(_pids)" ]; }
+_run() {
+	[ -f "$AGSBX/$2" ] || return 0
+	if [ -n "$STEALTH_NAME" ] && command -v bash >/dev/null 2>&1; then
+		nohup bash -c 'exec -a "$1" "$2" run -c "$3"' _ "$STEALTH_NAME" "$AGSBX/$1" "$AGSBX/$2" >/dev/null 2>&1 &
+	else
+		nohup "$AGSBX/$1" run -c "$AGSBX/$2" >/dev/null 2>&1 &
+	fi
+}
+start_proxy() {
+	date +%s > "$AGSBX/.last_knock" 2>/dev/null
+	proxy_up && return 0
+	_run sing-box sb.json
+	_run xray xr.json
+}
+stop_proxy() {
+	pidof systemd >/dev/null 2>&1 && systemctl stop sb xr >/dev/null 2>&1
+	command -v rc-service    >/dev/null 2>&1 && { rc-service sing-box stop; rc-service xray stop; } >/dev/null 2>&1
+	command -v supervisorctl >/dev/null 2>&1 && supervisorctl stop sing-box xray >/dev/null 2>&1
+	for p in $(_pids); do kill -15 "$p" 2>/dev/null; done
+}
+_tcp_active() {
+	_p=$(_pids); [ -z "$_p" ] && return 1
+	_o=$( { ss -tnp 2>/dev/null; netstat -tnp 2>/dev/null; } )
+	[ -z "$_o" ] && return 1
+	for x in $_p; do
+		printf '%s\n' "$_o" | grep -i estab | grep -Eq "pid=$x,|[ /]$x/" && return 0
+	done
+	return 1
+}
+is_active() {
+	c=$(wget -qO- "http://127.0.0.1:$CLASH_API_PORT/connections" 2>/dev/null) || c=$(curl -s "http://127.0.0.1:$CLASH_API_PORT/connections" 2>/dev/null)
+	printf '%s' "$c" | grep -q '"id"' && return 0
+	_tcp_active
+}
+recently_knocked() {
+	[ -f "$AGSBX/.last_knock" ] || return 1
+	now=$(date +%s); last=$(cat "$AGSBX/.last_knock" 2>/dev/null || echo 0)
+	[ $((now - last)) -lt "$GRACE" ]
+}
+knock_listener() {
+	while :; do
+		if command -v socat >/dev/null 2>&1; then
+			socat TCP-LISTEN:"$KNOCK_PORT",reuseaddr,fork EXEC:"$AGSBX/watchdog.sh knock" 2>/dev/null
+			sleep 1
+		elif nc -l -p "$KNOCK_PORT" >/dev/null 2>&1 || nc -l "$KNOCK_PORT" >/dev/null 2>&1; then
+			"$AGSBX/watchdog.sh" knock
+		else
+			sleep 1
+		fi
+	done
+}
+main() {
+	knock_listener &
+	idle=0
+	while :; do
+		sleep 30
+		if is_active || recently_knocked; then
+			idle=0
+		elif proxy_up; then
+			idle=$((idle + 30))
+			[ "$idle" -ge "$IDLE_TIMEOUT" ] && { stop_proxy; idle=0; }
+		fi
+	done
+}
+case "$1" in
+	knock) start_proxy ;;
+	stop)  stop_proxy ;;
+	*)     main ;;
+esac
+WDEOF
+	chmod +x "$HOME/agsbx/watchdog.sh"
+	sed -i '/agsbx\/sing-box/d;/agsbx\/xray/d' /tmp/crontab.tmp 2>/dev/null
+	grep -q 'agsbx/watchdog.sh' /tmp/crontab.tmp 2>/dev/null || echo '@reboot sleep 10 && /bin/sh -c "nohup $HOME/agsbx/watchdog.sh >/dev/null 2>&1 &"' >> /tmp/crontab.tmp
+	if ! pgrep -f 'agsbx/watchdog.sh' >/dev/null 2>&1; then nohup "$HOME/agsbx/watchdog.sh" >/dev/null 2>&1 & fi
+	echo "═════ 敲门模式已启用 ═════"
+	echo "  敲门端口:$KNOCK_PORT  |  空闲 ${IDLE_TIMEOUT}s 无连接自动关闭代理"
+	echo "  连接前先敲门:nc -w1 <服务器IP> $KNOCK_PORT   (代理随后自动拉起)"
 fi
 crontab /tmp/crontab.tmp >/dev/null 2>&1
 rm /tmp/crontab.tmp
