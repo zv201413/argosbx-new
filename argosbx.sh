@@ -1588,6 +1588,7 @@ GRACE=60
 SB_NAME=$(printf '%s' "$STEALTH_NAME" | cut -d, -f1)
 XR_NAME=$(printf '%s' "$STEALTH_NAME" | cut -d, -f2); [ -z "$XR_NAME" ] && XR_NAME="$SB_NAME"
 CF_NAME=$(printf '%s' "$STEALTH_NAME" | cut -d, -f3); [ -z "$CF_NAME" ] && CF_NAME="$SB_NAME"
+IS_FIXED=""; [ -s "$AGSBX/sbargotoken.log" ] && IS_FIXED=1   # 固定隧道:cloudflared 也按需启停;临时隧道:常驻
 _pids() {
 	for e in /proc/[0-9]*/exe; do
 		case "$(readlink "$e" 2>/dev/null)" in
@@ -1606,15 +1607,15 @@ _run() {
 }
 start_proxy() {
 	date +%s > "$AGSBX/.last_knock" 2>/dev/null
-	proxy_up && return 0
-	_run sing-box sb.json "$SB_NAME"
-	_run xray xr.json "$XR_NAME"
+	proxy_up || { _run sing-box sb.json "$SB_NAME"; _run xray xr.json "$XR_NAME"; }
+	[ -n "$IS_FIXED" ] && start_cloudflared
 }
 stop_proxy() {
 	pidof systemd >/dev/null 2>&1 && systemctl stop sb xr >/dev/null 2>&1
 	command -v rc-service    >/dev/null 2>&1 && { rc-service sing-box stop; rc-service xray stop; } >/dev/null 2>&1
 	command -v supervisorctl >/dev/null 2>&1 && supervisorctl stop sing-box xray >/dev/null 2>&1
 	for p in $(_pids); do kill -15 "$p" 2>/dev/null; done
+	[ -n "$IS_FIXED" ] && stop_cloudflared
 }
 _tcp_active() {
 	_p=$(_pids); [ -z "$_p" ] && return 1
@@ -1670,9 +1671,16 @@ start_cloudflared() {  # 开机/重启后伪装拉起 argo;临时隧道域名会
 		_cfrun tunnel $proto --url "http://localhost:$(cat "$AGSBX/argoport.log")" --edge-ip-version auto --no-autoupdate
 	fi
 }
+stop_cloudflared() {
+	pidof systemd >/dev/null 2>&1 && systemctl stop argo >/dev/null 2>&1
+	command -v rc-service >/dev/null 2>&1 && rc-service argo stop >/dev/null 2>&1
+	for e in /proc/[0-9]*/exe; do
+		case "$(readlink "$e" 2>/dev/null)" in */agsbx/cloudflared) kill -15 "$(basename "$(dirname "$e")")" 2>/dev/null ;; esac
+	done
+}
 main() {
 	echo $$ > "$AGSBX/watchdog.pid" 2>/dev/null
-	start_cloudflared
+	[ -z "$IS_FIXED" ] && start_cloudflared
 	knock_listener &
 	idle=0
 	while :; do
