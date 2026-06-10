@@ -8,6 +8,7 @@
 #   - 导入环境变量(uuid/port_vl_re/port_vm_ws等)
 #   - 检测进程运行状态,防止重复安装
 #   - 定义资源下载URL
+#   - 定义可选隐蔽功能变量(KNOCK/KNOCK_PORT/IDLE_TIMEOUT/STEALTH_NAME/CLASH_API_PORT,默认全关)
 # 依赖: 无
 # =============================================================================
 export LANG=en_US.UTF-8
@@ -577,7 +578,8 @@ fi
 #   - 配置AnyTLS协议(port_an)
 #   - 配置Any-Reality协议(port_ar)
 #   - 配置Shadowsocks协议(port_ss)
-#   - 生成自签名证书用于TLS
+#   - 生成自签名证书用于TLS(多发行版自动装openssl + PEM内容校验兜底)
+#   - 可选: KNOCK 模式下注入 localhost clash_api(供 watchdog 活跃连接检测)
 # 条件: 当启用hyp/tup/anp/arp/ssp时调用
 # 特点: 所有协议配置均写入sb.json,不使用XR.json
 # =============================================================================
@@ -1288,6 +1290,8 @@ fi
 #   - 流程控制: installsb → installxray → xrsbvm (注入WS) → warpsx → xrsbout
 #   - 故障自愈: 修正 .bashrc 恢复语句中的变量键名错误，确保 SSH 重连可正确找回协议
 #   - 持久化配置: 写入 crontab 和 bashrc 配置别名
+#   - Argo隧道: 启动 cloudflared(可选 exec -a 进程伪装);固定隧道域名稳定、临时隧道每次换域名
+#   - 可选敲门子系统(KNOCK=1): 生成 watchdog.sh + conf,空闲自关代理/敲门唤醒,固定隧道下 cloudflared 一并按需启停,watchdog 独占生命周期 + 保活cron
 # =============================================================================
 
 insnezha(){
@@ -1766,7 +1770,7 @@ if [ -n "$hyjpt" ] && [ -n "$hyp" ]; then
 fi
 
 # =============================================================================
-# SECTION 11.1: cip - 节点信息输出与命名规范化
+# SECTION 10: cip - 节点信息输出与命名规范化
 # =============================================================================
 cip(){
 echo "=========当前三大内核运行状态========="
@@ -1794,7 +1798,7 @@ fi
 }
 
 # =============================================================================
-# SECTION 11.2: node_output - 节点链接生成与输出
+# SECTION 11: node_output - 节点链接生成与输出
 # =============================================================================
 node_output(){
 echo
@@ -1817,7 +1821,7 @@ else
 ipbest
 fi
 # =============================================================================
-# SECTION 11.3: ipchange - IP信息显示函数
+# SECTION 12: ipchange - IP信息显示函数
 # 功能:
 #   - 显示VPS本地IPv4/IPv6地址
 #   - 显示服务器地区
@@ -2197,6 +2201,8 @@ echo "聚合节点信息，请进入 $HOME/agsbx/jh.txt 文件目录查看或者
 echo "========================================================="
 }
 # =============================================================================
+# SECTION 13: showmode - 命令帮助与用法说明(list/rep/upx/ups/res/del 等)
+# =============================================================================
 showmode(){
 echo "主脚本：bash <(curl -Ls https://raw.githubusercontent.com/zv201413/argosbx-new/main-new/argosbx.sh) 各种变量"
 echo "显示节点信息命令：agsbx list"
@@ -2210,25 +2216,17 @@ echo "---------------------------------------------------------"
 echo
 }
 
-# SECTION 11: cip - 节点信息输出与命名规范化
-# 功能:
-#   - 统一命名规范: 实现 [prefix]_[country]_[protocol]_[hostname] 格式输出
-#   - 动态地址替换: 
-#     * argoip: 全局替换 Argo/CDN 节点的优选 IP
-#     * nodeaddr: 全局替换所有直连节点的服务器 IP
-#   - 地理位置感知: 自动获取出口国家代码并注入节点 Tag
-#   - 数据持久化: 汇总所有链接到 $HOME/agsbx/jh.txt
 # =============================================================================
-# SECTION 9.1: cleandel - 卸载清理函数
+# SECTION 14: cleandel - 卸载清理函数
 # 功能:
-#   - 杀掉 agsbx 残留进程
-#   - 清理 crontab 定时任务
+#   - 杀掉 agsbx 残留进程(含敲门 watchdog / socat 监听)
+#   - 清理 crontab 定时任务(含 watchdog 开机自启与保活)
 #   - 删除 systemd/openrc 服务
 #   - 清理 bashrc 环境变量
 # =============================================================================
 cleandel(){
 for P in /proc/[0-9]*; do if [ -L "$P/exe" ]; then TARGET=$(readlink -f "$P/exe" 2>/dev/null); if echo "$TARGET" | grep -qE '/agsbx/c|/agsbx/s|/agsbx/x'; then PID=$(basename "$P"); kill "$PID" 2>/dev/null; fi; fi; done
-kill -15 $(pgrep -f 'agsbx/s' 2>/dev/null) $(pgrep -f 'agsbx/c' 2>/dev/null) $(pgrep -f 'agsbx/x' 2>/dev/null) >/dev/null 2>&1
+kill -15 $(pgrep -f 'agsbx/s' 2>/dev/null) $(pgrep -f 'agsbx/c' 2>/dev/null) $(pgrep -f 'agsbx/x' 2>/dev/null) $(pgrep -f 'agsbx/watchdog.sh' 2>/dev/null) >/dev/null 2>&1
 sed -i '/agsbx/d' ~/.bashrc 2>/dev/null
 sed -i '/export PATH="\$HOME\/bin:\$PATH"/d' ~/.bashrc 2>/dev/null
 . ~/.bashrc 2>/dev/null
@@ -2237,6 +2235,7 @@ sed -i '/agsbx\/sing-box/d' /tmp/crontab.tmp 2>/dev/null
 sed -i '/agsbx\/xray/d' /tmp/crontab.tmp 2>/dev/null
 sed -i '/agsbx\/cloudflared/d' /tmp/crontab.tmp 2>/dev/null
 sed -i '/nezha-agent/d' /tmp/crontab.tmp 2>/dev/null
+sed -i '/agsbx\/watchdog/d' /tmp/crontab.tmp 2>/dev/null
 crontab /tmp/crontab.tmp >/dev/null 2>&1
 rm /tmp/crontab.tmp 2>/dev/null
 rm -rf "$HOME/bin/agsbx" 2>/dev/null
@@ -2264,7 +2263,7 @@ fi
 }
 
 # =============================================================================
-# SECTION 10.5: xrestart/sbrestart - 内核重启函数
+# SECTION 15: xrestart/sbrestart - 内核重启函数
 # 功能:
 #   - xrestart(): 重启Xray内核
 #   - sbrestart(): 重启Sing-box内核
@@ -2296,7 +2295,7 @@ fi
 }
 
 # =============================================================================
-# SECTION 10.6: push_gist - 自动化节点订阅推送
+# SECTION 16: push_gist - 自动化节点订阅推送
 # 功能:
 #   - 读取 $HOME/agsbx/gh_token 和 $HOME/agsbx/gh_gist_id
 #   - 将节点信息推送到GitHub Gist
@@ -2349,7 +2348,7 @@ fi
 }
 
 # =============================================================================
-# SECTION 10: 命令行参数路由处理
+# SECTION 17: 命令行参数路由处理
 # 使用: ./argosbx.sh [del|rep|list|upx|ups|res|help]
 # =============================================================================
 if [ "$1" = "del" ]; then
@@ -2421,7 +2420,7 @@ exit
 fi
 
 # =============================================================================
-# SECTION 15: 脚本主执行流程 - 首次安装逻辑
+# SECTION 18: 脚本主执行流程 - 首次安装逻辑
 # 功能:
 #   - 检测DNS配置,必要时添加IPv6 DNS
 #   - 判断WARP IP可用性,设置endpoint
