@@ -595,31 +595,23 @@ cat > "$HOME/agsbx/sb.json" <<EOF
   "inbounds": [
 EOF
 insuuid
-# 证书生成：三层兜底
-# 第 1 层：openssl 直接生成
+# 证书生成：自签 ECC + 内容校验（不再用 -s 误判 404 页面）
+# 确保 openssl 存在（多发行版，apk 需先 update）
+if ! command -v openssl >/dev/null 2>&1; then
+	command -v apk     >/dev/null 2>&1 && { apk update >/dev/null 2>&1; apk add --no-cache openssl >/dev/null 2>&1; }
+	command -v apt-get >/dev/null 2>&1 && { apt-get update >/dev/null 2>&1; DEBIAN_FRONTEND=noninteractive apt-get install -y openssl >/dev/null 2>&1; }
+	command -v dnf     >/dev/null 2>&1 && dnf install -y openssl >/dev/null 2>&1
+	command -v yum     >/dev/null 2>&1 && yum install -y openssl >/dev/null 2>&1
+fi
+# 一步生成匹配的 key+cert
 if command -v openssl >/dev/null 2>&1; then
-	openssl ecparam -genkey -name prime256v1 -out "$HOME/agsbx/private.key" >/dev/null 2>&1
-	openssl req -new -x509 -days 36500 -key "$HOME/agsbx/private.key" -out "$HOME/agsbx/cert.pem" -subj "/CN=www.bing.com" >/dev/null 2>&1
-fi
-# 第 2 层：Alpine 等无 openssl 的环境，先装再生成
-if [ ! -s "$HOME/agsbx/private.key" ] || [ ! -s "$HOME/agsbx/cert.pem" ]; then
-	command -v apk >/dev/null 2>&1 && apk add openssl >/dev/null 2>&1
-	if command -v openssl >/dev/null 2>&1; then
-		openssl ecparam -genkey -name prime256v1 -out "$HOME/agsbx/private.key" >/dev/null 2>&1
-		openssl req -new -x509 -days 36500 -key "$HOME/agsbx/private.key" -out "$HOME/agsbx/cert.pem" -subj "/CN=www.bing.com" >/dev/null 2>&1
-	fi
-fi
-# 第 3 层：无交互自签名（不依赖 /dev/urandom 以外的东西）
-if [ ! -s "$HOME/agsbx/private.key" ] || [ ! -s "$HOME/agsbx/cert.pem" ]; then
-	echo "WARNING: 证书生成失败，尝试无交互自签名..."
 	openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 \
 		-keyout "$HOME/agsbx/private.key" -out "$HOME/agsbx/cert.pem" \
 		-days 36500 -nodes -subj "/CN=www.bing.com" >/dev/null 2>&1
 fi
-# 第 4 层：下载兜底
-if [ ! -s "$HOME/agsbx/private.key" ] || [ ! -s "$HOME/agsbx/cert.pem" ]; then
-	url="https://github.com/yonggekkk/argosbx/releases/download/argosbx/private.key"; out="$HOME/agsbx/private.key"; (command -v curl>/dev/null 2>&1 && curl -Ls -o "$out" --retry 2 "$url") || (command -v wget>/dev/null 2>&1 && timeout 3 wget -q -O "$out" --tries=2 "$url")
-	url="https://github.com/yonggekkk/argosbx/releases/download/argosbx/cert.pem"; out="$HOME/agsbx/cert.pem"; (command -v curl>/dev/null 2>&1 && curl -Ls -o "$out" --retry 2 "$url") || (command -v wget>/dev/null 2>&1 && timeout 3 wget -q -O "$out" --tries=2 "$url")
+# 内容校验：真有 PEM 才算成功，否则明确报错（绝不把垃圾喂给 sing-box）
+if ! grep -q "BEGIN CERTIFICATE" "$HOME/agsbx/cert.pem" 2>/dev/null; then
+	echo "ERROR: 自签证书生成失败（openssl 不可用？）。请在 VPS 手动执行 apk add openssl 后重装。"
 fi
 if [ -n "$hyp" ]; then
 hyp=hypt
