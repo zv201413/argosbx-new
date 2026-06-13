@@ -85,6 +85,7 @@
       grid-template-columns: 1fr 1fr;
       grid-template-rows: auto auto auto;
       gap: 20px;
+      align-items: start;
     }
     @media (max-width: 1100px) {
       .grid {
@@ -94,15 +95,14 @@
     }
     .protocol-port {
       grid-column: 1;
-      grid-row: 1 / 3;
-    }
-    .outbound-warp {
-      grid-column: 2;
       grid-row: 1;
     }
-    .argo-tunnel {
+    .right-col {
       grid-column: 2;
-      grid-row: 2;
+      grid-row: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
     }
     .shortcut-commands-card {
       grid-column: 1 / 3;
@@ -500,6 +500,7 @@
         </div>
       </section>
 
+      <div class="right-col">
       <section class="card outbound-warp">
         <h2>相关全局配置调整： </h2>
         <div class="row">
@@ -615,6 +616,7 @@
       </details>
     </div>
   </details>
+      </div>
 
   <details class="card nezha-agent">
     <summary>哪吒 / Komari 探针配置</summary>
