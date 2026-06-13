@@ -556,6 +556,7 @@
           </select>
         </div>
   <div class="row"><label>直连节点自定义地址 <span class="pill">nodeaddr</span></label><input id="nodeaddr" type="text" placeholder="hy2/tuic等直连节点地址，留空则使用VPS IP"/></div>
+  <div class="row"><label>自定义安装目录 <span class="pill">AGSBX_DIR</span></label><input id="AGSBX_DIR" type="text" placeholder="home目录不可写时填一个可写目录(如 /www);留空则自动探测。脚本会在其下创建 agsbx 子目录"/></div>
 
   <details style="margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:0;">
     <summary style="cursor:pointer;padding:10px 14px;color:var(--sub);font-size:14px;user-select:none;list-style:none;display:flex;align-items:center;gap:6px;">
@@ -727,7 +728,7 @@
     }
   };
 const protoKeys = ['sopt','vmpt','vlpt','xhpt','vxpt','vwpt','arpt','anpt','hypt','tupt','sspt'];
-const optIds = ['warp','ippz','ippref','wippref','uuid','reym','cdnym', 'name', 'oap', 'argoip', 'nodeaddr', 'hyjpt', 'gh_token', 'gh_gist_id', 'nz_server', 'nz_sec', 'KNOCK', 'KNOCK_PORT', 'IDLE_TIMEOUT', 'STEALTH_NAME'];
+const optIds = ['warp','ippz','ippref','wippref','uuid','reym','cdnym', 'name', 'oap', 'argoip', 'nodeaddr', 'hyjpt', 'gh_token', 'gh_gist_id', 'nz_server', 'nz_sec', 'KNOCK', 'KNOCK_PORT', 'IDLE_TIMEOUT', 'STEALTH_NAME', 'AGSBX_DIR'];
 
   const argoSelect = document.getElementById('argoSelect');
   const agn = document.getElementById('agn');
@@ -1024,6 +1025,7 @@ document.getElementById('uuid').value = '';
   function toBashVars(m){
     const keys = Object.keys(m);
     const ordered = [];
+    if (keys.includes('AGSBX_DIR')) ordered.push('AGSBX_DIR');  // 安装目录置于命令最前缀,直观可见
     protoKeys.forEach(k => { if (keys.includes(k)) ordered.push(k); });
     ['vlpt_enc', 'xhpt_enc', 'vxpt_enc', 'vwpt_enc'].forEach(k => { if (keys.includes(k)) ordered.push(k); });
     ['warp', 'uuid', 'reym', 'cdnym', 'name', 'hyjpt', 'ippz', 'ippref', 'wippref', 'argoip', 'nodeaddr', 'gh_token', 'gh_gist_id', 'KNOCK', 'KNOCK_PORT', 'IDLE_TIMEOUT', 'STEALTH_NAME'].forEach(k => { if (keys.includes(k)) ordered.push(k); });
