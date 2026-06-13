@@ -329,7 +329,8 @@
       border: 1px dashed #3752a6;
       border-radius: 12px;
       padding: 12px;
-      white-space: pre;
+      white-space: pre-wrap;
+      word-break: break-all;
       resize: vertical;
       transition: background-color 0.3s, border-color 0.3s, color 0.3s;
     }
@@ -556,40 +557,6 @@
           </select>
         </div>
   <div class="row"><label>直连节点自定义地址 <span class="pill">nodeaddr</span></label><input id="nodeaddr" type="text" placeholder="hy2/tuic等直连节点地址，留空则使用VPS IP"/></div>
-  <div class="row"><label>自定义安装目录 <span class="pill">AGSBX_DIR</span></label><input id="AGSBX_DIR" type="text" placeholder="home目录不可写时填一个可写目录(如 /www);留空则自动探测。脚本会在其下创建 agsbx 子目录"/></div>
-
-  <details style="margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:0;">
-    <summary style="cursor:pointer;padding:10px 14px;color:var(--sub);font-size:14px;user-select:none;list-style:none;display:flex;align-items:center;gap:6px;">
-      <span style="font-size:10px;">▶</span> 高级选项
-    </summary>
-    <div style="padding:0 14px 14px;">
-    <div class="row"><label>Reality 域名 <span class="pill">reym</span></label><input id="reym" type="text" placeholder="留空则默认apple.com"/></div>
-    <div class="row">
-      <label>当前系统开放所有端口 <span class="pill">oap</span></label>
-      <select id="oap">
-        <option value="">默认 关闭</option>
-        <option value="y">开启 执行一次即可关闭</option>
-      </select>
-    </div>
-    </div>
-  </details>
-  <details style="margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:0;">
-    <summary style="cursor:pointer;padding:10px 14px;color:var(--sub);font-size:14px;user-select:none;list-style:none;display:flex;align-items:center;gap:6px;">
-      <span style="font-size:10px;">▶</span> 敲门唤醒 / 进程隐身（高级，默认关闭）
-    </summary>
-    <div style="padding:0 14px 14px;">
-    <div class="row">
-      <label>敲门+空闲自关 总开关 <span class="pill">KNOCK</span></label>
-      <select id="KNOCK">
-        <option value="">默认 关闭</option>
-        <option value="1">开启 空闲关代理 / 敲门唤醒</option>
-      </select>
-    </div>
-    <div class="row"><label>敲门端口 <span class="pill">KNOCK_PORT</span></label><input id="KNOCK_PORT" type="text" placeholder="留空自动分配(20000-60000)"/></div>
-    <div class="row"><label>空闲超时(秒) <span class="pill">IDLE_TIMEOUT</span></label><input id="IDLE_TIMEOUT" type="text" placeholder="留空默认300"/></div>
-    <div class="row"><label>进程伪装名 <span class="pill">STEALTH_NAME</span></label><input id="STEALTH_NAME" type="text" placeholder="逗号分隔3个=sing-box,xray,cloudflared(填1个则三者共用)。例 [kworker/0:1],[kworker/1:2],[kworker/2:0]  留空不伪装(需bash)"/></div>
-    </div>
-  </details>
   </section>
 
   <section class="card argo-tunnel">
@@ -605,17 +572,49 @@
 <div class="row"><label>固定隧道CF域名 <span class="pill">agn</span></label><input id="agn" type="text" placeholder="Zero Trust已设置有子域名称的CF域名，留空则临时隧道" disabled></div>
   <div class="row"><label>固定隧道Token <span class="pill">agk</span></label><input id="agk" type="text" placeholder="Zero Trust已提取ey开头的秘钥，留空则临时隧道" disabled></div>
   <div class="row"><label>Argo优选IP/域名 <span class="pill">argoip</span></label><input id="argoip" type="text" placeholder="多个用 ; 分隔，如 ip1;ip2;domain1"/></div>
-  <details style="margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:0;">
-    <summary style="cursor:pointer;padding:10px 14px;color:var(--sub);font-size:14px;user-select:none;list-style:none;display:flex;align-items:center;gap:6px;">
-      <span style="font-size:10px;transition:transform 0.2s;">▶</span> CDN 回源 &amp; Gist 同步（高级）
-    </summary>
-    <div style="padding:0 14px 14px;">
-    <div class="row"><label>CF解析IP的域名 <span class="pill">cdnym</span></label><input id="cdnym" type="text" placeholder="Vmess-ws、Vless-xhttp/ws启用80、回源CDN时可用" disabled/></div>
-    <div class="row"><label>Gist ID <span class="pill">gh_gist_id</span></label><input id="gh_gist_id" type="text" placeholder="已有Gist ID可填，留空则新建"/></div>
-    <div class="row"><label>GitHub Token <span class="pill">gh_token</span></label><input id="gh_token" type="text" placeholder="推送Gist用，留空则不推送"/></div>
+  </section>
+
+  <details class="card">
+    <summary>高级选项</summary>
+    <div class="card-body">
+      <div class="row"><label>自定义安装目录 <span class="pill">AGSBX_DIR</span></label><input id="AGSBX_DIR" type="text" placeholder="home目录不可写时填一个可写目录(如 /www);留空则自动探测。脚本会在其下创建 agsbx 子目录"/></div>
+      <div class="row"><label>Reality 域名 <span class="pill">reym</span></label><input id="reym" type="text" placeholder="留空则默认apple.com"/></div>
+      <div class="row">
+        <label>当前系统开放所有端口 <span class="pill">oap</span></label>
+        <select id="oap">
+          <option value="">默认 关闭</option>
+          <option value="y">开启 执行一次即可关闭</option>
+        </select>
+      </div>
+      <details style="margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:0;">
+        <summary style="cursor:pointer;padding:10px 14px;color:var(--sub);font-size:14px;user-select:none;list-style:none;display:flex;align-items:center;gap:6px;">
+          <span style="font-size:10px;">▶</span> 敲门唤醒 / 进程隐身（高级，默认关闭）
+        </summary>
+        <div style="padding:0 14px 14px;">
+        <div class="row">
+          <label>敲门+空闲自关 总开关 <span class="pill">KNOCK</span></label>
+          <select id="KNOCK">
+            <option value="">默认 关闭</option>
+            <option value="1">开启 空闲关代理 / 敲门唤醒</option>
+          </select>
+        </div>
+        <div class="row"><label>敲门端口 <span class="pill">KNOCK_PORT</span></label><input id="KNOCK_PORT" type="text" placeholder="留空自动分配(20000-60000)"/></div>
+        <div class="row"><label>空闲超时(秒) <span class="pill">IDLE_TIMEOUT</span></label><input id="IDLE_TIMEOUT" type="text" placeholder="留空默认300"/></div>
+        <div class="row"><label>进程伪装名 <span class="pill">STEALTH_NAME</span></label><input id="STEALTH_NAME" type="text" placeholder="逗号分隔3个=sing-box,xray,cloudflared(填1个则三者共用)。例 [kworker/0:1],[kworker/1:2],[kworker/2:0]  留空不伪装(需bash)"/></div>
+        </div>
+      </details>
+      <details style="margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:0;">
+        <summary style="cursor:pointer;padding:10px 14px;color:var(--sub);font-size:14px;user-select:none;list-style:none;display:flex;align-items:center;gap:6px;">
+          <span style="font-size:10px;transition:transform 0.2s;">▶</span> CDN 回源 &amp; Gist 同步（高级）
+        </summary>
+        <div style="padding:0 14px 14px;">
+        <div class="row"><label>CF解析IP的域名 <span class="pill">cdnym</span></label><input id="cdnym" type="text" placeholder="Vmess-ws、Vless-xhttp/ws启用80、回源CDN时可用" disabled/></div>
+        <div class="row"><label>Gist ID <span class="pill">gh_gist_id</span></label><input id="gh_gist_id" type="text" placeholder="已有Gist ID可填，留空则新建"/></div>
+        <div class="row"><label>GitHub Token <span class="pill">gh_token</span></label><input id="gh_token" type="text" placeholder="推送Gist用，留空则不推送"/></div>
+        </div>
+      </details>
     </div>
   </details>
-  </section>
 
   <details class="card nezha-agent">
     <summary>哪吒 / Komari 探针配置</summary>
