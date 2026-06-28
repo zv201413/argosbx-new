@@ -152,6 +152,33 @@ touch sbx_update
 fi
 
 check_netlink_full_support(){
+    if ! command -v python3 >/dev/null 2>&1; then
+        if [ -t 0 ]; then
+            echo "======================================"
+            echo "⚠️ 检测到缺少 python3，无法精确验证内核路由权限。"
+            echo "请选择应对策略："
+            echo " 1) 强行安装 Sing-box (默认)"
+            echo " 2) 安装 python3 并进行精确检测 "
+            echo " 3) 安全降级，切换到 Xray 模式"
+            echo "======================================"
+            read -r -t 30 -p "请输入选项 [1/2/3] (30秒后自动选1): " user_choice
+            case "${user_choice}" in
+                2)
+                    echo "正在安装 python3..."
+                    if command -v apk >/dev/null 2>&1; then apk add python3 >/dev/null 2>&1;
+                    elif command -v apt >/dev/null 2>&1; then apt update >/dev/null 2>&1 && apt install python3 -y >/dev/null 2>&1;
+                    fi
+                    ;;
+                3)
+                    return 1 ;;
+                *)
+                    return 0 ;;
+            esac
+        else
+            # 非交互环境默认放行
+            return 0
+        fi
+    fi
     # 精确复现 sing-box 的 "subscribe route updates" 操作：setsockopt(SOL_NETLINK=270,
     # NETLINK_ADD_MEMBERSHIP=1, RTNLGRP_IPV4_ROUTE=7 / RTNLGRP_IPV6_ROUTE=11)。
     # 旧版仅 bind LINK 组(groups=1)，Modal 等容器放行 LINK、拦截 ROUTE → 假阳性漏判。
@@ -163,7 +190,14 @@ check_netlink_full_support(){
 }
 
 SB_SUPPORTED=1
-check_netlink_full_support || SB_SUPPORTED=0
+case "$1" in
+    del|list|upx|ups|res|help|-h|rep)
+        # 运维指令无需进行环境兼容性检测，直接跳过
+        ;;
+    *)
+        check_netlink_full_support || SB_SUPPORTED=0
+        ;;
+esac
 
 if [ "$SB_SUPPORTED" = 0 ]; then
     SB_SKIP_REASON=""
