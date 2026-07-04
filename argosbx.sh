@@ -134,6 +134,13 @@ echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 hostname=$(uname -a | awk '{print $2}')
 op=$(cat /etc/redhat-release 2>/dev/null || cat /etc/os-release 2>/dev/null | grep -i pretty_name | cut -d \" -f2)
 [ -z "$(systemd-detect-virt 2>/dev/null)" ] && vi=$(virt-what 2>/dev/null) || vi=$(systemd-detect-virt 2>/dev/null)
+# OS 兼容性检测: 只支持 Linux(System V ELF), FreeBSD 等 BSD 系无对应二进制
+_os=$(uname -s 2>/dev/null)
+case "$_os" in
+Linux) ;;
+FreeBSD|OpenBSD|NetBSD|DragonFly) echo "❌ 不支持 $_os 系统。xray/sing-box/cloudflared 官方仅提供 Linux 二进制，本脚本无法在 BSD 上运行。"; exit 1 ;;
+*) ;;
+esac
 case $(uname -m) in
 arm64|aarch64) cpu=arm64;;
 amd64|x86_64) cpu=amd64;;
