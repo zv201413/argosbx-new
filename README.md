@@ -22,7 +22,6 @@
 | IPv6优先回退 | ❌ 无 | ✅ ippz=6支持回退 |
 | 容器兼容性 | ❌ 无检测 | ✅ 自动检测，回退Xray |
 | 探针安装转换 | ❌ 无 | ✅ 支持哪吒/Komari探针一键转免systemd命令 |
-| Hy2 安全加固 | `insecure=1` 跳过验证 | ✅ `insecure=0` + `pinSHA256` 证书钉扎防 MITM |
 | iptables 端口跳跃 | `-F PREROUTING` 全量清空 | ✅ 自定义链 `ARGOSBX_PRE`，不干扰其他 NAT 规则 |
 | 证书生成保护 | 无去重、失败仅警告 | ✅ SHA256 指纹持久化、失败 `exit 1` 中止 |
 
