@@ -689,6 +689,9 @@ if [ ! -f "$AGSBX/SHA256.txt" ]; then
 	fi
 	SHA256=$(openssl x509 -in "$AGSBX/cert.crt" -outform DER | sha256sum | awk '{print $1}')
 	echo "$SHA256" > "$AGSBX/SHA256.txt"
+	# sing-box certificate_public_key_sha256: 公钥 SHA256 base64 (兼容 NekoBox/sing-box GUI 等客户端)
+	PUBKEY_SHA256_B64=$(openssl x509 -in "$AGSBX/cert.crt" -pubkey -noout 2>/dev/null | openssl pkey -pubin -outform der 2>/dev/null | openssl dgst -sha256 -binary | openssl enc -base64)
+	echo "$PUBKEY_SHA256_B64" > "$AGSBX/PUBKEY_SHA256_B64.txt"
 fi
 if [ -n "$hyp" ]; then
 hyp=hypt
@@ -2166,7 +2169,7 @@ if grep hy2_sb "$AGSBX/sb.json" >/dev/null 2>&1; then
     else
         hyps=""
     fi
-    hy2_link="hysteria2://$uuid@$server_ip:$display_port_hy2?security=tls&alpn=h3&insecure=0&allowInsecure=0${hyps}&sni=www.bing.com&pinSHA256=$(cat "$AGSBX/SHA256.txt")#${sxname}${country}_hy2_$hostname"
+    hy2_link="hysteria2://$uuid@$server_ip:$display_port_hy2?security=tls&alpn=h3&insecure=0&allowInsecure=0${hyps}&sni=www.bing.com&pinSHA256=$(cat "$AGSBX/PUBKEY_SHA256_B64.txt")#${sxname}${country}_hy2_$hostname"
     echo "$hy2_link" >> "$AGSBX/jh.txt"
     echo "$hy2_link"
     echo
