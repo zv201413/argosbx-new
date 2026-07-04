@@ -668,23 +668,27 @@ cat > "$AGSBX/sb.json" <<EOF
   "inbounds": [
 EOF
 insuuid
-# 证书生成：自签 ECC + 内容校验（不再用 -s 误判 404 页面）
+# 证书去重：SHA256.txt 存在则跳过生成（保证客户端 pinSHA256 指纹稳定不变）
 # 确保 openssl 存在（多发行版，apk 需先 update）
-if ! command -v openssl >/dev/null 2>&1; then
-	command -v apk     >/dev/null 2>&1 && { apk update >/dev/null 2>&1; apk add --no-cache openssl >/dev/null 2>&1; }
-	command -v apt-get >/dev/null 2>&1 && { apt-get update >/dev/null 2>&1; DEBIAN_FRONTEND=noninteractive apt-get install -y openssl >/dev/null 2>&1; }
-	command -v dnf     >/dev/null 2>&1 && dnf install -y openssl >/dev/null 2>&1
-	command -v yum     >/dev/null 2>&1 && yum install -y openssl >/dev/null 2>&1
-fi
-# 一步生成匹配的 key+cert
-if command -v openssl >/dev/null 2>&1; then
-	openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 \
-		-keyout "$AGSBX/private.key" -out "$AGSBX/cert.pem" \
-		-days 36500 -nodes -subj "/CN=www.bing.com" >/dev/null 2>&1
-fi
-# 内容校验：真有 PEM 才算成功，否则明确报错（绝不把垃圾喂给 sing-box）
-if ! grep -q "BEGIN CERTIFICATE" "$AGSBX/cert.pem" 2>/dev/null; then
-	echo "ERROR: 自签证书生成失败（openssl 不可用？）。请在 VPS 手动执行 apk add openssl 后重装。"
+if [ ! -f "$AGSBX/SHA256.txt" ]; then
+	if ! command -v openssl >/dev/null 2>&1; then
+		command -v apk     >/dev/null 2>&1 && { apk update >/dev/null 2>&1; apk add --no-cache openssl >/dev/null 2>&1; }
+		command -v apt-get >/dev/null 2>&1 && { apt-get update >/dev/null 2>&1; DEBIAN_FRONTEND=noninteractive apt-get install -y openssl >/dev/null 2>&1; }
+		command -v dnf     >/dev/null 2>&1 && dnf install -y openssl >/dev/null 2>&1
+		command -v yum     >/dev/null 2>&1 && yum install -y openssl >/dev/null 2>&1
+	fi
+	# 一步生成匹配的 key+cert (ECC P-256)
+	if command -v openssl >/dev/null 2>&1; then
+		openssl ecparam -genkey -name prime256v1 -out "$AGSBX/private.key" >/dev/null 2>&1
+		openssl req -new -x509 -days 36500 -key "$AGSBX/private.key" -out "$AGSBX/cert.crt" -subj "/CN=www.bing.com" >/dev/null 2>&1
+	fi
+	# 内容校验 + SHA256 指纹计算
+	if ! grep -q "BEGIN CERTIFICATE" "$AGSBX/cert.crt" 2>/dev/null; then
+		echo "ERROR: 自签证书生成失败（openssl 不可用？）。请在 VPS 手动安装 openssl 后重装。"
+		exit 1
+	fi
+	SHA256=$(openssl x509 -in "$AGSBX/cert.crt" -outform DER | sha256sum | awk '{print $1}')
+	echo "$SHA256" > "$AGSBX/SHA256.txt"
 fi
 if [ -n "$hyp" ]; then
 hyp=hypt
@@ -713,7 +717,7 @@ cat >> "$AGSBX/sb.json" <<EOF
             "alpn": [
                 "h3"
             ],
-            "certificate_path": "$AGSBX/cert.pem",
+            "certificate_path": "$AGSBX/cert.crt",
             "key_path": "$AGSBX/private.key"
         }
     },
@@ -749,7 +753,7 @@ cat >> "$AGSBX/sb.json" <<EOF
                 "alpn": [
                     "h3"
                 ],
-                "certificate_path": "$AGSBX/cert.pem",
+                "certificate_path": "$AGSBX/cert.crt",
                 "key_path": "$AGSBX/private.key"
             }
         },
@@ -770,7 +774,7 @@ echo "Anytls端口：$port_an"
 cat >> "$AGSBX/sb.json" <<EOF
         {
             "type":"anytls",
-            "tag":"anytls_sb",
+            "tag":"anytls-sb",
             "listen":"::",
             "listen_port":${port_an},
             "users":[
@@ -781,7 +785,7 @@ cat >> "$AGSBX/sb.json" <<EOF
             "padding_scheme":[],
             "tls":{
                 "enabled": true,
-                "certificate_path": "$AGSBX/cert.pem",
+                "certificate_path": "$AGSBX/cert.crt",
                 "key_path": "$AGSBX/private.key"
             }
         },
@@ -1820,12 +1824,17 @@ else
 if [ -n "$hyjpt" ] && [ -n "$hyp" ]; then
     echo
     echo "设置Hysteria2协议的跳跃端口：$hyjpt"
-    iptables -t nat -F PREROUTING >/dev/null 2>&1
-    ip6tables -t nat -F PREROUTING >/dev/null 2>&1
     hyport=$(cat "$AGSBX/port_hy2" 2>/dev/null)
+    # iptables 自定义链 ARGOSBX_PRE（不污染其他服务的 PREROUTING 规则）
+    iptables -t nat -N ARGOSBX_PRE 2>/dev/null
+    iptables -t nat -F ARGOSBX_PRE >/dev/null 2>&1
+    iptables -t nat -C PREROUTING -j ARGOSBX_PRE 2>/dev/null || iptables -t nat -A PREROUTING -j ARGOSBX_PRE
+    ip6tables -t nat -N ARGOSBX_PRE 2>/dev/null
+    ip6tables -t nat -F ARGOSBX_PRE >/dev/null 2>&1
+    ip6tables -t nat -C PREROUTING -j ARGOSBX_PRE 2>/dev/null || ip6tables -t nat -A PREROUTING -j ARGOSBX_PRE
     for port in $hyjpt; do
-        iptables -t nat -A PREROUTING -p udp --dport "$port" -j DNAT --to-destination :$hyport
-        ip6tables -t nat -A PREROUTING -p udp --dport "$port" -j DNAT --to-destination :$hyport
+        iptables -t nat -A ARGOSBX_PRE -p udp --dport "$port" -j DNAT --to-destination :$hyport
+        ip6tables -t nat -A ARGOSBX_PRE -p udp --dport "$port" -j DNAT --to-destination :$hyport
     done
     netfilter-persistent save >/dev/null 2>&1
     if command -v rc-service >/dev/null 2>&1; then
@@ -2122,7 +2131,7 @@ fi
 fi
 
 # AnyTLS
-if grep anytls_sb "$AGSBX/sb.json" >/dev/null 2>&1; then
+if grep anytls-sb "$AGSBX/sb.json" >/dev/null 2>&1; then
 echo "💣【 AnyTLS 】节点信息如下："
 port_an=$(cat "$AGSBX/port_an")
 display_port_an="${port_an_ext:-${port_an}}"
@@ -2157,7 +2166,7 @@ if grep hy2_sb "$AGSBX/sb.json" >/dev/null 2>&1; then
     else
         hyps=""
     fi
-    hy2_link="hysteria2://$uuid@$server_ip:$display_port_hy2?security=tls&alpn=h3&insecure=1${hyps}&sni=www.bing.com#${sxname}${country}_hy2_$hostname"
+    hy2_link="hysteria2://$uuid@$server_ip:$display_port_hy2?security=tls&alpn=h3&insecure=0&allowInsecure=0${hyps}&sni=www.bing.com&pinSHA256=$(cat "$AGSBX/SHA256.txt")#${sxname}${country}_hy2_$hostname"
     echo "$hy2_link" >> "$AGSBX/jh.txt"
     echo "$hy2_link"
     echo
@@ -2168,7 +2177,7 @@ if grep tuic5-sb "$AGSBX/sb.json" >/dev/null 2>&1; then
 echo "💣【 Tuic 】节点信息如下："
 port_tu=$(cat "$AGSBX/port_tu")
 display_port_tu="${port_tu_ext:-${port_tu}}"
-tuic5_link="tuic://$uuid:$uuid@$server_ip:$display_port_tu?congestion_control=bbr&udp_relay_mode=native&alpn=h3&sni=www.bing.com&allow_insecure=1&allowInsecure=1#${sxname}${country}_tuic_$hostname"
+tuic5_link="tuic://$uuid:$uuid@$server_ip:$display_port_tu?congestion_control=bbr&udp_relay_mode=native&alpn=h3&sni=www.bing.com&insecure=1&allowInsecure=1#${sxname}${country}_tuic_$hostname"
 echo "$tuic5_link" >> "$AGSBX/jh.txt"
 echo "$tuic5_link"
 echo
@@ -2326,6 +2335,18 @@ supervisorctl stop "$svc" >/dev/null 2>&1 || true
 done
 supervisorctl reread >/dev/null 2>&1 || true
 supervisorctl update >/dev/null 2>&1 || true
+fi
+# 清理 Hysteria2 端口跳跃自定义 iptables 链
+iptables -t nat -D PREROUTING -j ARGOSBX_PRE 2>/dev/null
+iptables -t nat -F ARGOSBX_PRE 2>/dev/null
+iptables -t nat -X ARGOSBX_PRE 2>/dev/null
+ip6tables -t nat -D PREROUTING -j ARGOSBX_PRE 2>/dev/null
+ip6tables -t nat -F ARGOSBX_PRE 2>/dev/null
+ip6tables -t nat -X ARGOSBX_PRE 2>/dev/null
+netfilter-persistent save >/dev/null 2>&1
+if command -v rc-service >/dev/null 2>&1; then
+    rc-service iptables save >/dev/null 2>&1
+    rc-service ip6tables save >/dev/null 2>&1
 fi
 }
 
