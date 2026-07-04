@@ -255,6 +255,14 @@ echo
 echo "所有节点名称前缀：$name"
 fi
 v4v6
+# IPv4-only 兼容：v6 为空时自动降级 ippz/ippref/cloudflared edge-ip-version
+CF_IPV="auto"
+if [ -z "$v6" ]; then
+	CF_IPV="4"
+	[ "$ippz" = "6" ] && { echo "⚠️ IPv6 不可用，ippz 将自动回退为 IPv4 优先"; ippz=""; }
+	[ "$ippref" = "prefer_ipv6" ] && { echo "⚠️ IPv6 不可用，ippref 将自动回退为 prefer_ipv4"; ippref="prefer_ipv4"; }
+fi
+echo "$CF_IPV" > "$AGSBX/cf_ipv.txt"
 if echo "$v6" | grep -q '^2a09' || echo "$v4" | grep -q '^104.28'; then
 s1outtag=direct; s2outtag=direct; x1outtag=direct; x2outtag=direct; xip='"::/0", "0.0.0.0/0"'; sip='"::/0", "0.0.0.0/0"'; wap=warpargo
 echo; echo "请注意：你已安装了warp"
@@ -1505,7 +1513,7 @@ cfn=""; [ -n "$KNOCK" ] && [ -n "$STEALTH_NAME" ] && { cfn=$(printf '%s' "$STEAL
 if [ -n "${ARGO_DOMAIN}" ] && [ -n "${ARGO_AUTH}" ]; then
 argoname='固定'
 if [ -n "$cfn" ] && command -v bash >/dev/null 2>&1; then
-nohup bash -c 'exec -a "$1" "$AGSBX/cloudflared" "${@:2}"' _ "$cfn" tunnel ${argoproto} --no-autoupdate --edge-ip-version auto run --token "${ARGO_AUTH}" >/dev/null 2>&1 &
+nohup bash -c 'exec -a "$1" "$AGSBX/cloudflared" "${@:2}"' _ "$cfn" tunnel ${argoproto} --no-autoupdate --edge-ip-version $(cat "$AGSBX/cf_ipv.txt" 2>/dev/null || echo auto) run --token "${ARGO_AUTH}" >/dev/null 2>&1 &
 elif pidof systemd >/dev/null 2>&1 && [ "$(id -u)" -eq 0 ]; then
 cat > /etc/systemd/system/argo.service <<EOF
 [Unit]
@@ -1515,7 +1523,7 @@ After=network.target
 Type=simple
 NoNewPrivileges=yes
 TimeoutStartSec=0
-ExecStart=$AGSBX/cloudflared tunnel ${argoproto} --no-autoupdate --edge-ip-version auto run --token "${ARGO_AUTH}"
+ExecStart=$AGSBX/cloudflared tunnel ${argoproto} --no-autoupdate --edge-ip-version $(cat "$AGSBX/cf_ipv.txt" 2>/dev/null || echo auto) run --token "${ARGO_AUTH}"
 Restart=on-failure
 RestartSec=5s
 [Install]
@@ -1529,7 +1537,7 @@ cat > /etc/init.d/argo <<EOF
 #!/sbin/openrc-run
 description="argo service"
 command="$AGSBX/cloudflared tunnel"
-command_args="${argoproto} --no-autoupdate --edge-ip-version auto run --token ${ARGO_AUTH}"
+command_args="${argoproto} --no-autoupdate --edge-ip-version $(cat "$AGSBX/cf_ipv.txt" 2>/dev/null || echo auto) run --token ${ARGO_AUTH}"
 pidfile="/run/argo.pid"
 command_background="yes"
 depend() {
@@ -1540,16 +1548,16 @@ chmod +x /etc/init.d/argo >/dev/null 2>&1
 rc-update add argo default >/dev/null 2>&1
 rc-service argo start >/dev/null 2>&1
 else
-nohup "$AGSBX/cloudflared" tunnel ${argoproto} --no-autoupdate --edge-ip-version auto run --token "${ARGO_AUTH}" >/dev/null 2>&1 &
+nohup "$AGSBX/cloudflared" tunnel ${argoproto} --no-autoupdate --edge-ip-version $(cat "$AGSBX/cf_ipv.txt" 2>/dev/null || echo auto) run --token "${ARGO_AUTH}" >/dev/null 2>&1 &
 fi
 echo "${ARGO_DOMAIN}" > "$AGSBX/sbargoym.log"
 echo "${ARGO_AUTH}" > "$AGSBX/sbargotoken.log"
 else
 argoname='临时'
 if [ -n "$cfn" ] && command -v bash >/dev/null 2>&1; then
-nohup bash -c 'exec -a "$1" "$AGSBX/cloudflared" "${@:2}"' _ "$cfn" tunnel ${argoproto} --url "http://localhost:$(cat $AGSBX/argoport.log)" --edge-ip-version auto --no-autoupdate > $AGSBX/argo.log 2>&1 &
+nohup bash -c 'exec -a "$1" "$AGSBX/cloudflared" "${@:2}"' _ "$cfn" tunnel ${argoproto} --url "http://localhost:$(cat $AGSBX/argoport.log)" --edge-ip-version $(cat "$AGSBX/cf_ipv.txt" 2>/dev/null || echo auto) --no-autoupdate > $AGSBX/argo.log 2>&1 &
 else
-nohup "$AGSBX/cloudflared" tunnel ${argoproto} --url http://localhost:$(cat $AGSBX/argoport.log) --edge-ip-version auto --no-autoupdate > $AGSBX/argo.log 2>&1 &
+nohup "$AGSBX/cloudflared" tunnel ${argoproto} --url http://localhost:$(cat $AGSBX/argoport.log) --edge-ip-version $(cat "$AGSBX/cf_ipv.txt" 2>/dev/null || echo auto) --no-autoupdate > $AGSBX/argo.log 2>&1 &
 fi
 fi
 echo "申请Argo$argoname隧道中……请稍等"
@@ -1638,10 +1646,10 @@ sed -i '/agsbx\/cloudflared/d' /tmp/crontab.tmp
 if [ -n "$argo" ] && [ -n "$vmag" ]; then
 if [ -n "${ARGO_DOMAIN}" ] && [ -n "${ARGO_AUTH}" ]; then
 if ! pidof systemd >/dev/null 2>&1 && ! command -v rc-service >/dev/null 2>&1; then
-echo '@reboot sleep 10 && /bin/sh -c "nohup $AGSBX/cloudflared tunnel $(cat $AGSBX/argoproto.log 2>/dev/null) --no-autoupdate --edge-ip-version auto run --token $(cat $AGSBX/sbargotoken.log 2>/dev/null) >/dev/null 2>&1 &"' >> /tmp/crontab.tmp
+echo '@reboot sleep 10 && /bin/sh -c "nohup $AGSBX/cloudflared tunnel $(cat $AGSBX/argoproto.log 2>/dev/null) --no-autoupdate --edge-ip-version $(cat "$AGSBX/cf_ipv.txt" 2>/dev/null || echo auto) run --token $(cat $AGSBX/sbargotoken.log 2>/dev/null) >/dev/null 2>&1 &"' >> /tmp/crontab.tmp
 fi
 else
-echo '@reboot sleep 10 && /bin/sh -c "nohup $AGSBX/cloudflared tunnel $(cat $AGSBX/argoproto.log 2>/dev/null) --url http://localhost:$(cat $AGSBX/argoport.log) --edge-ip-version auto --no-autoupdate > $AGSBX/argo.log 2>&1 &"' >> /tmp/crontab.tmp
+echo '@reboot sleep 10 && /bin/sh -c "nohup $AGSBX/cloudflared tunnel $(cat $AGSBX/argoproto.log 2>/dev/null) --url http://localhost:$(cat $AGSBX/argoport.log) --edge-ip-version $(cat "$AGSBX/cf_ipv.txt" 2>/dev/null || echo auto) --no-autoupdate > $AGSBX/argo.log 2>&1 &"' >> /tmp/crontab.tmp
 fi
 fi
 # ═════════ 可选:敲门 + 空闲自关子系统(仅 KNOCK=1 启用;非 KNOCK 完全跳过,以下 cron 照旧)═════════
@@ -1744,9 +1752,9 @@ start_cloudflared() {  # 开机/重启后伪装拉起 argo;临时隧道域名会
 	cf_up && return 0
 	proto=$(cat "$AGSBX/argoproto.log" 2>/dev/null)
 	if [ -s "$AGSBX/sbargotoken.log" ]; then
-		_cfrun tunnel $proto --no-autoupdate --edge-ip-version auto run --token "$(cat "$AGSBX/sbargotoken.log")"
+		_cfrun tunnel $proto --no-autoupdate --edge-ip-version $(cat "$AGSBX/cf_ipv.txt" 2>/dev/null || echo auto) run --token "$(cat "$AGSBX/sbargotoken.log")"
 	elif [ -f "$AGSBX/argoport.log" ]; then
-		_cfrun tunnel $proto --url "http://localhost:$(cat "$AGSBX/argoport.log")" --edge-ip-version auto --no-autoupdate
+		_cfrun tunnel $proto --url "http://localhost:$(cat "$AGSBX/argoport.log")" --edge-ip-version $(cat "$AGSBX/cf_ipv.txt" 2>/dev/null || echo auto) --no-autoupdate
 	fi
 }
 stop_cloudflared() {
@@ -1891,7 +1899,8 @@ echo "$server_ip" > "$AGSBX/server_ip.log"
 fi
 elif [ "$ippz" = "6" ]; then
 if [ -z "$v6" ]; then
-ipbest6
+# IPv6 不可用,直接回退 v4 (不调 ipbest6 浪费时间)
+[ -z "$v4" ] && ipbest || { server_ip="$v4"; echo "$server_ip" > "$AGSBX/server_ip.log"; }
 else
 server_ip="[$v6]"
 echo "$server_ip" > "$AGSBX/server_ip.log"
@@ -1944,7 +1953,8 @@ echo "$server_ip" > "$AGSBX/server_ip.log"
 fi
 elif [ "$ippz" = "6" ]; then
 if [ -z "$v6" ]; then
-ipbest6
+# IPv6 不可用,直接回退 v4
+[ -z "$v4" ] && ipbest || { server_ip="$v4"; echo "$server_ip" > "$AGSBX/server_ip.log"; }
 else
 server_ip="[$v6]"
 echo "$server_ip" > "$AGSBX/server_ip.log"
@@ -2497,10 +2507,10 @@ rc-service argo restart >/dev/null 2>&1
 else
 if [ -e "$AGSBX/sbargotoken.log" ]; then
 if ! pidof systemd >/dev/null 2>&1 && ! command -v rc-service >/dev/null 2>&1; then
-nohup $AGSBX/cloudflared tunnel $(cat $AGSBX/argoproto.log 2>/dev/null) --no-autoupdate --edge-ip-version auto run --token $(cat $AGSBX/sbargotoken.log 2>/dev/null) >/dev/null 2>&1 &
+nohup $AGSBX/cloudflared tunnel $(cat $AGSBX/argoproto.log 2>/dev/null) --no-autoupdate --edge-ip-version $(cat "$AGSBX/cf_ipv.txt" 2>/dev/null || echo auto) run --token $(cat $AGSBX/sbargotoken.log 2>/dev/null) >/dev/null 2>&1 &
 fi
 else
-nohup $AGSBX/cloudflared tunnel $(cat $AGSBX/argoproto.log 2>/dev/null) --url http://localhost:$(cat $AGSBX/argoport.log 2>/dev/null) --edge-ip-version auto --no-autoupdate > $AGSBX/argo.log 2>&1 &
+nohup $AGSBX/cloudflared tunnel $(cat $AGSBX/argoproto.log 2>/dev/null) --url http://localhost:$(cat $AGSBX/argoport.log 2>/dev/null) --edge-ip-version $(cat "$AGSBX/cf_ipv.txt" 2>/dev/null || echo auto) --no-autoupdate > $AGSBX/argo.log 2>&1 &
 fi
 fi
 ;;
