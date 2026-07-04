@@ -680,7 +680,7 @@ if [ ! -f "$AGSBX/SHA256.txt" ]; then
 	# 一步生成匹配的 key+cert (ECC P-256)
 	if command -v openssl >/dev/null 2>&1; then
 		openssl ecparam -genkey -name prime256v1 -out "$AGSBX/private.key" >/dev/null 2>&1
-		openssl req -new -x509 -days 36500 -key "$AGSBX/private.key" -out "$AGSBX/cert.crt" -subj "/CN=www.bing.com" >/dev/null 2>&1
+		openssl req -new -x509 -days 36500 -key "$AGSBX/private.key" -out "$AGSBX/cert.crt" -subj "/CN=www.bing.com" -addext "subjectAltName=DNS:www.bing.com" >/dev/null 2>&1
 	fi
 	# 内容校验 + SHA256 指纹计算
 	if ! grep -q "BEGIN CERTIFICATE" "$AGSBX/cert.crt" 2>/dev/null; then
