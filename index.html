@@ -106,6 +106,27 @@
     }
     .shortcut-commands-card {
       grid-column: 1 / 3;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      padding: 10px 20px;
+      gap: 14px;
+    }
+    .shortcut-commands-card .shortcut-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--ink);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .shortcut-commands-card .shortcut-commands-content {
+      margin-top: 0;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+      min-width: 0;
     }
     .out {
       grid-column: 1 / 3;
@@ -147,30 +168,6 @@
     }
     details.card[open] {
       padding: 0;
-    }
-    details.card.shortcut-commands-card summary {
-      padding: 14px 20px;
-      font-size: 16px;
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-    details.card.shortcut-commands-card[open] {
-      display: flex;
-      align-items: center;
-      flex-wrap: wrap;
-      padding: 10px 20px;
-      gap: 12px;
-    }
-    details.card.shortcut-commands-card[open] summary {
-      padding: 0;
-    }
-    details.card.shortcut-commands-card .card-body {
-      flex: 1;
-      padding: 0;
-      min-width: 0;
-    }
-    details.card.shortcut-commands-card .shortcut-commands-content {
-      margin-top: 0;
     }
     /* 嵌套折叠箭头旋转 */
     details summary span:first-child {
@@ -581,7 +578,14 @@
             <option value="6">IPv6优先</option>
           </select>
         </div>
-  <div class="row"><label>直连节点自定义地址 <span class="pill">nodeaddr</span></label><input id="nodeaddr" type="text" placeholder="hy2/tuic等直连节点地址，留空则使用VPS IP"/></div>
+        <details style="margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:0;">
+          <summary style="cursor:pointer;padding:10px 14px;color:var(--sub);font-size:14px;user-select:none;list-style:none;display:flex;align-items:center;gap:6px;">
+            <span style="font-size:10px;transition:transform 0.2s;">▶</span> 自定义节点地址 (直连协议)
+          </summary>
+          <div style="padding:0 14px 14px;">
+            <div class="row"><label>直连节点自定义地址 <span class="pill">nodeaddr</span></label><input id="nodeaddr" type="text" placeholder="hy2/tuic等直连节点地址，留空则使用VPS IP"/></div>
+          </div>
+        </details>
   </section>
 
   <section class="card argo-tunnel">
@@ -596,24 +600,38 @@
         </div>
 <div class="row"><label>固定隧道CF域名 <span class="pill">agn</span></label><input id="agn" type="text" placeholder="Zero Trust已设置有子域名称的CF域名，留空则临时隧道" disabled></div>
   <div class="row"><label>固定隧道Token <span class="pill">agk</span></label><input id="agk" type="text" placeholder="Zero Trust已提取ey开头的秘钥，留空则临时隧道" disabled></div>
-  <div class="row"><label>Argo优选IP/域名 <span class="pill">argoip</span></label><input id="argoip" type="text" placeholder="多个用 ; 分隔，如 ip1;ip2;domain1"/></div>
+  <details style="margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:0;">
+    <summary style="cursor:pointer;padding:10px 14px;color:var(--sub);font-size:14px;user-select:none;list-style:none;display:flex;align-items:center;gap:6px;">
+      <span style="font-size:10px;transition:transform 0.2s;">▶</span> CDN 优选 IP 与回源域名
+    </summary>
+    <div style="padding:0 14px 14px;">
+      <div class="row"><label>Argo优选IP/域名 <span class="pill">argoip</span></label><input id="argoip" type="text" placeholder="多个用 ; 分隔，如 ip1;ip2;domain1"/></div>
+      <div class="row"><label>CF解析IP的域名 <span class="pill">cdnym</span></label><input id="cdnym" type="text" placeholder="Vmess-ws、Vless-xhttp/ws启用80、回源CDN时可用" disabled/></div>
+    </div>
+  </details>
   </section>
 
   <details class="card">
     <summary>高级选项（默认关闭）</summary>
     <div class="card-body">
       <div class="row"><label>自定义安装目录 <span class="pill">AGSBX_DIR</span></label><input id="AGSBX_DIR" type="text" placeholder="home目录不可写时填一个可写目录(如 /www);留空则自动探测。脚本会在其下创建 agsbx 子目录"/></div>
-      <div class="row"><label>CF解析IP的域名 <span class="pill">cdnym</span></label><input id="cdnym" type="text" placeholder="Vmess-ws、Vless-xhttp/ws启用80、回源CDN时可用" disabled/></div>
-      <div class="row"><label>Reality 域名 <span class="pill">reym</span></label><input id="reym" type="text" placeholder="留空则默认apple.com"/></div>
       <div class="row"><label>Gist ID <span class="pill">gh_gist_id</span></label><input id="gh_gist_id" type="text" placeholder="已有Gist ID可填，留空则新建"/></div>
       <div class="row"><label>GitHub Token <span class="pill">gh_token</span></label><input id="gh_token" type="text" placeholder="推送Gist用，留空则不推送"/></div>
-      <div class="row">
-        <label>当前系统开放所有端口 <span class="pill">oap</span></label>
-        <select id="oap">
-          <option value="">默认 关闭</option>
-          <option value="y">开启 执行一次即可关闭</option>
-        </select>
-      </div>
+      <details style="margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:0;">
+        <summary style="cursor:pointer;padding:10px 14px;color:var(--sub);font-size:14px;user-select:none;list-style:none;display:flex;align-items:center;gap:6px;">
+          <span style="font-size:10px;transition:transform 0.2s;">▶</span> Reality 域名与系统端口设置
+        </summary>
+        <div style="padding:0 14px 14px;">
+          <div class="row"><label>Reality 域名 <span class="pill">reym</span></label><input id="reym" type="text" placeholder="留空则默认apple.com"/></div>
+          <div class="row">
+            <label>当前系统开放所有端口 <span class="pill">oap</span></label>
+            <select id="oap">
+              <option value="">默认 关闭</option>
+              <option value="y">开启 执行一次即可关闭</option>
+            </select>
+          </div>
+        </div>
+      </details>
       <details style="margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:0;">
         <summary style="cursor:pointer;padding:10px 14px;color:var(--sub);font-size:14px;user-select:none;list-style:none;display:flex;align-items:center;gap:6px;">
           <span style="font-size:10px;">▶</span> 敲门唤醒 / 进程隐身
@@ -678,9 +696,8 @@
     </div>
   </details>
 
-  <details class="card shortcut-commands-card">
-    <summary>快捷命令</summary>
-    <div class="card-body">
+  <section class="card shortcut-commands-card">
+    <div class="shortcut-title">快捷命令</div>
     <div class="shortcut-commands-content">
       <button class="command-button" data-command="list">节点显示命令：list</button>
       <button class="command-button" data-command="del">卸载脚本命令：del</button>
@@ -689,8 +706,7 @@
       <button class="command-button" data-command="res">重启脚本命令：res</button>
       <button class="command-button" data-command="rep">调整变量、更新脚本命令（注:变量设置完成后再点击）：rep</button>
     </div>
-    </div>
-  </details>
+  </section>
 
       <section class="card out">
         <div class="tabs">
