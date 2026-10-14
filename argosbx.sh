@@ -118,6 +118,23 @@ AGSBX=$(_agsbx_resolve) || {
 export AGSBX
 echo "📁 安装目录:$AGSBX"
 
+# NAT 外部端口（*_ext）持久化与回读：
+# 安装时传入的外部端口（如 hypt_ext=22323）落盘到 $AGSBX/port_*_ext；
+# 之后 agsbx list 等未再传变量的调用从文件回读——否则 display_port_* 会退回内部端口，
+# 在 NAT 映射（外部≠内部）的机器上生成错误端口的节点链接。
+_agsbx_ext_sync(){ # $1=变量名 $2=端口文件：有值落盘；无值且文件存在则回读（POSIX sh 兼容）
+	eval "_es_v=\${$1}"
+	if [ -n "$_es_v" ]; then
+		echo "$_es_v" > "$2"
+	elif [ -e "$2" ]; then
+		IFS= read -r _es_v < "$2" && eval "$1=\$_es_v"
+	fi
+}
+for _pe in vl_re xh vx vw vm_ws ss so hy2 tu an ar; do
+	_agsbx_ext_sync "port_${_pe}_ext" "$AGSBX/port_${_pe}_ext"
+done
+unset _pe
+
 # =============================================================================
 # SECTION 1: 脚本欢迎信息与环境自适应检测
 # 功能:
