@@ -2186,7 +2186,10 @@ if grep hy2_sb "$AGSBX/sb.json" >/dev/null 2>&1; then
     else
         hyps=""
     fi
-    hy2_link="hysteria2://$uuid@$server_ip:$display_port_hy2?security=tls&alpn=h3&insecure=0&allowInsecure=0${hyps}&sni=www.bing.com&pinSHA256=$(cat "$AGSBX/PUBKEY_SHA256_B64.txt")#${sxname}${country}_hy2_$hostname"
+    # pinSHA256 是标准 base64（含 + / =），必须 percent-encode 后再拼进 URL：
+    # 未编码时 + 会被查询串解析成空格，指纹在客户端侧就坏了（v2rayN/NekoBox/Karing 一律受影响）
+    pin_urlenc=$(printf '%s' "$(cat "$AGSBX/PUBKEY_SHA256_B64.txt" 2>/dev/null)" | sed 's/+/%2B/g; s|/|%2F|g; s/=/%3D/g')
+    hy2_link="hysteria2://$uuid@$server_ip:$display_port_hy2?security=tls&alpn=h3&insecure=0&allowInsecure=0${hyps}&sni=www.bing.com&pinSHA256=${pin_urlenc}#${sxname}${country}_hy2_$hostname"
     echo "$hy2_link" >> "$AGSBX/jh.txt"
     echo "$hy2_link"
     echo
@@ -2197,7 +2200,10 @@ if grep tuic5-sb "$AGSBX/sb.json" >/dev/null 2>&1; then
 echo "💣【 Tuic 】节点信息如下："
 port_tu=$(cat "$AGSBX/port_tu")
 display_port_tu="${port_tu_ext:-${port_tu}}"
-tuic5_link="tuic://$uuid:$uuid@$server_ip:$display_port_tu?congestion_control=bbr&udp_relay_mode=native&alpn=h3&sni=www.bing.com&insecure=1&allowInsecure=1#${sxname}${country}_tuic_$hostname"
+# TUIC 无官方钉扎约定，但补丁版 v2rayN 会解析 pinSHA256（→ certificate_public_key_sha256）；
+# 其他客户端忽略该未知参数，行为不变。同时保留 insecure/allowInsecure 以兼容老客户端。
+pin_urlenc=${pin_urlenc:-$(printf '%s' "$(cat "$AGSBX/PUBKEY_SHA256_B64.txt" 2>/dev/null)" | sed 's/+/%2B/g; s|/|%2F|g; s/=/%3D/g')}
+tuic5_link="tuic://$uuid:$uuid@$server_ip:$display_port_tu?congestion_control=bbr&udp_relay_mode=native&alpn=h3&sni=www.bing.com&insecure=1&allowInsecure=1${pin_urlenc:+&pinSHA256=$pin_urlenc}#${sxname}${country}_tuic_$hostname"
 echo "$tuic5_link" >> "$AGSBX/jh.txt"
 echo "$tuic5_link"
 echo

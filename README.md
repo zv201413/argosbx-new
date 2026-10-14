@@ -157,20 +157,25 @@ hypt=yes hyjpt="20000:30000 40000" ./argosbx.sh
 
 本版本对 Hysteria2 协议做了安全加固：
 
-- **证书钉扎（pinSHA256）**：生成的 Hy2 链接已从 `insecure=1`（跳过验证）升级为 `insecure=0` + `pinSHA256` 公钥指纹（base64）。客户端连接时会强制校验服务端证书，**防止中间人攻击（MITM）**。
+- **证书钉扎（pinSHA256）**：生成的 Hy2 链接已从 `insecure=1`（跳过验证）升级为 `insecure=0` + `pinSHA256` 公钥指纹（base64）。支持该公钥 pin 的客户端会校验服务端公钥，防止中间人攻击（MITM）；其他客户端的配置方式见下表。
+  - **链接里的 pin 已做 percent-encoding**：base64 含 `+` `/` `=`，直接拼进 URL 会被查询串解析破坏（`+` 变空格），导致客户端拿到坏指纹。修复见 `argosbx.sh` 的 `pin_urlenc`。
 - **证书稳定**：首次安装时生成一次自签证书并记录指纹，后续重装不覆盖，客户端指纹不变。
 - **证书兼容性**：自签证书包含 SAN（Subject Alternative Name）扩展，兼容 Go TLS 库的现代验证要求。
-- **TUIC 限制**：TUIC 协议无证书钉扎机制，仍为 `insecure=1`，建议优先使用 Hy2。
+- **TUIC**：TUIC 无官方钉扎约定，链接保留 `insecure=1&allowInsecure=1` 兼容老客户端，**同时新增 `pinSHA256`**——会解析它的客户端（补丁版 v2rayN）走 `certificate_public_key_sha256` 真校验，不解析的客户端忽略该参数、行为不变。
 - **客户端配置说明（重要）**：
 
   | 客户端 | URI `pinSHA256` 参数 | 手动配置方式 |
   |:---|:---|:---|
+  | **v2rayN（fork 补丁版）** | ✅ 解析（hy2 **与 tuic** 均映射为 `certificate_public_key_sha256`） | 无操作；构建/升级/失效恢复见桌面「v2rayN补丁面板」 |
   | **NekoBox / sing-box GUI** | ✅ 自动解析为 `certificate_public_key_sha256` | 无操作 |
-  | **v2rayN** | ❌ 不解析 | 节点编辑 → TLS → 完整证书（链）框 → 粘贴 `~/agsbx/cert.crt` 完整 PEM 内容 |
+  | **v2rayN（官方原版）** | hy2 导入至 CertSha，但 sing-box 配置生成不使用；TUIC 不识别该参数 | 节点编辑 → TLS → 完整证书（链）框 → 粘贴 `~/agsbx/cert.crt` 完整 PEM 内容 |
   | **其他客户端** | 取决于实现 | 备选：`cat ~/agsbx/PUBKEY_SHA256_B64.txt` 获取 base64 公钥指纹 |
 
   在 VPS 上查看公钥指纹：`cat ~/agsbx/PUBKEY_SHA256_B64.txt`
   在 VPS 上查看完整证书：`cat ~/agsbx/cert.crt`
+
+  > 补丁原理与实测证据（pin 通 / 无 pin 失败 / 错 pin 失败 / TUIC 同样适用 / 内核需 ≥1.13）见
+  > `/home/zv/github/桌面面板/v2rayN补丁面板/docs/pin-patch.md` 与 `tests/run.sh`。
 
 ### WARP出站模式（warp变量）
 
