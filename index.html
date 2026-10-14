@@ -148,6 +148,30 @@
     details.card[open] {
       padding: 0;
     }
+    details.card.shortcut-commands-card summary {
+      padding: 14px 20px;
+      font-size: 16px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    details.card.shortcut-commands-card[open] {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      padding: 10px 20px;
+      gap: 12px;
+    }
+    details.card.shortcut-commands-card[open] summary {
+      padding: 0;
+    }
+    details.card.shortcut-commands-card .card-body {
+      flex: 1;
+      padding: 0;
+      min-width: 0;
+    }
+    details.card.shortcut-commands-card .shortcut-commands-content {
+      margin-top: 0;
+    }
     /* 嵌套折叠箭头旋转 */
     details summary span:first-child {
       display:inline-block;transition:transform 0.2s;
@@ -579,7 +603,10 @@
     <summary>高级选项（默认关闭）</summary>
     <div class="card-body">
       <div class="row"><label>自定义安装目录 <span class="pill">AGSBX_DIR</span></label><input id="AGSBX_DIR" type="text" placeholder="home目录不可写时填一个可写目录(如 /www);留空则自动探测。脚本会在其下创建 agsbx 子目录"/></div>
+      <div class="row"><label>CF解析IP的域名 <span class="pill">cdnym</span></label><input id="cdnym" type="text" placeholder="Vmess-ws、Vless-xhttp/ws启用80、回源CDN时可用" disabled/></div>
       <div class="row"><label>Reality 域名 <span class="pill">reym</span></label><input id="reym" type="text" placeholder="留空则默认apple.com"/></div>
+      <div class="row"><label>Gist ID <span class="pill">gh_gist_id</span></label><input id="gh_gist_id" type="text" placeholder="已有Gist ID可填，留空则新建"/></div>
+      <div class="row"><label>GitHub Token <span class="pill">gh_token</span></label><input id="gh_token" type="text" placeholder="推送Gist用，留空则不推送"/></div>
       <div class="row">
         <label>当前系统开放所有端口 <span class="pill">oap</span></label>
         <select id="oap">
@@ -602,16 +629,6 @@
         <div class="row"><label>敲门端口 <span class="pill">KNOCK_PORT</span></label><input id="KNOCK_PORT" type="text" placeholder="留空自动分配(20000-60000)"/></div>
         <div class="row"><label>空闲超时(秒) <span class="pill">IDLE_TIMEOUT</span></label><input id="IDLE_TIMEOUT" type="text" placeholder="留空默认300"/></div>
         <div class="row"><label>进程伪装名 <span class="pill">STEALTH_NAME</span></label><input id="STEALTH_NAME" type="text" placeholder="逗号分隔3个=sing-box,xray,cloudflared(填1个则三者共用)。例 [kworker/0:1],[kworker/1:2],[kworker/2:0]  留空不伪装(需bash)"/></div>
-        </div>
-      </details>
-      <details style="margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:0;">
-        <summary style="cursor:pointer;padding:10px 14px;color:var(--sub);font-size:14px;user-select:none;list-style:none;display:flex;align-items:center;gap:6px;">
-          <span style="font-size:10px;transition:transform 0.2s;">▶</span> CDN 回源 &amp; Gist 同步
-        </summary>
-        <div style="padding:0 14px 14px;">
-        <div class="row"><label>CF解析IP的域名 <span class="pill">cdnym</span></label><input id="cdnym" type="text" placeholder="Vmess-ws、Vless-xhttp/ws启用80、回源CDN时可用" disabled/></div>
-        <div class="row"><label>Gist ID <span class="pill">gh_gist_id</span></label><input id="gh_gist_id" type="text" placeholder="已有Gist ID可填，留空则新建"/></div>
-        <div class="row"><label>GitHub Token <span class="pill">gh_token</span></label><input id="gh_token" type="text" placeholder="推送Gist用，留空则不推送"/></div>
         </div>
       </details>
     </div>
