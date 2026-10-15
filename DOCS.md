@@ -280,3 +280,22 @@ ippz=4 agsbx list
 ---
 
 > 🔗 **返回主页**：[Argosbx-New README.md](README.md)
+
+
+### NAT 外部端口的持久化与旧安装迁移
+
+`*_ext` 会写入安装目录的 `port_*_ext` 文件。以后直接执行 `agsbx list`，以及重启服务器后，
+都会从文件回读；它不自动探测 NAT，也不修改宿主机端口转发。
+
+| 外部端口参数 | 持久化文件 |
+|---|---|
+| `hypt_ext` | `port_hy2_ext` |
+| `tupt_ext` | `port_tu_ext` |
+| `anpt_ext` | `port_an_ext` |
+| `arpt_ext` | `port_ar_ext` |
+| `vlpt_ext` / `xhpt_ext` / `vxpt_ext` / `vwpt_ext` | `port_vl_re_ext` / `port_xh_ext` / `port_vx_ext` / `port_vw_ext` |
+| `vmpt_ext` / `sspt_ext` / `sopt_ext` | `port_vm_ws_ext` / `port_ss_ext` / `port_so_ext` |
+
+旧版没有保存过的端口无法凭内部监听端口恢复。更新脚本后，按商家实际映射给所有已启用协议
+补传一次外部端口；只传 `hypt_ext` 只会补齐 Hy2，不能同时恢复 AnyTLS/TUIC 等其它协议。
+后续传入非空的新值会更新对应记录，未传值则保留现有记录。
