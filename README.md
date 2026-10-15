@@ -61,7 +61,8 @@
 - **客户端适配说明**：
   | 客户端 | URI `pinSHA256` 解析状态 | 手动配置说明 |
   |:---|:---|:---|
-  | **v2rayN（fork 补丁版）** | ✅ 完美识别映射 | 导入即用，无须额外设置 |
+  | **v2rayN（fork 补丁版，sing_box 核）** | ✅ base64 公钥 pin 映射 | Hy2 建议核心映射 → sing_box；内核 ≥1.13，导入免 PEM |
+  | **v2rayN（Hy2 / Xray 26.x 核）** | 仅认 hex 整证书指纹 | `pinnedPeerCertSha256` 只认 hex（v2rayN 从 PEM 自产导出即此格式）；脚本 base64 公钥 pin 会导致加载失败 |
   | **NekoBox / sing-box GUI**| ✅ 自动识别为公钥指纹 | 导入即用 |
   | **v2rayN（官方原版）** | ⚠️ TUIC 不识别，Hy2 不调取 | 节点 TLS 设置中粘贴 `~/agsbx/cert.crt` 证书内容 |
   | **其他客户端** | 视实现情况而定 | 可查看 `cat ~/agsbx/PUBKEY_SHA256_B64.txt` 获取公钥指纹 |
