@@ -886,10 +886,18 @@
               <p class="field-note">填写已有 Gist ID 可更新原订阅，留空则创建新订阅。</p>
               <div class="row qr-sharing-row">
             <label for="qrShareMode">二维码分享 <span class="pill">QR_SHARE</span></label>
-            <select id="qrShareMode" title="同时控制网页分享和终端二维码">
-              <option value="both">默认 开启（原版 + iOS 兼容版）</option>
-              <option value="original">开启（仅原版）</option>
-              <option value="off">关闭</option>
+            <select id="qrShareMode" title="iOS 指 iOS 兼容版；启用终端时自动安装或复用 qrencode，不启用时不安装、不运行">
+              <optgroup label="启用 qrencode（自动安装 / 复用）">
+                <option value="both" data-qr-share="1" data-ios-share="1" data-qr-term="1">默认 原版+iOS · 网页+终端</option>
+                <option value="original" data-qr-share="1" data-ios-share="0" data-qr-term="1">原版 · 网页+终端</option>
+                <option value="term-both" data-qr-share="0" data-ios-share="1" data-qr-term="1">原版+iOS · 仅终端</option>
+                <option value="term-original" data-qr-share="0" data-ios-share="0" data-qr-term="1">原版 · 仅终端</option>
+              </optgroup>
+              <optgroup label="不启用 qrencode（不安装 / 不运行）">
+                <option value="web-both" data-qr-share="1" data-ios-share="1" data-qr-term="0">原版+iOS · 仅网页</option>
+                <option value="web-original" data-qr-share="1" data-ios-share="0" data-qr-term="0">原版 · 仅网页</option>
+                <option value="off" data-qr-share="0" data-ios-share="0" data-qr-term="0">全部关闭</option>
+              </optgroup>
             </select>
             <input id="QR_SHARE" type="hidden" value="1">
             <input id="IOS_SHARE" type="hidden" value="1">
@@ -899,6 +907,7 @@
           </div>
           <aside class="command-console" aria-label="部署命令">
             <div class="console-heading"><h3><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="m7 9 3 3-3 3M13 15h4"/></svg>一键部署命令</h3><span class="live-status"><i></i>实时生成</span></div>
+            <div class="command-code"><div class="code-caption"><span>SSH / BASH</span><span>可直接编辑</span></div><textarea id="output" spellcheck="false" aria-label="一键部署命令"></textarea></div>
             <div class="command-controls">
               <div class="command-options">
                 <div class="command-option"><span>环境模式</span><div class="segmented-choice"><label title="标准 VPS，直接执行"><input type="radio" name="envMode" value="std" checked>标准环境</label><label title="先保存文件，适合 /dev/fd 不可用的环境"><input type="radio" name="envMode" value="res">受限环境</label></div></div>
@@ -906,7 +915,7 @@
               </div>
               <div class="console-actions"><button id="copy" type="button" class="primary"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4H4v12h4"/></svg>复制部署命令</button><button id="reset" type="button" class="ghost">重置配置</button></div>
             </div>
-            <div class="command-code"><div class="code-caption"><span>SSH / BASH</span><span>可直接编辑</span></div><textarea id="output" spellcheck="false" aria-label="一键部署命令"></textarea></div>
+
 
           </aside>
         </div>
@@ -969,10 +978,10 @@ const optIds = ['warp','ippz','ippref','wippref','uuid','reym','cdnym', 'name', 
   externalPortsToggle.addEventListener('change', syncExternalPorts);
 
   function syncQrShareMode() {
-    const mode = qrShareMode.value;
-    document.getElementById('QR_SHARE').value = mode === 'off' ? '0' : '1';
-    document.getElementById('IOS_SHARE').value = mode === 'both' ? '1' : '0';
-    document.getElementById('QR_TERM').value = mode === 'off' ? '0' : '1';
+    const choice = qrShareMode.selectedOptions[0].dataset;
+    document.getElementById('QR_SHARE').value = choice.qrShare;
+    document.getElementById('IOS_SHARE').value = choice.iosShare;
+    document.getElementById('QR_TERM').value = choice.qrTerm;
   }
 
   qrShareMode.addEventListener('change', () => {

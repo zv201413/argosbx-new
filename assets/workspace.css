@@ -99,7 +99,7 @@
 .console-heading svg { width: 19px; height: 19px; color: #93a6ce; }
 .live-status { display: flex; align-items: center; gap: 6px; color: var(--sub); font-size: 10px; }
 .live-status i { width: 5px; height: 5px; background: #6da68c; border-radius: 50%; }
-.command-controls { margin-bottom: 16px; }
+.command-controls { margin-top: 16px; }
 .command-options { display: grid; gap: 8px; }
 .command-option { display: grid; grid-template-columns: 76px minmax(0,1fr); align-items: center; gap: 10px; }
 .command-option > span { color: var(--sub); font-size: 12px; }
