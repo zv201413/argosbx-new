@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>甬哥-ArgoSBX小钢炮💣一键SSH V2026——zv修改版</title>
+  <title>Argosbx · SSH 部署工作台</title>
   <style>
     :root {
       --bg:#0b1020;
@@ -644,26 +644,21 @@
     }
 
   </style>
+  <link rel="stylesheet" href="assets/workspace.css">
 </head>
-<body>
+<body class="workspace-page">
   <div class="wrap">
-    <header>
-      <div class="theme-switch">
-        <input type="checkbox" id="theme-switch-checkbox" class="theme-switch-checkbox">
-        <label for="theme-switch-checkbox" class="theme-switch-label">
-          <svg class="theme-switch-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-          </svg>
-        </label>
+    <header class="app-header">
+      <div class="app-brand">
+        <div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 7 5 5-5 5M13 17h5"/></svg></div>
+        <div><div class="brand-line"><h1>Argosbx</h1></div><p>选择协议，配置部署，复制命令。</p></div>
       </div>
-      <h1>甬哥-ArgoSBX小钢炮💣一键SSH V2026——zv修改版</h1>
-      <p>
-        Github项目：
-        <a href="https://github.com/zv201413/argosbx-new" target="_blank">github.com/zv201413/argosbx-new</a>
-      </p>
+      <div class="app-header-actions">
+        <a href="https://github.com/zv201413/argosbx-new" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+        <div class="theme-switch"><input type="checkbox" id="theme-switch-checkbox" class="theme-switch-checkbox"><label for="theme-switch-checkbox" class="theme-switch-label" title="切换明暗主题"><svg class="theme-switch-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></label></div>
+      </div>
     </header>
-
-    <div class="grid">
+    <div class="grid workspace-grid">
       <div class="left-col">
       <section class="card protocol-port">
         <h2>必选内核协议端口（<label><input id="showExternalPorts" type="checkbox">外部端口</label>）：</h2>
@@ -694,30 +689,76 @@
           </div>
         </div>
       </section>
-
-      <details class="card advanced-system-settings" open>
-        <summary>高级系统设置</summary>
-        <div class="card-body">
-          <div class="row">
+      </div>
+      <div class="right-col">
+        <section class="card connection-card">
+          <div class="section-heading"><div><h2>连接与节点</h2></div><span class="section-tag">可选</span></div>
+          <div class="connection-group"><h3>Argo 隧道</h3><div class="row">
+          <label>启用Argo隧道开关 <span class="pill">argo</span></label>
+          <select id="argoSelect">
+            <option value="">默认 关闭</option>
+            <option value="vwpt">启用Vless-ws的Argo隧道 </option>
+            <option value="vmpt">启用Vmess-ws的Argo隧道 </option>
+          </select>
+        </div><div class="row"><label>固定隧道CF域名 <span class="pill">agn</span></label><input id="agn" type="text" placeholder="固定隧道填写 CF 域名，留空使用临时隧道" disabled title="Zero Trust已设置有子域名称的CF域名，留空则临时隧道"></div><div class="row"><label>固定隧道Token <span class="pill">agk</span></label><input id="agk" type="text" placeholder="固定隧道 Token，留空使用临时隧道" disabled title="Zero Trust已提取ey开头的秘钥，留空则临时隧道"></div><details style="margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:0;">
+          <summary style="cursor:pointer;padding:10px 14px;color:var(--sub);font-size:14px;user-select:none;list-style:none;display:flex;align-items:center;gap:6px;">
+            <span style="font-size:10px;transition:transform 0.2s;">▶</span> CDN 优选与回源
+          </summary>
+          <div style="padding:0 14px 14px;">
+            <div class="row"><label>Argo优选IP/域名 <span class="pill">argoip</span></label><input id="argoip" type="text" placeholder="多个用 ; 分隔，如 ip1;ip2;domain1"></div>
+            <div class="row"><label>CF解析IP的域名 <span class="pill">cdnym</span></label><input id="cdnym" type="text" placeholder="Vmess-ws、Vless-xhttp/ws启用80、回源CDN时可用" disabled></div>
+          </div>
+        </details></div>
+          <div class="connection-group node-group"><h3>节点设置</h3><div class="row"><label>节点名称前缀 <span class="pill">name</span></label>
+          <div class="input-with-preview">
+            <input id="name" type="text" placeholder="留空使用默认节点名" title="留空则默认协议名前缀">
+            <div class="name-preview" id="namePreview"></div>
+          </div>
+        </div><div class="row"><label>Address: IPv4/IPv6 <span class="pill">ippz</span></label>
+          <select id="ippz">
+            <option value="">默认IPv4优先</option>
+            <option value="6">IPv6优先</option>
+          </select>
+        </div><div class="row"><label>出站: IPv4/IPv6 <span class="pill">ippref</span></label>
+          <select id="ippref">
+            <option value="">默认IPv4优先出站</option>
+            <option value="prefer_ipv6">IPv6优先出站</option>
+          </select>
+        </div></div>
+          <div class="connection-group common-settings">
+            <h3>安装与分享</h3>
+            <div class="row">
             <label for="qrShareMode">二维码分享 <span class="pill">QR_SHARE</span></label>
             <select id="qrShareMode" title="同时控制网页分享和终端二维码">
               <option value="both">默认 开启（原版 + iOS 兼容版）</option>
               <option value="original">开启（仅原版）</option>
               <option value="off">关闭</option>
             </select>
-            <input id="QR_SHARE" type="hidden" value="1"/>
-            <input id="IOS_SHARE" type="hidden" value="1"/>
-            <input id="QR_TERM" type="hidden" value="1"/>
-          </div>
-          <div class="row"><label>自定义安装目录 <span class="pill">AGSBX_DIR</span></label><input id="AGSBX_DIR" type="text" placeholder="home目录不可写时填一个可写目录(如 /www);留空则自动探测。脚本会在其下创建 agsbx 子目录"/></div>
-          <div class="row">
+            <input id="QR_SHARE" type="hidden" value="1">
+            <input id="IOS_SHARE" type="hidden" value="1">
+            <input id="QR_TERM" type="hidden" value="1">
+          </div><div class="row"><label>自定义安装目录 <span class="pill">AGSBX_DIR</span></label><input id="AGSBX_DIR" type="text" placeholder="留空自动选择，如 /www" title="home目录不可写时填一个可写目录(如 /www);留空则自动探测。脚本会在其下创建 agsbx 子目录"></div><div class="row">
             <label>UUID 密码 <span class="pill">uuid</span></label>
             <div class="input-with-button">
-              <input id="uuid" type="text" placeholder="留空则随机生成uuid密码"/>
+              <input id="uuid" type="text" placeholder="留空随机生成 UUID" title="留空则随机生成uuid密码">
               <button id="generateUuidBtn" type="button" class="primary">生成 UUID</button>
             </div>
           </div>
-          <details style="margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:0;">
+          </div>
+        </section>
+      </div>
+      <section class="card deploy-workspace" id="deployment">
+        <div class="workspace-heading"><div><div class="eyebrow">CONFIGURE & DEPLOY</div><h2>配置与部署</h2></div><div class="selection-status" id="protocolSelectionStatus" role="status">尚未选择协议</div></div>
+        <div class="workspace-content">
+          <div class="configuration-pane">
+            <div class="config-tabs" role="tablist" aria-label="部署设置">
+              <button type="button" role="tab" id="tab-sharing" aria-controls="panel-sharing" aria-selected="true" tabindex="0">订阅分享</button>
+              <button type="button" role="tab" id="tab-network" aria-controls="panel-network" aria-selected="false" tabindex="-1">网络与安全</button>
+              <button type="button" role="tab" id="tab-agent" aria-controls="panel-agent" aria-selected="false" tabindex="-1">探针配置</button>
+            </div>
+            <div class="config-panel" id="panel-network" role="tabpanel" aria-labelledby="tab-network" hidden>
+              <div class="panel-intro"><h3>网络与安全</h3><p>出站策略、端口控制与服务唤醒。</p></div>
+              <details style="margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:0;">
             <summary style="cursor:pointer;padding:10px 14px;color:var(--sub);font-size:14px;user-select:none;list-style:none;display:flex;align-items:center;gap:6px;">
               <span style="font-size:10px;transition:transform 0.2s;">▶</span> WARP、直连与端口设置
             </summary>
@@ -750,8 +791,8 @@
                   <option value="sx4">双核ipv4出站</option>
                 </select>
               </div>
-              <div class="row"><label>直连节点自定义地址 <span class="pill">nodeaddr</span></label><input id="nodeaddr" type="text" placeholder="hy2/tuic等直连节点地址，留空则使用VPS IP"/></div>
-              <div class="row"><label>Reality 域名 <span class="pill">reym</span></label><input id="reym" type="text" placeholder="留空则默认apple.com"/></div>
+              <div class="row"><label>直连节点自定义地址 <span class="pill">nodeaddr</span></label><input id="nodeaddr" type="text" placeholder="hy2/tuic等直连节点地址，留空则使用VPS IP"></div>
+              <div class="row"><label>Reality 域名 <span class="pill">reym</span></label><input id="reym" type="text" placeholder="留空则默认apple.com"></div>
               <div class="row">
                 <label>当前系统开放所有端口 <span class="pill">oap</span></label>
                 <select id="oap">
@@ -760,8 +801,7 @@
                 </select>
               </div>
             </div>
-          </details>
-          <details style="margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:0;">
+          </details><details style="margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:0;">
             <summary style="cursor:pointer;padding:10px 14px;color:var(--sub);font-size:14px;user-select:none;list-style:none;display:flex;align-items:center;gap:6px;">
               <span style="font-size:10px;">▶</span> 敲门唤醒与进程隐身
             </summary>
@@ -773,94 +813,30 @@
                   <option value="1">开启 空闲关代理 / 敲门唤醒</option>
                 </select>
               </div>
-              <div class="row"><label>敲门端口 <span class="pill">KNOCK_PORT</span></label><input id="KNOCK_PORT" type="text" placeholder="留空自动分配(20000-60000)"/></div>
-              <div class="row"><label>空闲超时(秒) <span class="pill">IDLE_TIMEOUT</span></label><input id="IDLE_TIMEOUT" type="text" placeholder="留空默认300"/></div>
-              <div class="row"><label>进程伪装名 <span class="pill">STEALTH_NAME</span></label><input id="STEALTH_NAME" type="text" placeholder="逗号分隔3个=sing-box,xray,cloudflared(填1个则三者共用)。例 [kworker/0:1],[kworker/1:2],[kworker/2:0]  留空不伪装(需bash)"/></div>
+              <div class="row"><label>敲门端口 <span class="pill">KNOCK_PORT</span></label><input id="KNOCK_PORT" type="text" placeholder="留空自动分配(20000-60000)"></div>
+              <div class="row"><label>空闲超时(秒) <span class="pill">IDLE_TIMEOUT</span></label><input id="IDLE_TIMEOUT" type="text" placeholder="留空默认300"></div>
+              <div class="row"><label>进程伪装名 <span class="pill">STEALTH_NAME</span></label><input id="STEALTH_NAME" type="text" placeholder="逗号分隔3个=sing-box,xray,cloudflared(填1个则三者共用)。例 [kworker/0:1],[kworker/1:2],[kworker/2:0]  留空不伪装(需bash)"></div>
             </div>
           </details>
-        </div>
-      </details>
-      </div>
-
-      <div class="right-col">
-      <section class="card argo-tunnel">
-        <h2>Argo 临时/固定隧道 CDN</h2>
-        <div class="row">
-          <label>启用Argo隧道开关 <span class="pill">argo</span></label>
-          <select id="argoSelect">
-            <option value="">默认 关闭</option>
-            <option value="vwpt">启用Vless-ws的Argo隧道 </option>
-            <option value="vmpt">启用Vmess-ws的Argo隧道 </option>
-          </select>
-        </div>
-        <div class="row"><label>固定隧道CF域名 <span class="pill">agn</span></label><input id="agn" type="text" placeholder="Zero Trust已设置有子域名称的CF域名，留空则临时隧道" disabled></div>
-        <div class="row"><label>固定隧道Token <span class="pill">agk</span></label><input id="agk" type="text" placeholder="Zero Trust已提取ey开头的秘钥，留空则临时隧道" disabled></div>
-        <details style="margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:0;">
-          <summary style="cursor:pointer;padding:10px 14px;color:var(--sub);font-size:14px;user-select:none;list-style:none;display:flex;align-items:center;gap:6px;">
-            <span style="font-size:10px;transition:transform 0.2s;">▶</span> CDN 优选与回源
-          </summary>
-          <div style="padding:0 14px 14px;">
-            <div class="row"><label>Argo优选IP/域名 <span class="pill">argoip</span></label><input id="argoip" type="text" placeholder="多个用 ; 分隔，如 ip1;ip2;domain1"/></div>
-            <div class="row"><label>CF解析IP的域名 <span class="pill">cdnym</span></label><input id="cdnym" type="text" placeholder="Vmess-ws、Vless-xhttp/ws启用80、回源CDN时可用" disabled/></div>
+            </div>
+            <div class="config-panel" id="panel-agent" role="tabpanel" aria-labelledby="tab-agent" hidden>
+              <div class="panel-intro"><h3>哪吒 / Komari 探针</h3><p>填写后随主脚本一起安装，也可从现有安装命令导入。</p></div>
+              <div class="nezha-import">
+            <label for="nezhaImportInput">📥 从安装命令导入</label>
+            <input id="nezhaImportInput" type="text" placeholder="粘贴安装命令，自动填入探针配置" style="flex:1; padding:8px 10px; background:var(--input-bg); color:var(--ink); border:1px solid var(--line); border-radius:8px; font-size:13px; outline:none; margin:0;" title="粘贴面板复制的安装命令自动解析...">
           </div>
-        </details>
-      </section>
-
-      <section class="card outbound-warp">
-        <h2>相关全局配置调整： </h2>
-        <div class="row"><label>节点名称前缀 <span class="pill">name</span></label>
-          <div class="input-with-preview">
-            <input id="name" type="text" placeholder="留空则默认协议名前缀"/>
-            <div class="name-preview" id="namePreview"></div>
-          </div>
-        </div>
-        <div class="row"><label>Address: IPv4/IPv6 <span class="pill">ippz</span></label>
-          <select id="ippz">
-            <option value="">默认IPv4优先</option>
-            <option value="6">IPv6优先</option>
-          </select>
-        </div>
-        <div class="row"><label>出站: IPv4/IPv6 <span class="pill">ippref</span></label>
-          <select id="ippref">
-            <option value="">默认IPv4优先出站</option>
-            <option value="prefer_ipv6">IPv6优先出站</option>
-          </select>
-        </div>
-        <form id="gistCredentials" method="post" autocomplete="on">
-          <div class="row gist-credential-row">
-            <label for="gh_gist_id">Gist ID <span class="pill">gh_gist_id</span></label>
-            <input id="gh_gist_id" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="已有Gist ID可填，留空则新建"/>
-          </div>
-          <div class="row gist-credential-row">
-            <label for="gh_token">GitHub Token <span class="pill">gh_token</span></label>
-            <input id="gh_token" name="password" type="password" autocomplete="current-password" autocapitalize="none" spellcheck="false" placeholder="推送Gist用，留空则不推送"/>
-          </div>
-          <div class="actions">
-            <button type="submit">保存到浏览器</button>
-            <button id="fillGistCredentials" type="button">填入已存凭据</button>
-          </div>
-        </form>
-      </section>
-
-      <details class="card nezha-agent" open>
-        <summary>哪吒 / Komari 探针配置</summary>
-        <div class="card-body">
-          <div class="row"><label for="nz_type">探针类型 <span class="pill">nz_type</span></label><select id="nz_type"><option value="komari">Komari</option><option value="nezha">哪吒</option></select></div>
-          <div class="nezha-fields">
+              <div class="row"><label for="nz_type">探针类型 <span class="pill">nz_type</span></label><select id="nz_type"><option value="komari">Komari</option><option value="nezha">哪吒</option></select></div>
+              <div class="nezha-fields">
             <div class="nezha-field">
               <label for="nz_server">服务器地址 <span class="pill">nz_server</span></label>
-              <input id="nz_server" type="text" placeholder="如 nezha.com:443" style="flex:1; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:var(--input-bg); color:var(--ink); font-size:13px; outline:none; margin:0;"/>
+              <input id="nz_server" type="text" placeholder="如 nezha.com:443" style="flex:1; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:var(--input-bg); color:var(--ink); font-size:13px; outline:none; margin:0;">
             </div>
             <div class="nezha-field">
               <label for="nz_sec">Agent 密钥 <span class="pill">nz_sec</span></label>
-              <input id="nz_sec" type="text" placeholder="agent_secret_key" style="flex:1; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:var(--input-bg); color:var(--ink); font-size:13px; outline:none; margin:0;"/>
+              <input id="nz_sec" type="text" placeholder="agent_secret_key" style="flex:1; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:var(--input-bg); color:var(--ink); font-size:13px; outline:none; margin:0;">
             </div>
           </div>
-          <div class="nezha-import">
-            <label for="nezhaImportInput">📥 从安装命令导入</label>
-            <input id="nezhaImportInput" type="text" placeholder="粘贴面板复制的安装命令自动解析..." style="flex:1; padding:8px 10px; background:var(--input-bg); color:var(--ink); border:1px solid var(--line); border-radius:8px; font-size:13px; outline:none; margin:0;"/>
-          </div>
-          <div class="nezha-command">
+              <details class="agent-standalone"><summary><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 7 5 5-5 5M13 17h6"/></svg>单独安装探针<span class="fold-note">展开命令</span></summary><div class="nezha-command">
             <div class="nezha-controls">
               <div>
                 <div style="font-size:13px; color:var(--sub); margin-bottom:8px; font-weight:bold;">环境模式</div>
@@ -884,59 +860,52 @@
             <div class="nezha-output">
               <textarea id="nzOutput" readonly style="width:100%; min-height:100px; padding:12px; font-size:13px; font-family:monospace; background:var(--input-bg); color:var(--ink); border:1px solid var(--line); border-radius:8px; resize:vertical; margin:0;"></textarea>
             </div>
-          </div>
-        </div>
-      </details>
-      </div>
-
-  <section class="card shortcut-commands-card">
-    <div class="shortcut-title">快捷命令</div>
-    <div class="shortcut-commands-content">
-      <button class="command-button" data-command="list">节点显示命令：list</button>
-      <button class="command-button" data-command="del">卸载脚本命令：del</button>
-      <button class="command-button" data-command="upx">升级Xray内核：upx</button>
-      <button class="command-button" data-command="ups">升级Singbox内核：ups</button>
-      <button class="command-button" data-command="res">重启脚本命令：res</button>
-      <button class="command-button" data-command="rep">调整变量、更新脚本命令（注:变量设置完成后再点击）：rep</button>
-    </div>
-  </section>
-
-      <section class="card out">
-        <div class="tabs">
-          <h2>进入服务器的SSH界面，复制下方生成的一键脚本命令，回车一次搞定</h2>
-        </div>
-        <div style="display:flex; gap:16px; margin-top: 12px; align-items:stretch; flex-wrap:wrap;">
-          <div style="flex:0 0 240px; display:flex; flex-direction:column; justify-content:space-between; padding:16px; background:rgba(255,255,255,0.02); border:1px solid var(--line); border-radius:8px;">
-            <div>
-              <div style="font-size:13px; color:var(--sub); margin-bottom:8px; font-weight:bold;">环境模式</div>
-              <div style="display:flex; gap:16px; margin-bottom:12px; font-size:13px;">
-                <label title="适用于标准 VPS，直接执行"><input type="radio" name="envMode" value="std" checked> 标准环境</label>
-                <label title="解决 /dev/fd/63 报错，保存文件执行"><input type="radio" name="envMode" value="res"> 受限环境</label>
-              </div>
-              <div style="font-size:13px; color:var(--sub); margin-bottom:8px; font-weight:bold;">命令类型</div>
-              <div style="display:flex; gap:16px; margin-bottom:16px; font-size:13px;">
-                <label><input type="radio" name="commandType" value="curl" checked> curl</label>
-                <label><input type="radio" name="commandType" value="wget"> wget</label>
-              </div>
+          </div></details>
             </div>
-            <div style="display:flex; gap:10px;">
-              <button id="copy" type="button" class="primary" style="flex:1; padding:8px 0; font-size:13px; border-radius:6px;">复制</button>
-              <button id="reset" type="button" style="flex:1; padding:8px 0; font-size:13px; border-radius:6px;">重置</button>
+            <div class="config-panel" id="panel-sharing" role="tabpanel" aria-labelledby="tab-sharing">
+              <div class="panel-intro"><h3>GitHub Gist 订阅</h3><p>将节点聚合为订阅；留空时仅生成节点链接和二维码。</p></div>
+              <form id="gistCredentials" method="post" autocomplete="on">
+          <div class="row gist-credential-row">
+            <label for="gh_gist_id">Gist ID <span class="pill">gh_gist_id</span></label>
+            <input id="gh_gist_id" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="已有Gist ID可填，留空则新建">
+          </div>
+          <div class="row gist-credential-row">
+            <label for="gh_token">GitHub Token <span class="pill">gh_token</span></label>
+            <input id="gh_token" name="password" type="password" autocomplete="current-password" autocapitalize="none" spellcheck="false" placeholder="推送Gist用，留空则不推送">
+          </div>
+          <div class="actions">
+            <button type="submit">保存到浏览器</button>
+            <button id="fillGistCredentials" type="button">填入已存凭据</button>
+          </div>
+        </form>
+              <p class="field-note">填写已有 Gist ID 可更新原订阅，留空则创建新订阅。</p>
             </div>
           </div>
-          <div style="flex:1; min-width:300px; display:flex;">
-            <textarea id="output" spellcheck="false" style="width:100%; min-height:130px; margin:0; padding:12px; font-size:13px; font-family:monospace; background:var(--input-bg); color:var(--ink); border:1px solid var(--line); border-radius:8px; resize:vertical;"></textarea>
-          </div>
+          <aside class="command-console" aria-label="部署命令">
+            <div class="console-heading"><h3><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="m7 9 3 3-3 3M13 15h4"/></svg>一键部署命令</h3><span class="live-status"><i></i>实时生成</span></div>
+            <div class="command-controls">
+              <div class="command-options">
+                <div class="command-option"><span>环境模式</span><div class="segmented-choice"><label title="标准 VPS，直接执行"><input type="radio" name="envMode" value="std" checked>标准环境</label><label title="先保存文件，适合 /dev/fd 不可用的环境"><input type="radio" name="envMode" value="res">受限环境</label></div></div>
+                <div class="command-option downloader-option"><span>命令类型</span><div class="segmented-choice"><label><input type="radio" name="commandType" value="curl" checked>curl</label><label><input type="radio" name="commandType" value="wget">wget</label></div></div>
+              </div>
+              <div class="console-actions"><button id="copy" type="button" class="primary"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4H4v12h4"/></svg>复制部署命令</button><button id="reset" type="button" class="ghost">重置配置</button></div>
+            </div>
+            <div class="command-code"><div class="code-caption"><span>SSH / BASH</span><span>可直接编辑</span></div><textarea id="output" spellcheck="false" aria-label="一键部署命令"></textarea></div>
+            <details class="maintenance-commands"><summary>运维快捷命令<span class="fold-note">查看 / 更新 / 重启</span></summary><div class="shortcut-commands-content">
+      <button class="command-button" data-command="list">查看节点</button>
+      <button class="command-button danger-command" data-command="del">卸载脚本</button>
+      <button class="command-button" data-command="upx">升级 Xray</button>
+      <button class="command-button" data-command="ups">升级 Sing-box</button>
+      <button class="command-button" data-command="res">重启服务</button>
+      <button class="command-button" data-command="rep">应用配置 / 更新脚本</button>
+    </div></details>
+          </aside>
         </div>
-        <p style="margin-top: 10px;">相关细节说明，请参考Argosbx-new项目💣：<a href="https://github.com/zv201413/argosbx-new" target="_blank">github.com/zv201413/argosbx-new</a></p>
-        安卓手机客户端推荐：<a href="https://github.com/starifly/NekoBoxForAndroid/releases" target="_blank">Nekobox-starifly版 (全协议支持)</a>、<a href="https://github.com/2dust/v2rayNG/releases" target="_blank">V2rayNG官方版</a><br>
-        电脑win客户端推荐：<a href="https://github.com/2dust/v2rayN/releases" target="_blank">V2rayN官方版 (全协议支持)</a><br>
-        苹果IOS客户端推荐：<a href="https://apps.apple.com/app/happ-proxy-utility/id1592899835" target="_blank">Happ</a>、<a href="https://apps.apple.com/app/one-xray/id1563857995" target="_blank">OneXray</a>、<a href="https://www.nsloon.app/" target="_blank">Loon</a>、<a href="https://apps.apple.com/app/shadowrocket/id932747118" target="_blank">Shadowrocket</a>
-      </p>
+        <details class="client-resources"><summary>客户端与使用文档<span class="fold-note">按设备选择</span></summary><div class="client-resource-content"><div><span>Android</span><a href="https://github.com/starifly/NekoBoxForAndroid/releases" target="_blank" rel="noopener noreferrer">NekoBox ↗</a><a href="https://github.com/2dust/v2rayNG/releases" target="_blank" rel="noopener noreferrer">v2rayNG ↗</a></div><div><span>Windows</span><a href="https://github.com/2dust/v2rayN/releases" target="_blank" rel="noopener noreferrer">v2rayN ↗</a></div><div><span>iOS</span><a href="https://apps.apple.com/app/happ-proxy-utility/id1592899835" target="_blank" rel="noopener noreferrer">Happ ↗</a><a href="https://apps.apple.com/app/one-xray/id1563857995" target="_blank" rel="noopener noreferrer">OneXray ↗</a><a href="https://www.nsloon.app/" target="_blank" rel="noopener noreferrer">Loon ↗</a><a href="https://apps.apple.com/app/shadowrocket/id932747118" target="_blank" rel="noopener noreferrer">Shadowrocket ↗</a></div><div><span>文档</span><a href="https://github.com/zv201413/argosbx-new/blob/main-new/README.md" target="_blank" rel="noopener noreferrer">使用说明 ↗</a></div></div></details>
       </section>
     </div>
+    <footer class="app-footer"><span>Argosbx · 基于甬哥原版优化定制</span><a href="https://github.com/zv201413/argosbx-new/blob/main-new/README.md" target="_blank" rel="noopener noreferrer">使用文档 ↗</a></footer>
   </div>
-
 <script src="assets/agent.js"></script>
 <script>
 (function(){
@@ -1490,5 +1459,40 @@ document.getElementById('uuid').value = '';
   }
 })();
 </script>
+
+<script>
+(() => {
+  const tabs = [...document.querySelectorAll('.config-tabs [role="tab"]')];
+  function activate(tab) {
+    tabs.forEach(item => {
+      const selected = item === tab;
+      item.setAttribute('aria-selected', selected ? 'true' : 'false');
+      item.tabIndex = selected ? 0 : -1;
+      document.getElementById(item.getAttribute('aria-controls')).hidden = !selected;
+    });
+  }
+  tabs.forEach((tab, index) => {
+    tab.addEventListener('click', () => activate(tab));
+    tab.addEventListener('keydown', event => {
+      let target;
+      if (event.key === 'ArrowRight') target = tabs[(index + 1) % tabs.length];
+      if (event.key === 'ArrowLeft') target = tabs[(index + tabs.length - 1) % tabs.length];
+      if (event.key === 'Home') target = tabs[0];
+      if (event.key === 'End') target = tabs[tabs.length - 1];
+      if (target) {event.preventDefault(); activate(target); target.focus();}
+    });
+  });
+  function updateSelection() {
+    const count = document.querySelectorAll('[data-proto]:checked').length;
+    const status = document.getElementById('protocolSelectionStatus');
+    status.textContent = count ? `已选择 ${count} 个协议` : '尚未选择协议';
+    status.classList.toggle('has-selection', count > 0);
+  }
+  document.addEventListener('change', updateSelection);
+  document.addEventListener('click', () => queueMicrotask(updateSelection));
+  updateSelection();
+})();
+</script>
+
 </body>
 </html>

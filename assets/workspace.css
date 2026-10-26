@@ -1,0 +1,175 @@
+/* Deployment workspace layout; original protocol styles are preserved. */
+.workspace-page .app-header {
+  flex-direction: row;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  padding: 0 2px;
+}
+.app-brand { display: flex; align-items: center; gap: 14px; }
+.brand-mark {
+  display: grid; place-items: center; width: 46px; height: 46px;
+  border-radius: 13px; background: rgba(79,124,255,.12);
+  border: 1px solid rgba(79,124,255,.25); color: #84a1ff;
+}
+.brand-mark svg { width: 27px; height: 27px; }
+.brand-line { display: flex; align-items: center; gap: 12px; }
+.workspace-page .app-header h1 { margin: 0; font-size: 26px; font-weight: 650; letter-spacing: -.7px; }
+.workspace-page .app-header p { margin: 4px 0 0; max-width: none; font-size: 13px; }
+.app-header-actions { display: flex; align-items: center; gap: 22px; font-size: 13px; }
+.app-header-actions > a { color: var(--sub); }
+.app-header-actions .theme-switch { position: static; padding: 0; }
+.app-header-actions .theme-switch-icon { width: 21px; height: 21px; }
+.workspace-grid { grid-template-rows: auto auto; align-items: start; }
+.workspace-grid .right-col { align-self: stretch; }
+.connection-card { flex: 1; padding: 22px 24px; background: rgba(255,255,255,.025); }
+.section-heading { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; gap: 12px; }
+.connection-card .section-heading h2 { margin-bottom: 6px; font-size: 20px; }
+.section-heading p, .workspace-heading p { color: var(--sub); font-size: 13px; margin: 0; line-height: 1.7; }
+.section-tag { color: var(--sub); background: rgba(255,255,255,.035); font-size: 11px; border: 1px solid var(--line); border-radius: 5px; padding: 3px 8px; }
+.connection-card .connection-group h3 { font-size: 13px; color: var(--sub); font-weight: 500; margin: 0 0 12px; }
+.connection-card .row { grid-template-columns: 194px minmax(0,1fr); gap: 12px; margin: 10px 0; }
+.connection-card .row label { font-size: 13px; gap: 5px; }
+.connection-card .pill { margin-left: 2px; font-size: 10px; border: 0; padding: 0; opacity: .7; }
+.connection-card input, .connection-card select { padding: 10px 12px; min-height: 41px; font-size: 13px; border-radius: 8px; }
+.connection-card .node-group { margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--line); }
+.connection-card .common-settings { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--line); }
+.common-settings .input-with-button { min-width: 0; }
+.common-settings .input-with-button input { min-width: 0; }
+.common-settings .input-with-button button { font-size: 12px; min-height: 41px; border-radius: 8px; padding: 8px 11px; }
+.common-settings .field-note { margin-top: 14px; font-size: 11px; }
+.connection-card details { background: rgba(255,255,255,.012); }
+.deploy-workspace { grid-column: 1 / -1; padding: 0; overflow: hidden; background: rgba(255,255,255,.027); }
+.workspace-heading { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 25px 28px 23px; border-bottom: 1px solid var(--line); }
+.eyebrow { font-size: 10px; letter-spacing: 1.5px; font-weight: 600; color: #819bdb; margin-bottom: 5px; }
+.deploy-workspace .workspace-heading h2 { margin: 0 0 5px; font-size: 23px; letter-spacing: -.3px; }
+.selection-status { flex-shrink: 0; font-size: 12px; color: var(--sub); background: rgba(255,255,255,.035); border: 1px solid var(--line); padding: 7px 11px; border-radius: 7px; }
+.selection-status.has-selection { color: #9bc8b1; border-color: rgba(91,168,129,.3); background: rgba(91,168,129,.07); }
+.workspace-content { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,.96fr); gap: 28px; padding: 24px 28px; align-items: start; }
+.configuration-pane { min-width: 0; }
+.config-tabs { display: flex; gap: 3px; padding: 4px; border: 1px solid var(--line); border-radius: 9px; background: rgba(255,255,255,.018); }
+.config-tabs button { flex: 1; padding: 9px 6px; font: inherit; font-size: 13px; background: transparent; border: 1px solid transparent; border-radius: 6px; color: var(--sub); white-space: nowrap; }
+.config-tabs button[aria-selected="true"] { background: rgba(79,124,255,.13); color: #bacbff; border-color: rgba(79,124,255,.18); }
+.config-tabs button:hover { color: var(--ink); }
+.config-tabs button:focus-visible, .deploy-workspace summary:focus-visible { outline: 2px solid var(--acc); outline-offset: 3px; }
+.config-panel { padding: 24px 1px 0; }
+.deploy-workspace [hidden] { display: none !important; }
+.panel-intro { margin-bottom: 21px; }
+.deploy-workspace .panel-intro h3 { margin: 0 0 5px; font-size: 15px; font-weight: 550; }
+.panel-intro p { color: var(--sub); font-size: 12px; line-height: 1.7; margin: 0; }
+.deploy-workspace .row { grid-template-columns: 180px minmax(0,1fr); gap: 14px; margin: 13px 0; }
+.deploy-workspace .row label { font-size: 13px; gap: 5px; }
+.deploy-workspace .pill { margin-left: 2px; font-size: 10px; padding: 0; border: 0; opacity: .65; }
+.deploy-workspace input[type="text"], .deploy-workspace input[type="password"], .deploy-workspace select { font-size: 13px; border-radius: 8px; min-height: 43px; padding: 10px 12px; }
+.deploy-workspace input:focus, .deploy-workspace select:focus, .command-console textarea:focus { border-color: rgba(98,136,255,.75); box-shadow: 0 0 0 3px rgba(79,124,255,.08); }
+.deploy-workspace .input-with-button { min-width: 0; }
+.deploy-workspace .input-with-button input { min-width: 0; }
+.deploy-workspace .input-with-button button { font-size: 12px; min-height: 43px; border-radius: 8px; padding: 8px 11px; }
+.field-note { font-size: 12px; color: var(--sub); line-height: 1.85; margin: 20px 0 0; opacity: .8; }
+.config-panel > details { background: rgba(255,255,255,.015); }
+.config-panel > details > summary { min-height: 46px; }
+.deploy-workspace .nezha-import { grid-template-columns: minmax(0,1fr); gap: 8px; margin-bottom: 18px; }
+.deploy-workspace .nezha-import label { font-size: 12px; }
+.deploy-workspace .nezha-import input { min-height: 43px; }
+.deploy-workspace .nezha-fields { gap: 16px; margin-top: 14px; }
+.deploy-workspace .nezha-field label { font-size: 12px; gap: 4px; }
+.deploy-workspace .nezha-fields input { min-height: 43px; }
+.agent-standalone { margin-top: 22px; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }
+.agent-standalone > summary, .maintenance-commands > summary, .client-resources > summary { display: flex; align-items: center; gap: 8px; padding: 13px 14px; list-style: none; cursor: pointer; font-size: 12px; color: var(--sub); }
+.agent-standalone > summary::-webkit-details-marker, .maintenance-commands > summary::-webkit-details-marker, .client-resources > summary::-webkit-details-marker { display: none; }
+.agent-standalone summary svg { width: 16px; height: 16px; }
+.fold-note { margin-left: auto; font-size: 11px; color: var(--sub); opacity: .6; }
+.agent-standalone > summary::after, .maintenance-commands > summary::after, .client-resources > summary::after { content: '+'; font-size: 17px; line-height: 1; margin-left: 6px; }
+.agent-standalone[open] > summary::after, .maintenance-commands[open] > summary::after, .client-resources[open] > summary::after { content: '−'; }
+.agent-standalone .nezha-command { padding: 0 12px 12px; }
+.agent-standalone .nezha-controls { gap: 12px; background: transparent; }
+.agent-standalone .nezha-actions { margin-left: 0; }
+.agent-standalone .nezha-output { flex: none; }
+.deploy-workspace #gistCredentials { margin: 0; border: 0; padding: 0; }
+.deploy-workspace #gistCredentials .gist-credential-row { grid-template-columns: 154px minmax(0,1fr); }
+.deploy-workspace #gistCredentials .actions { padding-top: 5px; gap: 8px; }
+.deploy-workspace #gistCredentials button { font-size: 12px; border-radius: 7px; padding: 9px 12px; }
+.command-console { padding: 20px; border: 1px solid var(--line); border-radius: 12px; background: rgba(6,12,29,.48); min-width: 0; }
+.console-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 18px; }
+.deploy-workspace .console-heading h3 { display: flex; gap: 8px; align-items: center; margin: 0; font-size: 14px; font-weight: 550; }
+.console-heading svg { width: 19px; height: 19px; color: #93a6ce; }
+.live-status { display: flex; align-items: center; gap: 6px; color: var(--sub); font-size: 10px; }
+.live-status i { width: 5px; height: 5px; background: #6da68c; border-radius: 50%; }
+.command-controls { margin-bottom: 16px; }
+.command-options { display: grid; gap: 8px; }
+.command-option { display: grid; grid-template-columns: 76px minmax(0,1fr); align-items: center; gap: 10px; }
+.command-option > span { color: var(--sub); font-size: 12px; }
+.segmented-choice { display: flex; padding: 3px; border: 1px solid var(--line); border-radius: 7px; gap: 2px; }
+.segmented-choice label { display: flex; flex: 1; justify-content: center; align-items: center; padding: 6px 9px; font-size: 12px; border-radius: 4px; cursor: pointer; color: var(--sub); position: relative; white-space: nowrap; }
+.segmented-choice label:has(input:checked) { background: rgba(79,124,255,.16); color: #b7cbff; }
+.segmented-choice input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.segmented-choice label:has(input:focus-visible) { outline: 2px solid var(--acc); }
+.command-code { background: rgba(2,7,18,.35); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.code-caption { display: flex; justify-content: space-between; color: #7484a5; font-size: 9px; padding: 11px 13px 0; letter-spacing: .7px; }
+.command-console textarea { display: block; min-height: 151px; border: 0; border-radius: 0; background: transparent; margin: 0; padding: 14px 13px; font: 12px/1.8 ui-monospace, SFMono-Regular, Consolas, monospace; color: #c5d4f4; resize: vertical; outline: none; }
+.command-console textarea:focus { box-shadow: inset 0 0 0 1px rgba(98,136,255,.4); }
+.console-actions { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+.console-actions button { border-radius: 8px; font-size: 12px; padding: 11px 14px; min-height: 40px; }
+.console-actions .primary { display: flex; align-items: center; justify-content: center; gap: 8px; flex: 1; background: #476fe3; border-color: #567eed; box-shadow: 0 3px 10px rgba(25,49,114,.22); }
+.console-actions svg { width: 15px; height: 15px; }
+.console-actions .ghost { color: var(--sub); border: 0; }
+.maintenance-commands { margin-top: 17px; padding-top: 4px; border-top: 1px solid var(--line); }
+.maintenance-commands > summary { padding: 10px 0 0; }
+.maintenance-commands .shortcut-commands-content { gap: 7px; margin-top: 13px; }
+.maintenance-commands .command-button { font-size: 10px; padding: 7px 9px; background: rgba(255,255,255,.025); border-radius: 5px; }
+.maintenance-commands .danger-command { color: #d9a2a8; }
+.client-resources { border-top: 1px solid var(--line); padding: 0 28px; }
+.client-resources > summary { padding: 15px 0; }
+.client-resource-content { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 15px; padding: 3px 0 22px; }
+.client-resource-content > div { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; font-size: 12px; }
+.client-resource-content > div > span { color: var(--sub); min-width: 64px; font-size: 11px; }
+.app-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 18px 3px 0; font-size: 11px; color: var(--sub); opacity: .75; }
+.app-footer a { color: var(--sub); }
+.light-mode .brand-mark { color: #476fe3; }
+.light-mode .config-tabs button[aria-selected="true"], .light-mode .segmented-choice label:has(input:checked) { color: #345ab8; }
+.light-mode .command-console { background: #f6f8fd; }
+.light-mode .command-code { background: #fff; }
+.light-mode .command-console textarea { color: #293e61; background: transparent; }
+.light-mode .selection-status.has-selection { color: #326e51; }
+.light-mode .maintenance-commands .danger-command { color: #a64853; }
+@media (max-width: 1100px) {
+  .workspace-grid .right-col { grid-row: 2; }
+  .workspace-content { grid-template-columns: minmax(0,1fr) minmax(0,.96fr); gap: 20px; padding: 22px; }
+  .deploy-workspace .row { grid-template-columns: minmax(0,1fr); gap: 7px; }
+  .deploy-workspace #gistCredentials .gist-credential-row { grid-template-columns: minmax(0,1fr); }
+  .command-options { flex-wrap: wrap; }
+}
+@media (max-width: 760px) {
+  .workspace-content { grid-template-columns: minmax(0,1fr); }
+  .command-console { margin-top: 4px; }
+  .workspace-heading { align-items: flex-start; padding: 22px; }
+  .selection-status { padding: 6px 8px; font-size: 10px; }
+  .client-resources { padding: 0 22px; }
+}
+@media (max-width: 600px) {
+  .workspace-page .app-header { gap: 10px; }
+  .app-brand { gap: 10px; }
+  .brand-mark { width: 38px; height: 38px; }
+  .workspace-page .app-header h1 { font-size: 23px; }
+  .workspace-page .app-header p { font-size: 11px; }
+  .app-header-actions { gap: 12px; }
+  .app-header-actions > a { display: none; }
+  .brand-line { gap: 8px; }
+  .connection-card { padding: 20px; }
+  .connection-card .row { grid-template-columns: minmax(0,1fr); gap: 7px; }
+  .workspace-heading { flex-wrap: wrap; gap: 12px; padding: 20px; }
+  .deploy-workspace .workspace-heading h2 { font-size: 21px; }
+  .workspace-content { padding: 18px; }
+  .config-tabs { gap: 1px; padding: 3px; }
+  .config-tabs button { font-size: 11px; padding: 9px 3px; }
+  .config-panel { padding-top: 20px; }
+  .deploy-workspace .nezha-fields { grid-template-columns: minmax(0,1fr); }
+  .command-console { padding: 16px; }
+  .command-options { gap: 12px; }
+  .segmented-choice label { font-size: 10px; padding: 6px 7px; }
+  .console-actions { gap: 4px; }
+  .console-actions button { padding: 10px; }
+  .client-resources { padding: 0 20px; }
+  .client-resource-content { grid-template-columns: minmax(0,1fr); }
+  .app-footer { align-items: flex-start; line-height: 1.8; }
+  .app-footer > span { max-width: 180px; }
+}
