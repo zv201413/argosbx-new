@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Argosbx · SSH 部署工作台</title>
+  <title>甬哥-ArgoSBX小钢炮💣一键SSH V2026——zv修改版</title>
   <style>
     :root {
       --bg:#0b1020;
@@ -46,7 +46,7 @@
       transition: background-color 0.3s, color 0.3s;
     }
     .wrap {
-      max-width: 1450px; 
+      max-width: 1450px;
       margin: 32px auto;
       padding: 0 20px;
     }
@@ -387,11 +387,11 @@
       flex: 1.1;
     }
     .protocol-grid .protocol-item {
-      margin: 0; 
+      margin: 0;
     }
     .row:not(.protocol-port .row) {
       display: grid;
-      grid-template-columns: 240px 1fr; 
+      grid-template-columns: 240px 1fr;
       gap: 16px;
       align-items: center;
       margin: 8px 0;
@@ -648,15 +648,20 @@
 </head>
 <body class="workspace-page">
   <div class="wrap">
-    <header class="app-header">
-      <div class="app-brand">
-        <div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 7 5 5-5 5M13 17h5"/></svg></div>
-        <div><div class="brand-line"><h1>Argosbx</h1></div><p>选择协议，配置部署，复制命令。</p></div>
+    <header>
+      <div class="theme-switch">
+        <input type="checkbox" id="theme-switch-checkbox" class="theme-switch-checkbox">
+        <label for="theme-switch-checkbox" class="theme-switch-label">
+          <svg class="theme-switch-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </label>
       </div>
-      <div class="app-header-actions">
-        <a href="https://github.com/zv201413/argosbx-new" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
-        <div class="theme-switch"><input type="checkbox" id="theme-switch-checkbox" class="theme-switch-checkbox"><label for="theme-switch-checkbox" class="theme-switch-label" title="切换明暗主题"><svg class="theme-switch-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></label></div>
-      </div>
+      <h1>甬哥-ArgoSBX小钢炮💣一键SSH V2026——zv修改版</h1>
+      <p>
+        Github项目：
+        <a href="https://github.com/zv201413/argosbx-new" target="_blank">github.com/zv201413/argosbx-new</a>
+      </p>
     </header>
     <div class="grid workspace-grid">
       <div class="left-col">
@@ -726,18 +731,8 @@
           </select>
         </div></div>
           <div class="connection-group common-settings">
-            <h3>安装与分享</h3>
-            <div class="row">
-            <label for="qrShareMode">二维码分享 <span class="pill">QR_SHARE</span></label>
-            <select id="qrShareMode" title="同时控制网页分享和终端二维码">
-              <option value="both">默认 开启（原版 + iOS 兼容版）</option>
-              <option value="original">开启（仅原版）</option>
-              <option value="off">关闭</option>
-            </select>
-            <input id="QR_SHARE" type="hidden" value="1">
-            <input id="IOS_SHARE" type="hidden" value="1">
-            <input id="QR_TERM" type="hidden" value="1">
-          </div><div class="row"><label>自定义安装目录 <span class="pill">AGSBX_DIR</span></label><input id="AGSBX_DIR" type="text" placeholder="留空自动选择，如 /www" title="home目录不可写时填一个可写目录(如 /www);留空则自动探测。脚本会在其下创建 agsbx 子目录"></div><div class="row">
+            <h3>安装设置</h3>
+            <div class="row"><label>自定义安装目录 <span class="pill">AGSBX_DIR</span></label><input id="AGSBX_DIR" type="text" placeholder="留空自动选择，如 /www" title="home目录不可写时填一个可写目录(如 /www);留空则自动探测。脚本会在其下创建 agsbx 子目录"></div><div class="row">
             <label>UUID 密码 <span class="pill">uuid</span></label>
             <div class="input-with-button">
               <input id="uuid" type="text" placeholder="留空随机生成 UUID" title="留空则随机生成uuid密码">
@@ -748,7 +743,17 @@
         </section>
       </div>
       <section class="card deploy-workspace" id="deployment">
-        <div class="workspace-heading"><div><div class="eyebrow">CONFIGURE & DEPLOY</div><h2>配置与部署</h2></div><div class="selection-status" id="protocolSelectionStatus" role="status">尚未选择协议</div></div>
+        <div class="workspace-heading">
+          <div class="workspace-titlebar"><h2>配置与部署</h2><div class="selection-status" id="protocolSelectionStatus" role="status">尚未选择协议</div></div>
+          <nav class="workspace-shortcuts" aria-label="快捷命令"><div class="shortcut-title">快捷命令</div><div class="shortcut-commands-content">
+      <button class="command-button" data-command="list">节点显示命令：list</button>
+      <button class="command-button" data-command="del">卸载脚本命令：del</button>
+      <button class="command-button" data-command="upx">升级Xray内核：upx</button>
+      <button class="command-button" data-command="ups">升级Singbox内核：ups</button>
+      <button class="command-button" data-command="res">重启脚本命令：res</button>
+      <button class="command-button" data-command="rep">调整变量、更新脚本命令（注:变量设置完成后再点击）：rep</button>
+    </div></nav>
+        </div>
         <div class="workspace-content">
           <div class="configuration-pane">
             <div class="config-tabs" role="tablist" aria-label="部署设置">
@@ -879,6 +884,17 @@
           </div>
         </form>
               <p class="field-note">填写已有 Gist ID 可更新原订阅，留空则创建新订阅。</p>
+              <div class="row qr-sharing-row">
+            <label for="qrShareMode">二维码分享 <span class="pill">QR_SHARE</span></label>
+            <select id="qrShareMode" title="同时控制网页分享和终端二维码">
+              <option value="both">默认 开启（原版 + iOS 兼容版）</option>
+              <option value="original">开启（仅原版）</option>
+              <option value="off">关闭</option>
+            </select>
+            <input id="QR_SHARE" type="hidden" value="1">
+            <input id="IOS_SHARE" type="hidden" value="1">
+            <input id="QR_TERM" type="hidden" value="1">
+          </div>
             </div>
           </div>
           <aside class="command-console" aria-label="部署命令">
@@ -891,14 +907,7 @@
               <div class="console-actions"><button id="copy" type="button" class="primary"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4H4v12h4"/></svg>复制部署命令</button><button id="reset" type="button" class="ghost">重置配置</button></div>
             </div>
             <div class="command-code"><div class="code-caption"><span>SSH / BASH</span><span>可直接编辑</span></div><textarea id="output" spellcheck="false" aria-label="一键部署命令"></textarea></div>
-            <details class="maintenance-commands"><summary>运维快捷命令<span class="fold-note">查看 / 更新 / 重启</span></summary><div class="shortcut-commands-content">
-      <button class="command-button" data-command="list">查看节点</button>
-      <button class="command-button danger-command" data-command="del">卸载脚本</button>
-      <button class="command-button" data-command="upx">升级 Xray</button>
-      <button class="command-button" data-command="ups">升级 Sing-box</button>
-      <button class="command-button" data-command="res">重启服务</button>
-      <button class="command-button" data-command="rep">应用配置 / 更新脚本</button>
-    </div></details>
+
           </aside>
         </div>
         <details class="client-resources"><summary>客户端与使用文档<span class="fold-note">按设备选择</span></summary><div class="client-resource-content"><div><span>Android</span><a href="https://github.com/starifly/NekoBoxForAndroid/releases" target="_blank" rel="noopener noreferrer">NekoBox ↗</a><a href="https://github.com/2dust/v2rayNG/releases" target="_blank" rel="noopener noreferrer">v2rayNG ↗</a></div><div><span>Windows</span><a href="https://github.com/2dust/v2rayN/releases" target="_blank" rel="noopener noreferrer">v2rayN ↗</a></div><div><span>iOS</span><a href="https://apps.apple.com/app/happ-proxy-utility/id1592899835" target="_blank" rel="noopener noreferrer">Happ ↗</a><a href="https://apps.apple.com/app/one-xray/id1563857995" target="_blank" rel="noopener noreferrer">OneXray ↗</a><a href="https://www.nsloon.app/" target="_blank" rel="noopener noreferrer">Loon ↗</a><a href="https://apps.apple.com/app/shadowrocket/id932747118" target="_blank" rel="noopener noreferrer">Shadowrocket ↗</a></div><div><span>文档</span><a href="https://github.com/zv201413/argosbx-new/blob/main-new/README.md" target="_blank" rel="noopener noreferrer">使用说明 ↗</a></div></div></details>
@@ -1074,9 +1083,9 @@ document.getElementById('uuid').value = '';
 
   function updateCdnymState() {
       const isAnyProtocolChecked = vmessWsCheckbox.checked || vlessXhttpCheckbox.checked || vlessWsVCheckbox.checked;
-      
+
       cdnymInput.disabled = !isAnyProtocolChecked;
-      
+
       if (!isAnyProtocolChecked) {
           cdnymInput.value = '';
       }
@@ -1086,42 +1095,42 @@ document.getElementById('uuid').value = '';
   argoSelect.addEventListener('change', () => {
     const argoValue = argoSelect.value;
     const isEnabled = argoValue !== '';
-    
+
     [agn, agk].forEach(i => i.disabled = !isEnabled);
 
     if (argoValue === 'vwpt') {
         vlessWsVCheckbox.checked = true;
     } else if (argoValue === 'vmpt') {
         vmessWsCheckbox.checked = true;
-    } 
+    }
 
     if (!isEnabled) {
         agn.value = '';
         agk.value = '';
     }
 
-    updateCdnymState(); 
+    updateCdnymState();
     render();
   });
 
   vmessWsCheckbox.addEventListener('change', () => {
-    if (!vmessWsCheckbox.checked && argoSelect.value === 'vmpt') { 
+    if (!vmessWsCheckbox.checked && argoSelect.value === 'vmpt') {
        argoSelect.value = '';
        updateArgoState('');
     }
     updateCdnymState();
     render();
   });
-  
+
   vlessWsVCheckbox.addEventListener('change', () => {
-      if (!vlessWsVCheckbox.checked && argoSelect.value === 'vwpt') { 
+      if (!vlessWsVCheckbox.checked && argoSelect.value === 'vwpt') {
          argoSelect.value = '';
          updateArgoState('');
       }
-      updateCdnymState(); 
+      updateCdnymState();
       render();
   });
-  
+
   vlessXhttpCheckbox.addEventListener('change', () => {
     updateCdnymState();
     render();
@@ -1144,7 +1153,7 @@ document.getElementById('uuid').value = '';
       if (inp.value.trim() !== '' && !ck.checked) {
         ck.checked = true;
       }
-      
+
       if (key === 'vmpt' || key === 'vwpt' || key === 'vxpt') {
         updateCdnymState();
       }
@@ -1193,7 +1202,7 @@ document.getElementById('uuid').value = '';
   // 节点名称前缀实时预览
   const nameInput = document.getElementById('name');
   const namePreview = document.getElementById('namePreview');
-  
+
   function updateNamePreview() {
     const prefix = nameInput.value.trim();
     if (prefix) {
@@ -1202,7 +1211,7 @@ document.getElementById('uuid').value = '';
       namePreview.innerHTML = `预览: <b>country_protocol_hostname</b>`;
     }
   }
-  
+
   nameInput.addEventListener('input', updateNamePreview);
   updateNamePreview();
 
@@ -1276,18 +1285,18 @@ document.getElementById('uuid').value = '';
         m[id] = v;
       }
     });
-    
+
     const argoValue = argoSelect.value;
     if (argoValue !== '') {
-      m['argo'] = argoValue; 
-      
+      m['argo'] = argoValue;
+
       const _agn = (agn.value || '').trim();
       const _agk = (agk.value || '').trim();
-      
+
       if (!agn.disabled && _agn) m['agn'] = _agn;
       if (!agk.disabled && _agk) m['agk'] = _agk;
     }
-    
+
     return m;
   }
 
@@ -1316,12 +1325,12 @@ document.getElementById('uuid').value = '';
     const m = collectVars();
     const varsArray = toBashVars(m);
     const varsStr = varsArray.length > 0 ? varsArray.join(' ') + ' ' : '';
-    
+
     const mode = document.querySelector('input[name="envMode"]:checked').value;
     const type = document.querySelector('input[name="commandType"]:checked').value;
     const template = TEMPLATES[mode][type];
     const exec = TEMPLATES[mode].exec;
-    
+
     if (mode === 'std') {
       output.value = varsStr + template;
     } else {
@@ -1399,7 +1408,7 @@ document.getElementById('uuid').value = '';
     el.addEventListener('input', render);
     el.addEventListener('change', render);
   });
-  
+
   document.querySelectorAll('.command-button').forEach(btn => {
     btn.addEventListener('click', () => {
       const command = btn.getAttribute('data-command');

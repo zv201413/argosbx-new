@@ -39,12 +39,16 @@
 .common-settings .field-note { margin-top: 14px; font-size: 11px; }
 .connection-card details { background: rgba(255,255,255,.012); }
 .deploy-workspace { grid-column: 1 / -1; padding: 0; overflow: hidden; background: rgba(255,255,255,.027); }
-.workspace-heading { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 25px 28px 23px; border-bottom: 1px solid var(--line); }
-.eyebrow { font-size: 10px; letter-spacing: 1.5px; font-weight: 600; color: #819bdb; margin-bottom: 5px; }
+.workspace-heading { display: flex; flex-direction: column; align-items: stretch; gap: 16px; padding: 22px 28px; border-bottom: 1px solid var(--line); }
+.workspace-titlebar { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+.workspace-shortcuts { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+.workspace-shortcuts .shortcut-title { font-size: 14px; font-weight: 600; white-space: nowrap; }
+.workspace-shortcuts .shortcut-commands-content { flex: 1; min-width: 0; gap: 8px; margin: 0; }
+.workspace-shortcuts .command-button { max-width: 100%; font-size: 12px; padding: 9px 11px; }
 .deploy-workspace .workspace-heading h2 { margin: 0 0 5px; font-size: 23px; letter-spacing: -.3px; }
 .selection-status { flex-shrink: 0; font-size: 12px; color: var(--sub); background: rgba(255,255,255,.035); border: 1px solid var(--line); padding: 7px 11px; border-radius: 7px; }
 .selection-status.has-selection { color: #9bc8b1; border-color: rgba(91,168,129,.3); background: rgba(91,168,129,.07); }
-.workspace-content { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,.96fr); gap: 28px; padding: 24px 28px; align-items: start; }
+.workspace-content { display: grid; grid-template-columns: minmax(0,.58fr) minmax(0,1fr); gap: 28px; padding: 24px 28px; align-items: start; }
 .configuration-pane { min-width: 0; }
 .config-tabs { display: flex; gap: 3px; padding: 4px; border: 1px solid var(--line); border-radius: 9px; background: rgba(255,255,255,.018); }
 .config-tabs button { flex: 1; padding: 9px 6px; font: inherit; font-size: 13px; background: transparent; border: 1px solid transparent; border-radius: 6px; color: var(--sub); white-space: nowrap; }
@@ -56,7 +60,8 @@
 .panel-intro { margin-bottom: 21px; }
 .deploy-workspace .panel-intro h3 { margin: 0 0 5px; font-size: 15px; font-weight: 550; }
 .panel-intro p { color: var(--sub); font-size: 12px; line-height: 1.7; margin: 0; }
-.deploy-workspace .row { grid-template-columns: 180px minmax(0,1fr); gap: 14px; margin: 13px 0; }
+.deploy-workspace .row:not(.protocol-port .row) { grid-template-columns: 154px minmax(0,1fr); gap: 14px; margin: 13px 0; }
+.deploy-workspace .qr-sharing-row { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--line); }
 .deploy-workspace .row label { font-size: 13px; gap: 5px; }
 .deploy-workspace .pill { margin-left: 2px; font-size: 10px; padding: 0; border: 0; opacity: .65; }
 .deploy-workspace input[type="text"], .deploy-workspace input[type="password"], .deploy-workspace select { font-size: 13px; border-radius: 8px; min-height: 43px; padding: 10px 12px; }
@@ -133,8 +138,8 @@
 .light-mode .maintenance-commands .danger-command { color: #a64853; }
 @media (max-width: 1100px) {
   .workspace-grid .right-col { grid-row: 2; }
-  .workspace-content { grid-template-columns: minmax(0,1fr) minmax(0,.96fr); gap: 20px; padding: 22px; }
-  .deploy-workspace .row { grid-template-columns: minmax(0,1fr); gap: 7px; }
+  .workspace-content { grid-template-columns: minmax(0,.58fr) minmax(0,1fr); gap: 20px; padding: 22px; }
+  .deploy-workspace .row:not(.protocol-port .row) { grid-template-columns: minmax(0,1fr); gap: 7px; }
   .deploy-workspace #gistCredentials .gist-credential-row { grid-template-columns: minmax(0,1fr); }
   .command-options { flex-wrap: wrap; }
 }
