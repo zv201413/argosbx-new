@@ -82,20 +82,24 @@
     }
     .grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
       grid-template-rows: auto auto auto;
       gap: 20px;
-      align-items: start;
+      align-items: stretch;
     }
     @media (max-width: 1100px) {
       .grid {
-        grid-template-columns: 1fr;
-      grid-template-rows: auto auto auto auto auto;
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto;
       }
     }
-    .protocol-port {
+    .left-col {
       grid-column: 1;
       grid-row: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      min-width: 0;
     }
     .right-col {
       grid-column: 2;
@@ -103,9 +107,22 @@
       display: flex;
       flex-direction: column;
       gap: 20px;
+      min-width: 0;
+    }
+    .protocol-port {
+      flex-shrink: 0;
+    }
+    .outbound-warp {
+      flex: 1;
+    }
+    @media (max-width: 1100px) {
+      .right-col {
+        grid-column: 1;
+        grid-row: 2;
+      }
     }
     .shortcut-commands-card {
-      grid-column: 1 / 3;
+      grid-column: 1 / -1;
       display: flex;
       align-items: center;
       flex-wrap: wrap;
@@ -129,10 +146,85 @@
       min-width: 0;
     }
     .out {
-      grid-column: 1 / 3;
+      grid-column: 1 / -1;
     }
     .nezha-agent {
-      grid-column: 1 / 3;
+      flex: 0 0 auto;
+      min-width: 0;
+      margin-top: auto;
+    }
+    .nezha-agent[open] {
+      flex: 1;
+    }
+    .nezha-agent .card-body {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .nezha-fields {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .nezha-field {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .nezha-field label, .nezha-import label {
+      font-size: 14px;
+      color: var(--ink);
+      margin: 0;
+    }
+    .nezha-import {
+      display: grid;
+      grid-template-columns: 165px minmax(0, 1fr);
+      align-items: center;
+      gap: 8px;
+    }
+    .nezha-import label {
+      color: var(--sub);
+      font-size: 13px;
+    }
+    .nezha-command {
+      display: grid;
+      grid-template-columns: 205px minmax(0, 1fr);
+      gap: 12px;
+    }
+    .nezha-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 12px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+    .nezha-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 16px;
+      font-size: 13px;
+    }
+    .nezha-options label {
+      white-space: nowrap;
+    }
+    .nezha-actions {
+      display: flex;
+      gap: 10px;
+    }
+    .nezha-actions button {
+      flex: 1;
+      white-space: nowrap;
+    }
+    @media (max-width: 600px) {
+      .nezha-fields, .nezha-import, .nezha-command {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .nezha-controls {
+        flex-direction: row;
+        flex-wrap: wrap;
+      }
     }
     details.card {
       display: block;
@@ -231,6 +323,21 @@
       font-size: 11px;
       white-space: nowrap;
     }
+    @media (max-width: 600px) {
+      .protocol-grid {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 72px;
+        gap: 8px;
+      }
+      .protocol-grid > label {
+        gap: 4px;
+      }
+      .protocol-grid > label:not(:nth-child(3n)) {
+        flex-wrap: wrap;
+      }
+      .protocol-grid .pill {
+        margin-left: 0;
+      }
+    }
     .port-inputs {
       display: flex;
       gap: 8px;
@@ -321,6 +428,27 @@
       flex-wrap: wrap;
       gap: 10px;
       margin-top: 10px;
+    }
+    #gistCredentials .gist-credential-row {
+      grid-template-columns: 180px minmax(0, 1fr) auto;
+      gap: 10px;
+    }
+    .gist-credential-row button {
+      white-space: nowrap;
+      padding: 10px 12px;
+    }
+    .gist-credential-row label {
+      font-size: 14px;
+      white-space: nowrap;
+      gap: 6px;
+    }
+    @media (max-width: 600px) {
+      #gistCredentials .gist-credential-row {
+        grid-template-columns: minmax(0, 1fr) auto;
+      }
+      .gist-credential-row label {
+        grid-column: 1 / -1;
+      }
     }
     button {
       cursor: pointer;
@@ -421,12 +549,17 @@
       align-items: center;
       gap: 8px;
       width: 100%;
+      min-width: 0;
     }
     .input-with-preview input {
-      flex: 0 0 180px;
+      flex: 1 1 180px;
+      min-width: 0;
     }
     .name-preview {
       white-space: nowrap;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
       padding: 5px 8px;
       background: rgba(79, 124, 255, 0.1);
       border-radius: 6px;
@@ -491,6 +624,7 @@
     </header>
 
     <div class="grid">
+      <div class="left-col">
       <section class="card protocol-port">
         <h2>必选内核协议端口：</h2>
         <div class="protocol-group separator">
@@ -520,6 +654,52 @@
           </div>
         </div>
       </section>
+
+      <details class="card nezha-agent" open>
+        <summary>哪吒 / Komari 探针配置</summary>
+        <div class="card-body">
+          <div class="nezha-fields">
+            <div class="nezha-field">
+              <label for="nz_server">服务器地址 <span class="pill">nz_server</span></label>
+              <input id="nz_server" type="text" placeholder="如 nezha.com:443" style="flex:1; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:var(--input-bg); color:var(--ink); font-size:13px; outline:none; margin:0;"/>
+            </div>
+            <div class="nezha-field">
+              <label for="nz_sec">Agent 密钥 <span class="pill">nz_sec</span></label>
+              <input id="nz_sec" type="text" placeholder="agent_secret_key" style="flex:1; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:var(--input-bg); color:var(--ink); font-size:13px; outline:none; margin:0;"/>
+            </div>
+          </div>
+          <div class="nezha-import">
+            <label for="nezhaImportInput">📥 从安装命令导入</label>
+            <input id="nezhaImportInput" type="text" placeholder="粘贴面板复制的安装命令自动解析..." style="flex:1; padding:8px 10px; background:var(--input-bg); color:var(--ink); border:1px solid var(--line); border-radius:8px; font-size:13px; outline:none; margin:0;"/>
+          </div>
+          <div class="nezha-command">
+            <div class="nezha-controls">
+              <div>
+                <div style="font-size:13px; color:var(--sub); margin-bottom:8px; font-weight:bold;">环境模式</div>
+                <div class="nezha-options">
+                  <label><input type="radio" name="nzEnvMode" value="std" checked> 标准环境</label>
+                  <label><input type="radio" name="nzEnvMode" value="res"> 受限环境</label>
+                </div>
+              </div>
+              <div>
+                <div style="font-size:13px; color:var(--sub); margin-bottom:8px; font-weight:bold;">命令类型</div>
+                <div class="nezha-options">
+                  <label><input type="radio" name="nzCmdType" value="curl" checked> curl</label>
+                  <label><input type="radio" name="nzCmdType" value="wget"> wget</label>
+                </div>
+              </div>
+              <div class="nezha-actions">
+                <button id="copyNzBtn" type="button" class="primary" style="padding:8px 12px; font-size:13px; border-radius:6px;">复制</button>
+                <button id="generateNzBtn" type="button" style="padding:8px 12px; font-size:13px; border-radius:6px;">生成命令</button>
+              </div>
+            </div>
+            <div style="display:flex; min-width:0;">
+              <textarea id="nzOutput" readonly style="width:100%; min-height:130px; padding:12px; font-size:13px; font-family:monospace; background:var(--input-bg); color:var(--ink); border:1px solid var(--line); border-radius:8px; resize:vertical; margin:0;"></textarea>
+            </div>
+          </div>
+        </div>
+      </details>
+      </div>
 
       <div class="right-col">
       <section class="card argo-tunnel">
@@ -566,14 +746,16 @@
           </select>
         </div>
         <form id="gistCredentials" method="post" autocomplete="on">
-          <div class="row"><label for="gh_gist_id">Gist ID <span class="pill">gh_gist_id</span></label><input id="gh_gist_id" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="已有Gist ID可填，留空则新建"/></div>
-          <div class="row"><label for="gh_token">GitHub Token <span class="pill">gh_token</span></label><input id="gh_token" name="password" type="password" autocomplete="current-password" autocapitalize="none" spellcheck="false" placeholder="推送Gist用，留空则不推送"/></div>
-          <div class="actions">
+          <div class="row gist-credential-row">
+            <label for="gh_gist_id">Gist ID <span class="pill">gh_gist_id</span></label><input id="gh_gist_id" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="已有Gist ID可填，留空则新建"/>
             <button type="submit">保存到浏览器</button>
+          </div>
+          <div class="row gist-credential-row">
+            <label for="gh_token">GitHub Token <span class="pill">gh_token</span></label><input id="gh_token" name="password" type="password" autocomplete="current-password" autocapitalize="none" spellcheck="false" placeholder="推送Gist用，留空则不推送"/>
             <button id="fillGistCredentials" type="button">填入已存凭据</button>
           </div>
         </form>
-        <details style="margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:0;">
+        <details open style="margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:0;">
           <summary style="cursor:pointer;padding:10px 14px;color:var(--sub);font-size:14px;user-select:none;list-style:none;display:flex;align-items:center;gap:6px;">
             <span style="font-size:10px;transition:transform 0.2s;">▶</span> 高级系统设置
           </summary>
@@ -663,49 +845,6 @@
         </details>
       </section>
       </div>
-
-  <details class="card nezha-agent">
-    <summary>哪吒 / Komari 探针配置</summary>
-    <div class="card-body" style="display:flex; flex-direction:column; gap:10px;">
-      <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
-        <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:220px;">
-          <label style="font-size:14px; color:var(--ink); white-space:nowrap; margin:0;">服务器地址 <span class="pill">nz_server</span></label>
-          <input id="nz_server" type="text" placeholder="如 nezha.com:443" style="flex:1; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:var(--input-bg); color:var(--ink); font-size:13px; outline:none; margin:0;"/>
-        </div>
-        <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:220px;">
-          <label style="font-size:14px; color:var(--ink); white-space:nowrap; margin:0;">Agent 密钥 <span class="pill">nz_sec</span></label>
-          <input id="nz_sec" type="text" placeholder="agent_secret_key" style="flex:1; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:var(--input-bg); color:var(--ink); font-size:13px; outline:none; margin:0;"/>
-        </div>
-      </div>
-      <div style="display:flex; align-items:center; gap:8px;">
-        <span style="color:var(--sub); font-size:13px; white-space:nowrap;">📥 从安装命令导入</span>
-        <input id="nezhaImportInput" type="text" placeholder="粘贴面板复制的安装命令自动解析..." style="flex:1; padding:8px 10px; background:var(--input-bg); color:var(--ink); border:1px solid var(--line); border-radius:8px; font-size:13px; outline:none; margin:0;"/>
-      </div>
-      <div style="display:flex; gap:16px; margin-top: 12px; align-items:stretch; flex-wrap:wrap;">
-        <div style="flex:0 0 240px; display:flex; flex-direction:column; justify-content:space-between; padding:16px; background:rgba(255,255,255,0.02); border:1px solid var(--line); border-radius:8px;">
-          <div>
-            <div style="font-size:13px; color:var(--sub); margin-bottom:8px; font-weight:bold;">环境模式</div>
-            <div style="display:flex; gap:16px; margin-bottom:12px; font-size:13px;">
-              <label><input type="radio" name="nzEnvMode" value="std" checked> 标准环境</label>
-              <label><input type="radio" name="nzEnvMode" value="res"> 受限环境</label>
-            </div>
-            <div style="font-size:13px; color:var(--sub); margin-bottom:8px; font-weight:bold;">命令类型</div>
-            <div style="display:flex; gap:16px; margin-bottom:16px; font-size:13px;">
-              <label><input type="radio" name="nzCmdType" value="curl" checked> curl</label>
-              <label><input type="radio" name="nzCmdType" value="wget"> wget</label>
-            </div>
-          </div>
-          <div style="display:flex; gap:10px;">
-            <button id="copyNzBtn" type="button" class="primary" style="flex:1; padding:8px 0; font-size:13px; border-radius:6px;">复制</button>
-            <button id="generateNzBtn" type="button" style="flex:1; padding:8px 0; font-size:13px; border-radius:6px;">生成命令</button>
-          </div>
-        </div>
-        <div style="flex:1; min-width:300px; display:flex;">
-          <textarea id="nzOutput" readonly style="width:100%; min-height:130px; padding:12px; font-size:13px; font-family:monospace; background:var(--input-bg); color:var(--ink); border:1px solid var(--line); border-radius:8px; resize:vertical; margin:0;"></textarea>
-        </div>
-      </div>
-    </div>
-  </details>
 
   <section class="card shortcut-commands-card">
     <div class="shortcut-title">快捷命令</div>
