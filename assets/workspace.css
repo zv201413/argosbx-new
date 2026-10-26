@@ -75,6 +75,11 @@
 .deploy-workspace .nezha-import { grid-template-columns: minmax(0,1fr); gap: 8px; margin-bottom: 18px; }
 .deploy-workspace .nezha-import label { font-size: 12px; }
 .deploy-workspace .nezha-import input { min-height: 43px; }
+.deploy-workspace #agentCredentials { margin-bottom: 20px; }
+.deploy-workspace #agentCredentials .nezha-import { margin-bottom: 0; }
+.deploy-workspace #agentCredentials .actions { padding-top: 5px; gap: 8px; }
+.deploy-workspace #agentCredentials button { font-size: 12px; border-radius: 7px; padding: 9px 12px; }
+.deploy-workspace #agentCredentials .input-with-button input { flex: 1; margin: 0; width: 0; }
 .deploy-workspace .nezha-fields { gap: 16px; margin-top: 14px; }
 .deploy-workspace .nezha-field label { font-size: 12px; gap: 4px; }
 .deploy-workspace .nezha-fields input { min-height: 43px; }
