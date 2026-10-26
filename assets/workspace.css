@@ -79,7 +79,12 @@
 .deploy-workspace #agentCredentials .nezha-import { margin-bottom: 0; }
 .deploy-workspace #agentCredentials .actions { padding-top: 5px; gap: 8px; }
 .deploy-workspace #agentCredentials button { font-size: 12px; border-radius: 7px; padding: 9px 12px; }
-.deploy-workspace #agentCredentials .input-with-button input { flex: 1; margin: 0; width: 0; }
+.agent-import-editor { position: relative; flex: 1; min-width: 0; }
+.deploy-workspace #agentCredentials textarea { display: block; width: 100%; min-height: 43px; margin: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--input-bg); color: var(--ink); font: inherit; font-size: 13px; line-height: 20px; resize: vertical; }
+.agent-import-mask { display: none; position: absolute; inset: 0; align-items: center; overflow: hidden; padding: 10px 12px; color: var(--ink); white-space: nowrap; pointer-events: none; }
+.agent-import-control[data-masked="true"] textarea:not(:placeholder-shown) { color: transparent !important; caret-color: var(--ink); }
+.agent-import-control[data-masked="true"] textarea:not(:placeholder-shown)::selection { color: transparent; }
+.agent-import-control[data-masked="true"] textarea:not(:placeholder-shown) + .agent-import-mask { display: flex; }
 .deploy-workspace .nezha-fields { gap: 16px; margin-top: 14px; }
 .deploy-workspace .nezha-field label { font-size: 12px; gap: 4px; }
 .deploy-workspace .nezha-fields input { min-height: 43px; }

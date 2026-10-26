@@ -826,13 +826,16 @@
             </div>
             <div class="config-panel" id="panel-agent" role="tabpanel" aria-labelledby="tab-agent" hidden>
               <div class="panel-intro"><h3>哪吒 / Komari 探针</h3><p>填写后随主脚本一起安装，也可从现有安装命令导入。</p></div>
-              <form id="agentCredentials" method="post" autocomplete="on">
+              <form id="agentCredentials" method="post" autocomplete="off">
                 <div class="nezha-import">
                   <label for="agentCredentialNote">备注</label>
-                  <input id="agentCredentialNote" name="agent-username" type="text" autocomplete="section-agent username" autocapitalize="none" spellcheck="false" placeholder="如：Komari 主面板，作为保存账号">
+                  <input id="agentCredentialNote" name="agent-label" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="如：Komari 主面板，作为保存账号">
                   <label for="nezhaImportInput">📥 从安装命令导入</label>
-                  <div class="input-with-button">
-                    <input id="nezhaImportInput" name="agent-password" type="password" autocomplete="section-agent current-password" autocapitalize="none" spellcheck="false" placeholder="粘贴安装命令或链接" title="粘贴面板复制的安装命令，自动填入探针配置">
+                  <div class="input-with-button agent-import-control" data-masked="true">
+                    <div class="agent-import-editor">
+                      <textarea id="nezhaImportInput" name="agent-command" autocomplete="off" rows="1" autocapitalize="none" spellcheck="false" placeholder="粘贴安装命令或链接" title="粘贴面板复制的安装命令，自动填入探针配置"></textarea>
+                      <span class="agent-import-mask" aria-hidden="true">••••••••••••••••••••••••</span>
+                    </div>
                     <button id="toggleAgentImport" type="button" aria-controls="nezhaImportInput" aria-pressed="false">显示</button>
                   </div>
                 </div>
@@ -1021,6 +1024,10 @@ const optIds = ['warp','ippz','ippref','wippref','uuid','reym','cdnym', 'name', 
       showToast('保存时请填写 Gist ID 和 Token；新建 Gist 后可补填 ID 再保存');
       return;
     }
+    if (isAgentCredential({ id, password })) {
+      showToast('这是探针记录，请填写 Gist ID 和 GitHub Token');
+      return;
+    }
     try {
       await navigator.credentials.store(new PasswordCredential({ id, password }));
       showToast('已请求浏览器保存，请在 Chrome 的密码提示中确认');
@@ -1098,7 +1105,7 @@ document.getElementById('uuid').value = '';
   document.getElementById('nz_server').value = '';
   document.getElementById('nz_sec').value = '';
   document.getElementById('nezhaImportInput').value = '';
-  document.getElementById('nezhaImportInput').type = 'password';
+  document.querySelector('.agent-import-control').dataset.masked = 'true';
   document.getElementById('toggleAgentImport').textContent = '显示';
   document.getElementById('toggleAgentImport').setAttribute('aria-pressed', 'false');
   document.getElementById('gh_token').value = '';
@@ -1350,6 +1357,13 @@ document.getElementById('uuid').value = '';
   }
 
   function render(){
+    const gistId = document.getElementById('gh_gist_id');
+    const gistToken = document.getElementById('gh_token');
+    if (isAgentCredential({ id: gistId.value, password: gistToken.value })) {
+      gistId.value = '';
+      gistToken.value = '';
+      showToast('探针记录不能填入 Gist，请选择 Gist 凭据');
+    }
     const m = collectVars();
     const varsArray = toBashVars(m);
     const varsStr = varsArray.length > 0 ? varsArray.join(' ') + ' ' : '';
@@ -1373,6 +1387,7 @@ document.getElementById('uuid').value = '';
   const nzSecInput = document.getElementById('nz_sec');
   const nzTypeInput = document.getElementById('nz_type');
   let nzRepo = '';
+  const agentCredentialPrefix = '[探针] ';
 
   function importAgentConfiguration() {
     const imported = ArgosbxAgent.importCommand(nezhaImportInput.value);
@@ -1387,15 +1402,23 @@ document.getElementById('uuid').value = '';
     generateNzCommand(false);
   }
 
-  // 密码管理器自动填充可能只触发 change；两种事件都更新探针配置。
+  // 普通命令编辑框不参与登录密码自动填充；按钮回填后显式解析。
   nezhaImportInput.addEventListener('input', importAgentConfiguration);
   nezhaImportInput.addEventListener('change', importAgentConfiguration);
 
   function isAgentCredential(credential) {
     const imported = ArgosbxAgent.importCommand(credential.password);
-    return credential.name?.startsWith('探针配置：') || Boolean(imported.type || imported.server || imported.secret)
+    return credential.id?.startsWith(agentCredentialPrefix) || Boolean(imported.type && imported.server && imported.secret)
       || /^https?:\/\/\S+$/i.test(credential.password.trim());
   }
+
+  function isAgentImport(value) {
+    return isAgentCredential({ password: value });
+  }
+
+  document.getElementById('gistCredentials').addEventListener('focusin', render);
+  document.getElementById('tab-sharing').addEventListener('click', render);
+  window.addEventListener('pageshow', () => requestAnimationFrame(render));
 
   document.getElementById('agentCredentials').addEventListener('submit', async event => {
     event.preventDefault();
@@ -1405,10 +1428,14 @@ document.getElementById('uuid').value = '';
       showToast('请填写备注和安装命令或链接后再保存');
       return;
     }
+    if (!isAgentImport(password)) {
+      showToast('请粘贴完整探针安装命令或链接，不能使用 GitHub Token');
+      return;
+    }
     if (!canUseBrowserCredentials()) return;
     importAgentConfiguration();
     try {
-      await navigator.credentials.store(new PasswordCredential({ id, password, name: '探针配置：' + id }));
+      await navigator.credentials.store(new PasswordCredential({ id: agentCredentialPrefix + id, password, name: '探针配置：' + id }));
       showToast('已请求浏览器保存，请在密码提示中确认');
     } catch {
       showToast('浏览器未接受保存请求，请检查密码管理器设置');
@@ -1423,11 +1450,12 @@ document.getElementById('uuid').value = '';
         showToast('未选择凭据，请先保存探针安装命令');
         return;
       }
-      if (!isAgentCredential(credential)) {
+      if (!isAgentImport(credential.password)) {
         showToast('请选择保存的探针安装命令或链接');
         return;
       }
-      document.getElementById('agentCredentialNote').value = credential.id;
+      document.getElementById('agentCredentialNote').value = credential.id.startsWith(agentCredentialPrefix)
+        ? credential.id.slice(agentCredentialPrefix.length) : credential.id;
       nezhaImportInput.value = credential.password;
       importAgentConfiguration();
       showToast('已填入备注和安装命令');
@@ -1437,10 +1465,18 @@ document.getElementById('uuid').value = '';
   });
 
   document.getElementById('toggleAgentImport').addEventListener('click', event => {
-    const show = nezhaImportInput.type === 'password';
-    nezhaImportInput.type = show ? 'text' : 'password';
+    const control = document.querySelector('.agent-import-control');
+    const show = control.dataset.masked === 'true';
+    control.dataset.masked = String(!show);
     event.currentTarget.textContent = show ? '隐藏' : '显示';
     event.currentTarget.setAttribute('aria-pressed', String(show));
+  });
+
+  nezhaImportInput.addEventListener('keydown', event => {
+    if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+      event.preventDefault();
+      document.getElementById('agentCredentials').requestSubmit();
+    }
   });
 
   function generateNzCommand(notify = true) {
