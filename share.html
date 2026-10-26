@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Argosbx 节点二维码分享</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; background: #0d1426; color: #edf2ff; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 28px 18px; }
+    main { max-width: 780px; margin: auto; }
+    h1 { font-size: 25px; margin: 0 0 10px; }
+    h2 { font-size: 19px; margin-top: 0; }
+    p { color: #b8c4df; line-height: 1.6; }
+    a { color: #9cbcff; }
+    .card { background: #17213a; border: 1px solid #344361; border-radius: 14px; padding: 22px; margin-top: 20px; }
+    .qr { width: min(100%, 380px); margin: 20px auto; background: #fff; border-radius: 8px; overflow: hidden; }
+    .qr svg { display: block; width: 100%; height: auto; }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    button, select, textarea { font: inherit; border: 1px solid #455c88; border-radius: 7px; }
+    button { padding: 10px 16px; background: #294877; color: #fff; cursor: pointer; }
+    button:disabled { opacity: .5; cursor: default; }
+    select, textarea { background: #0e182c; color: #edf2ff; width: 100%; padding: 11px; }
+    textarea { margin-bottom: 14px; min-height: 90px; resize: vertical; overflow-wrap: anywhere; }
+    label { display: block; margin-bottom: 8px; }
+    [hidden] { display: none !important; }
+    #status { min-height: 24px; color: #c0ddff; }
+    #node-error, #subscription-error { color: #ffcc9f; }
+    .note { font-size: 14px; }
+  </style>
+  <script src="assets/vendor/qrcode.js" defer></script>
+  <script src="assets/share.js" defer></script>
+</head>
+<body>
+<main>
+  <h1>节点二维码分享</h1>
+  <p id="summary">正在读取节点…</p>
+  <p class="note">节点在浏览器内生成二维码。此链接包含节点凭据，请只分享给需要使用的人。</p>
+  <section class="card" id="subscription-card" hidden>
+    <h2>全部节点订阅二维码</h2>
+    <p>用客户端的扫码功能添加订阅，一次导入全部节点。若扫码被识别为网页，请复制订阅链接添加。</p>
+    <div class="qr" id="subscription-qr"></div>
+    <p id="subscription-error" hidden></p>
+    <textarea id="subscription-url" readonly aria-label="全部节点订阅链接"></textarea>
+    <div class="actions">
+      <button id="copy-subscription" type="button">复制订阅链接</button>
+      <button id="save-subscription-qr" type="button">保存二维码 SVG</button>
+    </div>
+  </section>
+  <section class="card" id="nodes-card" hidden>
+    <h2>逐节点二维码</h2>
+    <label for="node-select">选择要分享的节点</label>
+    <select id="node-select"></select>
+    <div class="qr" id="node-qr"></div>
+    <p id="node-error" hidden></p>
+    <textarea id="node-url" readonly aria-label="当前节点链接"></textarea>
+    <div class="actions">
+      <button id="copy-node" type="button">复制节点链接</button>
+      <button id="save-node-qr" type="button">保存二维码 SVG</button>
+    </div>
+    <p class="note">二维码沿用节点原有参数；协议、版本和证书验证方式需由客户端支持。</p>
+  </section>
+  <section class="card" id="all-actions" hidden>
+    <div class="actions">
+      <button id="copy-all" type="button">复制全部节点</button>
+      <button id="save-all" type="button">下载节点文本</button>
+    </div>
+  </section>
+  <p id="status" role="status" aria-live="polite"></p>
+  <p><a href="./index.html">返回命令生成器</a></p>
+</main>
+</body>
+</html>

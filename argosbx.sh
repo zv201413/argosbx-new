@@ -72,6 +72,10 @@ export oap=${oap:-''}
 export argoip=${argoip:-''}
 export gh_token=${gh_token:-''}
 export gh_gist_id=${gh_gist_id:-''}
+_qr_share_explicit=0
+[ "${QR_SHARE+x}" = x ] && _qr_share_explicit=1
+export QR_SHARE=${QR_SHARE:-'1'}              # 默认输出二维码分享页；=0 关闭
+QR_SUBSCRIPTION_URL=''
 export nodeaddr=${nodeaddr:-''}
 export wippref=${wippref:-''}
 export nz_host=${nz_host:-''}
@@ -117,6 +121,20 @@ AGSBX=$(_agsbx_resolve) || {
 }
 export AGSBX
 echo "📁 安装目录:$AGSBX"
+
+# 二维码开关持久化，agsbx list 复用安装时的选择。
+_agsbx_qr_sync(){
+	if [ "$_qr_share_explicit" = 0 ] && [ -f "$AGSBX/qr_share" ]; then
+		IFS= read -r QR_SHARE < "$AGSBX/qr_share" || QR_SHARE=1
+	fi
+	case "$QR_SHARE" in
+		0|1) ;;
+		*) echo "⚠️ QR_SHARE 仅支持 0/1，使用默认值 1" >&2; QR_SHARE=1 ;;
+	esac
+	printf '%s\n' "$QR_SHARE" > "$AGSBX/qr_share"
+	export QR_SHARE
+}
+_agsbx_qr_sync
 
 # NAT 外部端口（*_ext）持久化与回读：
 # 安装时传入的外部端口（如 hypt_ext=22323）落盘到 $AGSBX/port_*_ext；
@@ -2331,6 +2349,7 @@ echo "更新Xray或Singbox内核命令：agsbx upx 或 agsbx ups"
 echo "重启脚本命令：agsbx res"
 echo "卸载脚本命令：agsbx del"
 echo "双栈VPS显示IPv4/IPv6节点配置命令：ippz=4 或 ippz=6 agsbx list"
+echo "二维码分享开关：QR_SHARE=0 agsbx list 关闭；QR_SHARE=1 agsbx list 恢复"
 echo "---------------------------------------------------------"
 echo
 }
@@ -2432,6 +2451,7 @@ fi
 #   - 将节点信息推送到GitHub Gist
 # =============================================================================
 push_gist(){
+QR_SUBSCRIPTION_URL=''
 gh_token=$(cat "$AGSBX/gh_token" 2>/dev/null)
 gh_gist_id=$(cat "$AGSBX/gh_gist_id" 2>/dev/null)
 if [ -z "$gh_token" ]; then
@@ -2471,11 +2491,36 @@ if echo "$response" | grep -q '"id":'; then
   [ -z "$gh_gist_id" ] && echo "$gist_id" > "$AGSBX/gh_gist_id"
   # 按照用户指定的格式手动构造订阅链接
   raw_url="https://gist.github.com/${gh_user}/${gist_id}/raw/${gist_filename}"
+  QR_SUBSCRIPTION_URL="$raw_url"
   echo "Gist 推送成功"
   echo "订阅链接 (Raw): $raw_url"
 else
   echo "Gist 推送失败，请检查 Token 权限或网络连接"
 fi
+}
+
+# 浏览器本地生成二维码。节点放在 URL fragment 中，不提交给网站或二维码 API。
+# 本次 Gist 推送成功时编码订阅 URL，聚合导入；否则分享页逐节点生成二维码。
+qr_share_output(){
+[ "$QR_SHARE" = 1 ] || return 0
+[ -s "$AGSBX/jh.txt" ] || return 0
+_qr_nodes=$(sed '/^[[:space:]]*$/d' "$AGSBX/jh.txt" | base64 | tr -d '\r\n' | tr '+/' '-_' | tr -d '=')
+[ -n "$_qr_nodes" ] || return 0
+_qr_url="https://zv201413.github.io/argosbx-new/share.html#nodes=$_qr_nodes"
+if [ -n "${QR_SUBSCRIPTION_URL:-}" ]; then
+	_qr_sub=$(printf '%s' "$QR_SUBSCRIPTION_URL" | base64 | tr -d '\r\n' | tr '+/' '-_' | tr -d '=')
+	_qr_url="$_qr_url&sub=$_qr_sub"
+fi
+(umask 077; printf '%s\n' "$_qr_url" > "$AGSBX/qr-share-url.txt")
+echo
+echo "💣【 二维码分享 】打开以下链接，扫码导入节点："
+echo "$_qr_url"
+if [ -n "${QR_SUBSCRIPTION_URL:-}" ]; then
+	echo "已生成全部节点的订阅二维码，也可切换逐节点二维码。"
+else
+	echo "未配置 Gist 或推送未成功，分享页提供逐节点二维码。"
+fi
+echo "分享链接已保存：$AGSBX/qr-share-url.txt"
 }
 
 # =============================================================================
@@ -2503,6 +2548,7 @@ node_output
 gh_token=$(cat "$AGSBX/gh_token" 2>/dev/null)
 gh_gist_id=$(cat "$AGSBX/gh_gist_id" 2>/dev/null)
 [ -n "$gh_token" ] && push_gist
+qr_share_output
 exit
 elif [ "$1" = "upx" ]; then
 for P in /proc/[0-9]*; do [ -L "$P/exe" ] || continue; TARGET=$(readlink -f "$P/exe" 2>/dev/null) || continue; case "$TARGET" in *"/agsbx/x"*) kill "$(basename "$P")" 2>/dev/null ;; esac; done
@@ -2596,6 +2642,7 @@ node_output
 if [ -n "$gh_token" ]; then
   push_gist
 fi
+qr_share_output
 showmode
 echo
 else
@@ -2603,6 +2650,7 @@ echo "Argosbx脚本已安装"
 echo
 cip
 node_output
+qr_share_output
 showmode
 echo
 exit

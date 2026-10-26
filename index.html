@@ -265,7 +265,7 @@
       align-items: center;
       gap: 10px;
     }
-    input[type="text"], input[type="number"], select {
+    input[type="text"], input[type="password"], input[type="number"], select {
       width: 100%;
       padding: 10px 12px;
       border: 1px solid var(--line);
@@ -565,8 +565,20 @@
             <option value="prefer_ipv6">IPv6优先出站</option>
           </select>
         </div>
-        <div class="row"><label>Gist ID <span class="pill">gh_gist_id</span></label><input id="gh_gist_id" type="text" placeholder="已有Gist ID可填，留空则新建"/></div>
-        <div class="row"><label>GitHub Token <span class="pill">gh_token</span></label><input id="gh_token" type="text" placeholder="推送Gist用，留空则不推送"/></div>
+        <form id="gistCredentials" method="post" autocomplete="on">
+          <div class="row"><label for="gh_gist_id">Gist ID <span class="pill">gh_gist_id</span></label><input id="gh_gist_id" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="已有Gist ID可填，留空则新建"/></div>
+          <div class="row"><label for="gh_token">GitHub Token <span class="pill">gh_token</span></label><input id="gh_token" name="password" type="password" autocomplete="current-password" autocapitalize="none" spellcheck="false" placeholder="推送Gist用，留空则不推送"/></div>
+          <div class="actions">
+            <button type="submit">保存到浏览器</button>
+            <button id="fillGistCredentials" type="button">填入已存凭据</button>
+          </div>
+        </form>
+        <div class="row"><label>二维码分享 <span class="pill">QR_SHARE</span></label>
+          <select id="QR_SHARE">
+            <option value="1">默认 开启（Gist 聚合 / 逐节点二维码）</option>
+            <option value="0">关闭</option>
+          </select>
+        </div>
 
         <details style="margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:0;">
           <summary style="cursor:pointer;padding:10px 14px;color:var(--sub);font-size:14px;user-select:none;list-style:none;display:flex;align-items:center;gap:6px;">
@@ -757,7 +769,7 @@
     }
   };
 const protoKeys = ['sopt','vmpt','vlpt','xhpt','vxpt','vwpt','arpt','anpt','hypt','tupt','sspt'];
-const optIds = ['warp','ippz','ippref','wippref','uuid','reym','cdnym', 'name', 'oap', 'argoip', 'nodeaddr', 'hyjpt', 'gh_token', 'gh_gist_id', 'nz_server', 'nz_sec', 'KNOCK', 'KNOCK_PORT', 'IDLE_TIMEOUT', 'STEALTH_NAME', 'AGSBX_DIR'];
+const optIds = ['warp','ippz','ippref','wippref','uuid','reym','cdnym', 'name', 'oap', 'argoip', 'nodeaddr', 'hyjpt', 'gh_token', 'gh_gist_id', 'QR_SHARE', 'nz_server', 'nz_sec', 'KNOCK', 'KNOCK_PORT', 'IDLE_TIMEOUT', 'STEALTH_NAME', 'AGSBX_DIR'];
 
   const argoSelect = document.getElementById('argoSelect');
   const agn = document.getElementById('agn');
@@ -777,6 +789,52 @@ const optIds = ['warp','ippz','ippref','wippref','uuid','reym','cdnym', 'name', 
   const uuidInput = document.getElementById('uuid');
   const themeSwitchCheckbox = document.getElementById('theme-switch-checkbox');
   const commandTypeRadios = document.querySelectorAll('input[name="commandType"]');
+
+  function canUseGistCredentials() {
+    if (!['http:', 'https:'].includes(location.protocol) || !window.isSecureContext) {
+      showToast('请通过 HTTPS 或 localhost 打开页面后使用浏览器密码管理器');
+      return false;
+    }
+    if (!navigator.credentials || !window.PasswordCredential) {
+      showToast('当前浏览器不支持此凭据接口，请使用 Chrome');
+      return false;
+    }
+    return true;
+  }
+
+  document.getElementById('gistCredentials').addEventListener('submit', async event => {
+    event.preventDefault();
+    if (!canUseGistCredentials()) return;
+    const id = document.getElementById('gh_gist_id').value.trim();
+    const password = document.getElementById('gh_token').value.trim();
+    if (!id || !password) {
+      showToast('保存时请填写 Gist ID 和 Token；新建 Gist 后可补填 ID 再保存');
+      return;
+    }
+    try {
+      await navigator.credentials.store(new PasswordCredential({ id, password }));
+      showToast('已请求浏览器保存，请在 Chrome 的密码提示中确认');
+    } catch {
+      showToast('浏览器未接受保存请求，请检查密码管理器设置');
+    }
+  });
+
+  document.getElementById('fillGistCredentials').addEventListener('click', async () => {
+    if (!canUseGistCredentials()) return;
+    try {
+      const credential = await navigator.credentials.get({ password: true, mediation: 'required' });
+      if (!credential) {
+        showToast('未选择凭据；可先保存，或在 Chrome 密码管理器中添加');
+        return;
+      }
+      document.getElementById('gh_gist_id').value = credential.id;
+      document.getElementById('gh_token').value = credential.password;
+      render();
+      showToast('已填入 Gist ID 和 Token');
+    } catch {
+      showToast('浏览器未能填入凭据，请检查密码管理器设置');
+    }
+  });
 
   function initTheme() {
     const isLightMode = localStorage.getItem('theme') === 'light';
@@ -1057,7 +1115,7 @@ document.getElementById('uuid').value = '';
     if (keys.includes('AGSBX_DIR')) ordered.push('AGSBX_DIR');  // 安装目录置于命令最前缀,直观可见
     protoKeys.forEach(k => { if (keys.includes(k)) ordered.push(k); });
     ['vlpt_enc', 'xhpt_enc', 'vxpt_enc', 'vwpt_enc'].forEach(k => { if (keys.includes(k)) ordered.push(k); });
-    ['warp', 'uuid', 'reym', 'cdnym', 'name', 'hyjpt', 'ippz', 'ippref', 'wippref', 'argoip', 'nodeaddr', 'gh_token', 'gh_gist_id', 'KNOCK', 'KNOCK_PORT', 'IDLE_TIMEOUT', 'STEALTH_NAME'].forEach(k => { if (keys.includes(k)) ordered.push(k); });
+    ['warp', 'uuid', 'reym', 'cdnym', 'name', 'hyjpt', 'ippz', 'ippref', 'wippref', 'argoip', 'nodeaddr', 'gh_token', 'gh_gist_id', 'QR_SHARE', 'KNOCK', 'KNOCK_PORT', 'IDLE_TIMEOUT', 'STEALTH_NAME'].forEach(k => { if (keys.includes(k)) ordered.push(k); });
     if (keys.includes('argo')) ordered.push('argo');
     if (keys.includes('agn')) ordered.push('agn');
     if (keys.includes('agk')) ordered.push('agk');
@@ -1211,19 +1269,25 @@ document.getElementById('uuid').value = '';
       const template = TEMPLATES[mode][type];
       const exec = TEMPLATES[mode].exec;
       const shouldPreserveIppz = (command === 'list' && (ippzValue === '4' || ippzValue === '6'));
+      const qrShareValue = document.getElementById('QR_SHARE').value;
 
       if (command === 'rep') {
         render();
         output.value += ' rep';
       } else {
         resetForm(shouldPreserveIppz);
-        if (shouldPreserveIppz) {
-          ippzSelect.value = ippzValue;
-          const m = collectVars();
-          m['ippz'] = ippzValue;
+        if (command === 'list') {
+          document.getElementById('QR_SHARE').value = qrShareValue;
+          const m = { QR_SHARE: qrShareValue };
+          if (shouldPreserveIppz) {
+            ippzSelect.value = ippzValue;
+            m['ippz'] = ippzValue;
+          }
           const vars = toBashVars(m);
           const varsStr = vars.length ? vars.join(' ') + ' ' : '';
-          output.value = `${varsStr}${template} ${command}`;
+          output.value = mode === 'std'
+            ? `${varsStr}${template} ${command}`
+            : `${template} ${varsStr}${exec} ${command}`;
         } else {
           if (mode === 'std') {
             output.value = `${template} ${command}`;
