@@ -107,6 +107,16 @@ IOS_SHARE=1 agsbx list  # 恢复同时生成原版和 iOS 兼容版（默认）
 
 ---
 
+## 命令生成器的高级系统设置
+
+在 [命令生成器](https://zv201413.github.io/argosbx-new/) 的“相关全局配置调整”中展开 **高级系统设置**：
+
+- **自定义安装目录（`AGSBX_DIR`）**位于 UUID 密码正上方；留空自动探测，填写时脚本会在该目录下创建 `agsbx` 子目录。
+- 二级折叠菜单 **WARP、直连与端口设置**集中提供套 WARP-IP 出站（`warp`）、Warp IPv4/IPv6 出站（`wippref`）、直连节点自定义地址（`nodeaddr`）、Reality 域名（`reym`）与当前系统开放所有端口（`oap`）。
+- 二级折叠菜单 **敲门唤醒与进程隐身**提供敲门、空闲自关与进程伪装选项。
+
+---
+
 ## Chrome 记住 Gist ID 与 GitHub Token
 
 命令生成器将 **Gist ID 作为用户名、GitHub Token 作为密码**，通过标准的 `autocomplete="username"` / `autocomplete="current-password"` 和浏览器凭据接口配对保存。Token 输入框默认遮挡内容。
