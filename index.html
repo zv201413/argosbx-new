@@ -112,6 +112,11 @@
     .protocol-port {
       flex-shrink: 0;
     }
+    .protocol-port h2 label {
+      display: inline-flex;
+      gap: 6px;
+      font: inherit;
+    }
     .outbound-warp {
       display: flex;
       flex-direction: column;
@@ -373,6 +378,9 @@
       min-width: 0;
     }
     .port-inputs input:first-child {
+      flex: 1;
+    }
+    .show-external-ports .port-inputs input:first-child {
       flex: 0.9;
     }
     .port-inputs input:last-child {
@@ -658,31 +666,31 @@
     <div class="grid">
       <div class="left-col">
       <section class="card protocol-port">
-        <h2>必选内核协议端口：</h2>
+        <h2>必选内核协议端口（<label><input id="showExternalPorts" type="checkbox">外部端口</label>），默认隐藏：</h2>
         <div class="protocol-group separator">
           <h3>Xray可选协议：</h3>
           <div class="protocol-grid">
-            <label style="font-size:10px"><input type="checkbox" data-proto="vlpt"> Vless-tcp-reality-vision <span class="pill">vlpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="vlpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="vlpt"></div><label style="font-size:11px"><input type="checkbox" data-enc="vlpt"> ENC<span style="font-size:12px">加密</span></label>
-            <label style="font-size:11px"><input type="checkbox" data-proto="xhpt"> Vless-xhttp-reality <span class="pill">xhpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="xhpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="xhpt"></div><label style="font-size:11px"><input type="checkbox" data-enc="xhpt"> ENC<span style="font-size:12px">加密</span></label>
-            <label><input type="checkbox" data-proto="vxpt"> Vless-xhttp <span class="pill">vxpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="vxpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="vxpt"></div><label style="font-size:11px"><input type="checkbox" data-enc="vxpt"> ENC<span style="font-size:12px">加密</span></label>
+            <label style="font-size:10px"><input type="checkbox" data-proto="vlpt"> Vless-tcp-reality-vision <span class="pill">vlpt</span></label><div class="port-inputs"><input type="text" placeholder="端口(留空随机)" data-port="vlpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="vlpt" hidden></div><label style="font-size:11px"><input type="checkbox" data-enc="vlpt"> ENC<span style="font-size:12px">加密</span></label>
+            <label style="font-size:11px"><input type="checkbox" data-proto="xhpt"> Vless-xhttp-reality <span class="pill">xhpt</span></label><div class="port-inputs"><input type="text" placeholder="端口(留空随机)" data-port="xhpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="xhpt" hidden></div><label style="font-size:11px"><input type="checkbox" data-enc="xhpt"> ENC<span style="font-size:12px">加密</span></label>
+            <label><input type="checkbox" data-proto="vxpt"> Vless-xhttp <span class="pill">vxpt</span></label><div class="port-inputs"><input type="text" placeholder="端口(留空随机)" data-port="vxpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="vxpt" hidden></div><label style="font-size:11px"><input type="checkbox" data-enc="vxpt"> ENC<span style="font-size:12px">加密</span></label>
           </div>
         </div>
         <div class="protocol-group separator">
           <h3>Singbox可选协议：</h3>
           <div class="protocol-grid">
-            <label><input type="checkbox" data-proto="hypt"> Hysteria2 <span class="pill">hypt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="hypt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="hypt"></div><input id="hyjpt" type="text" placeholder="端口跳跃 xx:xx xx" disabled style="width:100%;padding:8px 8px;border:1px solid var(--line);border-radius:8px;background:var(--input-bg);color:var(--ink);outline:none;box-sizing:border-box;font-size:12px;"/>
-            <label><input type="checkbox" data-proto="tupt"> Tuic <span class="pill">tupt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="tupt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="tupt"></div><label></label>
-            <label><input type="checkbox" data-proto="anpt"> AnyTLS <span class="pill">anpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="anpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="anpt"></div><label></label>
-            <label><input type="checkbox" data-proto="arpt"> Any-reality <span class="pill">arpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="arpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="arpt"></div><label></label>
-            <label style="font-size:10px"><input type="checkbox" data-proto="sspt"> Shadowsocks-2022 <span class="pill">sspt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="sspt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="sspt"></div><label></label>
+            <label><input type="checkbox" data-proto="hypt"> Hysteria2 <span class="pill">hypt</span></label><div class="port-inputs"><input type="text" placeholder="端口(留空随机)" data-port="hypt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="hypt" hidden></div><input id="hyjpt" type="text" placeholder="端口跳跃 xx:xx xx" disabled style="width:100%;padding:8px 8px;border:1px solid var(--line);border-radius:8px;background:var(--input-bg);color:var(--ink);outline:none;box-sizing:border-box;font-size:12px;"/>
+            <label><input type="checkbox" data-proto="tupt"> Tuic <span class="pill">tupt</span></label><div class="port-inputs"><input type="text" placeholder="端口(留空随机)" data-port="tupt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="tupt" hidden></div><label></label>
+            <label><input type="checkbox" data-proto="anpt"> AnyTLS <span class="pill">anpt</span></label><div class="port-inputs"><input type="text" placeholder="端口(留空随机)" data-port="anpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="anpt" hidden></div><label></label>
+            <label><input type="checkbox" data-proto="arpt"> Any-reality <span class="pill">arpt</span></label><div class="port-inputs"><input type="text" placeholder="端口(留空随机)" data-port="arpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="arpt" hidden></div><label></label>
+            <label style="font-size:10px"><input type="checkbox" data-proto="sspt"> Shadowsocks-2022 <span class="pill">sspt</span></label><div class="port-inputs"><input type="text" placeholder="端口(留空随机)" data-port="sspt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="sspt" hidden></div><label></label>
           </div>
         </div>
-        <div class="protocol-group separator">
+        <div class="protocol-group">
           <h3>Xray/Singbox自动分配协议：</h3>
           <div class="protocol-grid">
-            <label><input type="checkbox" data-proto="vwpt"> Vless-ws <span class="pill">vwpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="vwpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="vwpt"></div><label style="font-size:11px"><input type="checkbox" data-enc="vwpt"> ENC<span style="font-size:12px">加密</span></label>
-            <label><input type="checkbox" data-proto="vmpt"> Vmess-ws <span class="pill">vmpt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="vmpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="vmpt"></div><label></label>
-            <label><input type="checkbox" data-proto="sopt"> Socks5 <span class="pill">sopt</span></label><div class="port-inputs"><input type="text" placeholder="内部端口(留空随机)" data-port="sopt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="sopt"></div><label></label>
+            <label><input type="checkbox" data-proto="vwpt"> Vless-ws <span class="pill">vwpt</span></label><div class="port-inputs"><input type="text" placeholder="端口(留空随机)" data-port="vwpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="vwpt" hidden></div><label style="font-size:11px"><input type="checkbox" data-enc="vwpt"> ENC<span style="font-size:12px">加密</span></label>
+            <label><input type="checkbox" data-proto="vmpt"> Vmess-ws <span class="pill">vmpt</span></label><div class="port-inputs"><input type="text" placeholder="端口(留空随机)" data-port="vmpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="vmpt" hidden></div><label></label>
+            <label><input type="checkbox" data-proto="sopt"> Socks5 <span class="pill">sopt</span></label><div class="port-inputs"><input type="text" placeholder="端口(留空随机)" data-port="sopt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="sopt" hidden></div><label></label>
           </div>
         </div>
       </section>
@@ -968,6 +976,18 @@ const optIds = ['warp','ippz','ippref','wippref','uuid','reym','cdnym', 'name', 
   const themeSwitchCheckbox = document.getElementById('theme-switch-checkbox');
   const commandTypeRadios = document.querySelectorAll('input[name="commandType"]');
   const qrShareMode = document.getElementById('qrShareMode');
+  const externalPortsToggle = document.getElementById('showExternalPorts');
+
+  function syncExternalPorts() {
+    const show = externalPortsToggle.checked;
+    document.querySelector('.protocol-port').classList.toggle('show-external-ports', show);
+    document.querySelectorAll('[data-extport]').forEach(input => { input.hidden = !show; });
+    document.querySelectorAll('[data-port]').forEach(input => {
+      input.placeholder = show ? '内部端口(留空随机)' : '端口(留空随机)';
+    });
+  }
+
+  externalPortsToggle.addEventListener('change', syncExternalPorts);
 
   function syncQrShareMode() {
     const mode = qrShareMode.value;
@@ -1055,6 +1075,7 @@ const optIds = ['warp','ippz','ippref','wippref','uuid','reym','cdnym', 'name', 
     checkboxes.forEach(cb => {
         cb.checked = false;
     });
+    syncExternalPorts();
     textInputs.forEach(inp => {
         inp.value = '';
     });
@@ -1398,6 +1419,7 @@ document.getElementById('uuid').value = '';
   });
 
   initTheme();
+  syncExternalPorts();
   syncQrShareMode();
   updateCdnymState();
   render();
