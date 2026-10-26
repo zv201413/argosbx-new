@@ -573,13 +573,6 @@
             <button id="fillGistCredentials" type="button">填入已存凭据</button>
           </div>
         </form>
-        <div class="row"><label>二维码分享 <span class="pill">QR_SHARE</span></label>
-          <select id="QR_SHARE">
-            <option value="1">默认 开启（Gist 聚合 / 逐节点二维码）</option>
-            <option value="0">关闭</option>
-          </select>
-        </div>
-
         <details style="margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:0;">
           <summary style="cursor:pointer;padding:10px 14px;color:var(--sub);font-size:14px;user-select:none;list-style:none;display:flex;align-items:center;gap:6px;">
             <span style="font-size:10px;transition:transform 0.2s;">▶</span> WARP 与直连设置
@@ -623,6 +616,12 @@
             <span style="font-size:10px;transition:transform 0.2s;">▶</span> 高级系统设置
           </summary>
           <div style="padding:0 14px 14px;">
+            <div class="row"><label>二维码分享 <span class="pill">QR_SHARE</span></label>
+              <select id="QR_SHARE">
+                <option value="1">默认 开启（Gist 聚合 / 逐节点二维码）</option>
+                <option value="0">关闭</option>
+              </select>
+            </div>
             <div class="row">
               <label>UUID 密码 <span class="pill">uuid</span></label>
               <div class="input-with-button">
