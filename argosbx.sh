@@ -75,7 +75,11 @@ export gh_gist_id=${gh_gist_id:-''}
 _qr_share_explicit=0
 [ "${QR_SHARE+x}" = x ] && _qr_share_explicit=1
 export QR_SHARE=${QR_SHARE:-'1'}              # 默认输出二维码分享页；=0 关闭
+_ios_share_explicit=0
+[ "${IOS_SHARE+x}" = x ] && _ios_share_explicit=1
+export IOS_SHARE=${IOS_SHARE:-'1'}            # 默认同时输出原版和 iOS 兼容版二维码；=0 仅原版
 QR_SUBSCRIPTION_URL=''
+QR_IOS_SUBSCRIPTION_URL=''
 export nodeaddr=${nodeaddr:-''}
 export wippref=${wippref:-''}
 export nz_host=${nz_host:-''}
@@ -135,6 +139,49 @@ _agsbx_qr_sync(){
 	export QR_SHARE
 }
 _agsbx_qr_sync
+
+# iOS 兼容版生成开关持久化；原版链接始终保留。
+_agsbx_ios_sync(){
+	if [ "$_ios_share_explicit" = 0 ] && [ -f "$AGSBX/ios_share" ]; then
+		IFS= read -r IOS_SHARE < "$AGSBX/ios_share" || IOS_SHARE=1
+	fi
+	case "$IOS_SHARE" in
+		0|1) ;;
+		*) echo "⚠️ IOS_SHARE 仅支持 0/1，使用默认值 1" >&2; IOS_SHARE=1 ;;
+	esac
+	printf '%s\n' "$IOS_SHARE" > "$AGSBX/ios_share"
+	export IOS_SHARE
+}
+_agsbx_ios_sync
+
+# 两份订阅按相同顺序写入；其他协议在兼容版中沿用原链接。
+_share_append(){ # original optional_ios
+	printf '%s\n' "$1" >> "$AGSBX/jh.txt"
+	[ "$IOS_SHARE" = 1 ] || return 0
+	printf '%s\n' "${2:-$1}" >> "$AGSBX/jh-ios.txt"
+}
+
+# 分享格式独立于安装流程，凭据按字段转义，TUIC 的分隔冒号保持原样。
+_share_urlencode(){
+	LC_ALL=C od -An -v -tu1 | LC_ALL=C awk '{for(i=1;i<=NF;i++){n=$i;if((n>=48&&n<=57)||(n>=65&&n<=90)||(n>=97&&n<=122)||n==45||n==46||n==95||n==126)printf "%c",n;else printf "%%%02X",n}}'
+}
+share_hy2_link(){ # password host port encoded_pin port_hopping fragment
+	if [ "$IOS_SHARE" = 1 ]; then
+		_sh_auth=$(printf '%s' "$1" | _share_urlencode)
+		printf 'hysteria2://%s@%s:%s?security=tls&alpn=h3&insecure=1%s&sni=www.bing.com&peer=www.bing.com#%s\n' "$_sh_auth" "$2" "$3" "$5" "$6"
+	else
+		printf 'hysteria2://%s@%s:%s?security=tls&alpn=h3&insecure=0&allowInsecure=0%s&sni=www.bing.com&pinSHA256=%s#%s\n' "$1" "$2" "$3" "$5" "$4" "$6"
+	fi
+}
+share_tuic_link(){ # uuid password host port encoded_pin fragment
+	if [ "$IOS_SHARE" = 1 ]; then
+		_st_uuid=$(printf '%s' "$1" | _share_urlencode)
+		_st_password=$(printf '%s' "$2" | _share_urlencode)
+		printf 'tuic://%s:%s@%s:%s?congestion_control=bbr&udp_relay_mode=native&alpn=h3&sni=www.bing.com&version=5&allow_insecure=1#%s\n' "$_st_uuid" "$_st_password" "$3" "$4" "$6"
+	else
+		printf 'tuic://%s:%s@%s:%s?congestion_control=bbr&udp_relay_mode=native&alpn=h3&sni=www.bing.com&insecure=1&allowInsecure=1%s#%s\n' "$1" "$2" "$3" "$4" "${5:+&pinSHA256=$5}" "$6"
+	fi
+}
 
 # NAT 外部端口（*_ext）持久化与回读：
 # 安装时传入的外部端口（如 hypt_ext=22323）落盘到 $AGSBX/port_*_ext；
@@ -2008,7 +2055,8 @@ fi
 
 cfip() { echo $((RANDOM % 13 + 1)); }
 ipchange
-rm -rf "$AGSBX/jh.txt"
+: > "$AGSBX/jh.txt"
+: > "$AGSBX/jh-ios.txt"
 uuid=$(cat "$AGSBX/uuid")
 server_ip=$(cat "$AGSBX/server_ip.log")
 [ -n "$nodeaddr" ] && server_ip="$nodeaddr"
@@ -2062,7 +2110,7 @@ vl_xh_link="vless://$uuid@$server_ip:$display_port_xh?encryption=$enkey&security
 else
 vl_xh_link="vless://$uuid@$server_ip:$display_port_xh?encryption=none&security=reality&sni=$ym_vl_re&fp=chrome&pbk=$public_key_x&sid=$short_id_x&type=xhttp&path=/xhttp&mode=auto#${sxname}${country}_vl_xhttp_reality_$hostname"
 fi
-echo "$vl_xh_link" >> "$AGSBX/jh.txt"
+_share_append "$vl_xh_link"
 echo "$vl_xh_link"
 echo
 fi
@@ -2077,7 +2125,7 @@ vl_vx_link="vless://$uuid@$server_ip:$display_port_vx?encryption=$enkey&type=xht
 else
 vl_vx_link="vless://$uuid@$server_ip:$display_port_vx?encryption=none&type=xhttp&path=/xhttp&mode=auto#${sxname}${country}_vl_xhttp_$hostname"
 fi
-echo "$vl_vx_link" >> "$AGSBX/jh.txt"
+_share_append "$vl_vx_link"
 echo "$vl_vx_link"
 echo
 if [ -f "$AGSBX/cdnym" ]; then
@@ -2092,7 +2140,7 @@ vl_vx_cdn_link="vless://$uuid@$ip:$display_port_vx?encryption=$enkey&type=xhttp&
 else
 vl_vx_cdn_link="vless://$uuid@$ip:$display_port_vx?encryption=none&type=xhttp&host=$xvvmcdnym&path=/xhttp&mode=auto#${sxname}${country}_vl_xhttp_cdn_${hostname}${ip_suffix}"
 fi
-  echo "$vl_vx_cdn_link" >> "$AGSBX/jh.txt"
+  _share_append "$vl_vx_cdn_link"
   echo "$vl_vx_cdn_link"
   idx=$((idx+1))
 done
@@ -2111,7 +2159,7 @@ else
 en_vw="none"
 fi
 vl_vw_link="vless://$uuid@$server_ip:$display_port_vw?encryption=$en_vw&type=ws&path=%2F${uuid}-vw#${sxname}${country}_vl_ws_$hostname"
-echo "$vl_vw_link" >> "$AGSBX/jh.txt"
+_share_append "$vl_vw_link"
 echo "$vl_vw_link"
 echo
 if [ -f "$AGSBX/cdnym" ]; then
@@ -2126,7 +2174,7 @@ vl_vw_cdn_link="vless://$uuid@$ip:$display_port_vw?encryption=$en_vw&type=ws&hos
 else
 vl_vw_cdn_link="vless://$uuid@$ip:$display_port_vw?encryption=none&type=ws&host=$xvvmcdnym&path=%2F${uuid}-vw#${sxname}${country}_vl_ws_cdn_${hostname}${ip_suffix}"
 fi
-  echo "$vl_vw_cdn_link" >> "$AGSBX/jh.txt"
+  _share_append "$vl_vw_cdn_link"
   echo "$vl_vw_cdn_link"
   idx=$((idx+1))
 done
@@ -2144,7 +2192,7 @@ vl_link="vless://$uuid@$server_ip:$display_port_vl_re?encryption=$enkey&security
 else
 vl_link="vless://$uuid@$server_ip:$display_port_vl_re?encryption=none&security=reality&sni=$ym_vl_re&fp=chrome&pbk=$public_key_x&sid=$short_id_x&type=tcp&headerType=none#${sxname}${country}_vl_reality_vision_$hostname"
 fi
-echo "$vl_link" >> "$AGSBX/jh.txt"
+_share_append "$vl_link"
 echo "$vl_link"
 echo
 fi
@@ -2155,7 +2203,7 @@ echo "💣【 Shadowsocks-2022 】节点信息如下："
 port_ss=$(cat "$AGSBX/port_ss")
 	display_port_ss="${port_ss_ext:-${port_ss}}"
 	ss_link="ss://$(echo -n "2022-blake3-aes-128-gcm:$sskey@$server_ip:$display_port_ss" | base64 -w0)#${sxname}Shadowsocks-2022_$hostname"
-echo "$ss_link" >> "$AGSBX/jh.txt"
+_share_append "$ss_link"
 echo "$ss_link"
 echo
 fi
@@ -2166,7 +2214,7 @@ echo "💣【 Vmess-ws 】节点信息如下："
 port_vm_ws=$(cat "$AGSBX/port_vm_ws")
 display_port_vm="${port_vm_ws_ext:-${port_vm_ws}}"
 vm_link="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}${country}_vm_ws_$hostname\", \"add\": \"$server_ip\", \"port\": \"$display_port_vm\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"www.bing.com\", \"path\": \"/$uuid-vm\", \"tls\": \"\"}" | base64 -w0)"
-echo "$vm_link" >> "$AGSBX/jh.txt"
+_share_append "$vm_link"
 echo "$vm_link"
 echo
 if [ -f "$AGSBX/cdnym" ]; then
@@ -2177,7 +2225,7 @@ for ip in $preferred_ips; do
   ip_suffix=""
   [ "$ip_count" -gt 1 ] && ip_suffix="-$idx"
   vm_cdn_link="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}${country}_vm_ws_cdn_${hostname}${ip_suffix}\", \"add\": \"$ip\", \"port\": \"$display_port_vm\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$xvvmcdnym\", \"path\": \"/$uuid-vm\", \"tls\": \"\"}" | base64 -w0)"
-  echo "$vm_cdn_link" >> "$AGSBX/jh.txt"
+  _share_append "$vm_cdn_link"
   echo "$vm_cdn_link"
   idx=$((idx+1))
 done
@@ -2191,7 +2239,7 @@ echo "💣【 AnyTLS 】节点信息如下："
 port_an=$(cat "$AGSBX/port_an")
 display_port_an="${port_an_ext:-${port_an}}"
 an_link="anytls://$uuid@$server_ip:$display_port_an?insecure=1&allowInsecure=1#${sxname}${country}_anytls_$hostname"
-echo "$an_link" >> "$AGSBX/jh.txt"
+_share_append "$an_link"
 echo "$an_link"
 echo
 fi
@@ -2202,7 +2250,7 @@ echo "💣【 Any-Reality 】节点信息如下："
 port_ar=$(cat "$AGSBX/port_ar")
 display_port_ar="${port_ar_ext:-${port_ar}}"
 ar_link="anytls://$uuid@$server_ip:$display_port_ar?security=reality&sni=$ym_vl_re&fp=chrome&pbk=$public_key_s&sid=$short_id_s&type=tcp&headerType=none#${sxname}${country}_any_reality_$hostname"
-echo "$ar_link" >> "$AGSBX/jh.txt"
+_share_append "$ar_link"
 echo "$ar_link"
 echo
 fi
@@ -2224,8 +2272,10 @@ if grep hy2_sb "$AGSBX/sb.json" >/dev/null 2>&1; then
     # pinSHA256 是标准 base64（含 + / =），必须 percent-encode 后再拼进 URL：
     # 未编码时 + 会被查询串解析成空格，指纹在客户端侧就坏了（v2rayN/NekoBox/Karing 一律受影响）
     pin_urlenc=$(printf '%s' "$(cat "$AGSBX/PUBKEY_SHA256_B64.txt" 2>/dev/null)" | sed 's/+/%2B/g; s|/|%2F|g; s/=/%3D/g')
-    hy2_link="hysteria2://$uuid@$server_ip:$display_port_hy2?security=tls&alpn=h3&insecure=0&allowInsecure=0${hyps}&sni=www.bing.com&pinSHA256=${pin_urlenc}#${sxname}${country}_hy2_$hostname"
-    echo "$hy2_link" >> "$AGSBX/jh.txt"
+    hy2_link=$(IOS_SHARE=0 share_hy2_link "$uuid" "$server_ip" "$display_port_hy2" "$pin_urlenc" "$hyps" "${sxname}${country}_hy2_$hostname")
+    hy2_ios_link=''
+    [ "$IOS_SHARE" = 1 ] && hy2_ios_link=$(IOS_SHARE=1 share_hy2_link "$uuid" "$server_ip" "$display_port_hy2" "$pin_urlenc" "$hyps" "${sxname}${country}_hy2_$hostname")
+    _share_append "$hy2_link" "$hy2_ios_link"
     echo "$hy2_link"
     echo
 fi
@@ -2238,8 +2288,10 @@ display_port_tu="${port_tu_ext:-${port_tu}}"
 # TUIC 无官方钉扎约定，但补丁版 v2rayN 会解析 pinSHA256（→ certificate_public_key_sha256）；
 # 其他客户端忽略该未知参数，行为不变。同时保留 insecure/allowInsecure 以兼容老客户端。
 pin_urlenc=${pin_urlenc:-$(printf '%s' "$(cat "$AGSBX/PUBKEY_SHA256_B64.txt" 2>/dev/null)" | sed 's/+/%2B/g; s|/|%2F|g; s/=/%3D/g')}
-tuic5_link="tuic://$uuid:$uuid@$server_ip:$display_port_tu?congestion_control=bbr&udp_relay_mode=native&alpn=h3&sni=www.bing.com&insecure=1&allowInsecure=1${pin_urlenc:+&pinSHA256=$pin_urlenc}#${sxname}${country}_tuic_$hostname"
-echo "$tuic5_link" >> "$AGSBX/jh.txt"
+tuic5_link=$(IOS_SHARE=0 share_tuic_link "$uuid" "$uuid" "$server_ip" "$display_port_tu" "$pin_urlenc" "${sxname}${country}_tuic_$hostname")
+tuic5_ios_link=''
+[ "$IOS_SHARE" = 1 ] && tuic5_ios_link=$(IOS_SHARE=1 share_tuic_link "$uuid" "$uuid" "$server_ip" "$display_port_tu" "$pin_urlenc" "${sxname}${country}_tuic_$hostname")
+_share_append "$tuic5_link" "$tuic5_ios_link"
 echo "$tuic5_link"
 echo
 fi
@@ -2288,7 +2340,7 @@ for ip in $argo_addrs; do
   ip_suffix=""
   [ "$argo_ip_count" -gt 1 ] && ip_suffix="-$idx"
   vmatls_link="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vmess-ws-tls-argo-$hostname-443${ip_suffix}\", \"add\": \"$ip\", \"port\": \"443\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$argodomain\", \"path\": \"/$uuid-vm\", \"tls\": \"tls\", \"sni\": \"$argodomain\", \"alpn\": \"\", \"fp\": \"chrome\"}" | base64 -w0)"
-  echo "$vmatls_link" >> "$AGSBX/jh.txt"
+  _share_append "$vmatls_link"
   echo "$vmatls_link"
   idx=$((idx+1))
 done
@@ -2299,7 +2351,7 @@ for ip in $argo_addrs; do
   ip_suffix=""
   [ "$argo_ip_count" -gt 1 ] && ip_suffix="-$idx"
   vma_link="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vmess-ws-argo-$hostname-80${ip_suffix}\", \"add\": \"$ip\", \"port\": \"80\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$argodomain\", \"path\": \"/$uuid-vm\", \"tls\": \"\"}" | base64 -w0)"
-  echo "$vma_link" >> "$AGSBX/jh.txt"
+  _share_append "$vma_link"
   echo "$vma_link"
   idx=$((idx+1))
 done
@@ -2316,7 +2368,7 @@ for ip in $argo_addrs; do
   ip_suffix=""
   [ "$argo_ip_count" -gt 1 ] && ip_suffix="-$idx"
   vwatls_link="vless://$uuid@$ip:443?encryption=$en_vw&type=ws&host=$argodomain&path=%2F${uuid}-vw&security=tls&sni=$argodomain&fp=chrome&insecure=0&allowInsecure=0#${sxname}${country}_vl_ws_tls_argo_${hostname}${ip_suffix}"
-  echo "$vwatls_link" >> "$AGSBX/jh.txt"
+  _share_append "$vwatls_link"
   echo "$vwatls_link"
   idx=$((idx+1))
 done
@@ -2327,7 +2379,7 @@ for ip in $argo_addrs; do
   ip_suffix=""
   [ "$argo_ip_count" -gt 1 ] && ip_suffix="-$idx"
   vwa_link="vless://$uuid@$ip:80?encryption=$en_vw&type=ws&host=$argodomain&path=%2F${uuid}-vw&security=none#${sxname}${country}_vl_ws_argo_${hostname}${ip_suffix}"
-  echo "$vwa_link" >> "$AGSBX/jh.txt"
+  _share_append "$vwa_link"
   echo "$vwa_link"
   idx=$((idx+1))
 done
@@ -2350,6 +2402,7 @@ echo "重启脚本命令：agsbx res"
 echo "卸载脚本命令：agsbx del"
 echo "双栈VPS显示IPv4/IPv6节点配置命令：ippz=4 或 ippz=6 agsbx list"
 echo "二维码分享开关：QR_SHARE=0 agsbx list 关闭；QR_SHARE=1 agsbx list 恢复"
+echo "iOS 兼容版二维码（默认同时生成）：IOS_SHARE=0 agsbx list 关闭；IOS_SHARE=1 agsbx list 恢复"
 echo "---------------------------------------------------------"
 echo
 }
@@ -2452,6 +2505,7 @@ fi
 # =============================================================================
 push_gist(){
 QR_SUBSCRIPTION_URL=''
+QR_IOS_SUBSCRIPTION_URL=''
 gh_token=$(cat "$AGSBX/gh_token" 2>/dev/null)
 gh_gist_id=$(cat "$AGSBX/gh_gist_id" 2>/dev/null)
 if [ -z "$gh_token" ]; then
@@ -2472,17 +2526,23 @@ gist_country=$(curl -sm5 ip-api.com/json/?fields=countryCode 2>/dev/null | sed '
 # 检测主要内核作为协议标识
 if [ -e "$AGSBX/sing-box" ] && [ -e "$AGSBX/xray" ]; then gist_proto="dual"; elif [ -e "$AGSBX/sing-box" ]; then gist_proto="sb"; else gist_proto="xr"; fi
 gist_filename="${gist_prefix}_${gist_country}_${gist_proto}_${hostname}.txt"
+gist_ios_filename="${gist_filename%.txt}_ios.txt"
+gist_files="\"$gist_filename\": {\"content\": \"$escaped_content\"}"
+if [ "$IOS_SHARE" = 1 ] && [ -s "$AGSBX/jh-ios.txt" ]; then
+  escaped_ios_content=$(sed 's/\\/\\\\/g; s/"/\\"/g' "$AGSBX/jh-ios.txt" | awk '{printf "%s\\n", $0}' | sed 's/\\n$//')
+  gist_files="$gist_files,\"$gist_ios_filename\": {\"content\": \"$escaped_ios_content\"}"
+fi
 
 if [ -n "$gh_gist_id" ]; then
 response=$(curl -s -X PATCH "https://api.github.com/gists/$gh_gist_id" \
 -H "Authorization: token $gh_token" \
 -H "Content-Type: application/json" \
--d "{\"description\": \"Argosbx Nodes\",\"public\": false,\"files\": {\"$gist_filename\": {\"content\": \"$escaped_content\"}}}")
+-d "{\"description\": \"Argosbx Nodes\",\"public\": false,\"files\": {$gist_files}}")
 else
 response=$(curl -s -X POST "https://api.github.com/gists" \
 -H "Authorization: token $gh_token" \
 -H "Content-Type: application/json" \
--d "{\"description\": \"Argosbx Nodes\",\"public\": false,\"files\": {\"$gist_filename\": {\"content\": \"$escaped_content\"}}}")
+-d "{\"description\": \"Argosbx Nodes\",\"public\": false,\"files\": {$gist_files}}")
 fi
 
 if echo "$response" | grep -q '"id":'; then
@@ -2492,8 +2552,12 @@ if echo "$response" | grep -q '"id":'; then
   # 按照用户指定的格式手动构造订阅链接
   raw_url="https://gist.github.com/${gh_user}/${gist_id}/raw/${gist_filename}"
   QR_SUBSCRIPTION_URL="$raw_url"
+  if [ "$IOS_SHARE" = 1 ] && [ -s "$AGSBX/jh-ios.txt" ]; then
+    QR_IOS_SUBSCRIPTION_URL="https://gist.github.com/${gh_user}/${gist_id}/raw/${gist_ios_filename}"
+  fi
   echo "Gist 推送成功"
   echo "订阅链接 (Raw): $raw_url"
+  [ -z "$QR_IOS_SUBSCRIPTION_URL" ] || echo "iOS 兼容版订阅链接 (Raw): $QR_IOS_SUBSCRIPTION_URL"
 else
   echo "Gist 推送失败，请检查 Token 权限或网络连接"
 fi
@@ -2507,6 +2571,14 @@ qr_share_output(){
 _qr_nodes=$(sed '/^[[:space:]]*$/d' "$AGSBX/jh.txt" | base64 | tr -d '\r\n' | tr '+/' '-_' | tr -d '=')
 [ -n "$_qr_nodes" ] || return 0
 _qr_url="https://zv201413.github.io/argosbx-new/share.html#nodes=$_qr_nodes"
+if [ "$IOS_SHARE" = 1 ] && [ -s "$AGSBX/jh-ios.txt" ]; then
+	_qr_ios=$(sed '/^[[:space:]]*$/d' "$AGSBX/jh-ios.txt" | base64 | tr -d '\r\n' | tr '+/' '-_' | tr -d '=')
+	_qr_url="$_qr_url&ios=$_qr_ios"
+	if [ -n "${QR_IOS_SUBSCRIPTION_URL:-}" ]; then
+		_qr_ios_sub=$(printf '%s' "$QR_IOS_SUBSCRIPTION_URL" | base64 | tr -d '\r\n' | tr '+/' '-_' | tr -d '=')
+		_qr_url="$_qr_url&iossub=$_qr_ios_sub"
+	fi
+fi
 if [ -n "${QR_SUBSCRIPTION_URL:-}" ]; then
 	_qr_sub=$(printf '%s' "$QR_SUBSCRIPTION_URL" | base64 | tr -d '\r\n' | tr '+/' '-_' | tr -d '=')
 	_qr_url="$_qr_url&sub=$_qr_sub"
@@ -2515,6 +2587,7 @@ fi
 echo
 echo "💣【 二维码分享 】打开以下链接，扫码导入节点："
 echo "$_qr_url"
+[ "$IOS_SHARE" != 1 ] || echo "同时提供原版和 iOS 兼容版，请按需扫码或下载。"
 if [ -n "${QR_SUBSCRIPTION_URL:-}" ]; then
 	echo "已生成全部节点的订阅二维码，也可切换逐节点二维码。"
 else

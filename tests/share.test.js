@@ -25,7 +25,7 @@ test('shell output opens as the original UTF-8/IPv6 node and a compact Gist subs
   const url = new URL(readFileSync(path.join(dir, 'qr-share-url.txt'), 'utf8').trim());
   assert.equal(url.search, '');
   assert.equal(url.pathname, '/argosbx-new/share.html');
-  assert.deepEqual(share.parseShare(url.hash), { nodes: [fixture], subscription, skipped: 0 });
+  assert.deepEqual(share.parseShare(url.hash), { nodes: [fixture], iosNodes: [], subscription, iosSubscription: '', skipped: 0 });
   assert.equal(share.nodeName(fixture, 0), '1. 中文节点');
 });
 
@@ -57,12 +57,12 @@ test('failed Gist push cannot retain an older aggregation URL', () => {
   const dir = mkdtempSync(path.join(tmpdir(), 'argosbx-share-'));
   writeFileSync(path.join(dir, 'gh_token'), 'test-token');
   writeFileSync(path.join(dir, 'jh.txt'), fixture);
-  const code = `curl(){ printf '%s' '{"message":"test failure"}'; }\n${shellFunction('push_gist')}\npush_gist\nprintf '\\nSUB=%s' "$QR_SUBSCRIPTION_URL"`;
+  const code = `curl(){ printf '%s' '{"message":"test failure"}'; }\n${shellFunction('push_gist')}\npush_gist\nprintf '\\nSUB=%s\\nIOS_SUB=%s' "$QR_SUBSCRIPTION_URL" "$QR_IOS_SUBSCRIPTION_URL"`;
   const output = execFileSync('sh', ['-c', code], {
-    env: { ...process.env, AGSBX: dir, QR_SUBSCRIPTION_URL: 'https://gist.github.com/stale/id/raw/nodes.txt' }, encoding: 'utf8'
+    env: { ...process.env, AGSBX: dir, QR_SUBSCRIPTION_URL: 'https://gist.github.com/stale/id/raw/nodes.txt', QR_IOS_SUBSCRIPTION_URL: 'https://gist.github.com/stale/id/raw/nodes-ios.txt' }, encoding: 'utf8'
   });
   assert.match(output, /Gist 推送失败/);
-  assert.match(output, /SUB=$/);
+  assert.match(output, /\nSUB=\nIOS_SUB=$/);
 });
 
 test('share payload ignores executable schemes and rejects invalid base64 or malformed UTF-8', () => {

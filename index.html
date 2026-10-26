@@ -622,6 +622,12 @@
                 <option value="0">关闭</option>
               </select>
             </div>
+            <div class="row"><label>同时生成 iOS 兼容版 <span class="pill">IOS_SHARE</span></label>
+              <select id="IOS_SHARE">
+                <option value="1">默认 开启（原版 + iOS 兼容版二维码）</option>
+                <option value="0">关闭（仅生成原版二维码）</option>
+              </select>
+            </div>
             <div class="row">
               <label>UUID 密码 <span class="pill">uuid</span></label>
               <div class="input-with-button">
@@ -768,7 +774,7 @@
     }
   };
 const protoKeys = ['sopt','vmpt','vlpt','xhpt','vxpt','vwpt','arpt','anpt','hypt','tupt','sspt'];
-const optIds = ['warp','ippz','ippref','wippref','uuid','reym','cdnym', 'name', 'oap', 'argoip', 'nodeaddr', 'hyjpt', 'gh_token', 'gh_gist_id', 'QR_SHARE', 'nz_server', 'nz_sec', 'KNOCK', 'KNOCK_PORT', 'IDLE_TIMEOUT', 'STEALTH_NAME', 'AGSBX_DIR'];
+const optIds = ['warp','ippz','ippref','wippref','uuid','reym','cdnym', 'name', 'oap', 'argoip', 'nodeaddr', 'hyjpt', 'gh_token', 'gh_gist_id', 'QR_SHARE', 'IOS_SHARE', 'nz_server', 'nz_sec', 'KNOCK', 'KNOCK_PORT', 'IDLE_TIMEOUT', 'STEALTH_NAME', 'AGSBX_DIR'];
 
   const argoSelect = document.getElementById('argoSelect');
   const agn = document.getElementById('agn');
@@ -1114,7 +1120,7 @@ document.getElementById('uuid').value = '';
     if (keys.includes('AGSBX_DIR')) ordered.push('AGSBX_DIR');  // 安装目录置于命令最前缀,直观可见
     protoKeys.forEach(k => { if (keys.includes(k)) ordered.push(k); });
     ['vlpt_enc', 'xhpt_enc', 'vxpt_enc', 'vwpt_enc'].forEach(k => { if (keys.includes(k)) ordered.push(k); });
-    ['warp', 'uuid', 'reym', 'cdnym', 'name', 'hyjpt', 'ippz', 'ippref', 'wippref', 'argoip', 'nodeaddr', 'gh_token', 'gh_gist_id', 'QR_SHARE', 'KNOCK', 'KNOCK_PORT', 'IDLE_TIMEOUT', 'STEALTH_NAME'].forEach(k => { if (keys.includes(k)) ordered.push(k); });
+    ['warp', 'uuid', 'reym', 'cdnym', 'name', 'hyjpt', 'ippz', 'ippref', 'wippref', 'argoip', 'nodeaddr', 'gh_token', 'gh_gist_id', 'QR_SHARE', 'IOS_SHARE', 'KNOCK', 'KNOCK_PORT', 'IDLE_TIMEOUT', 'STEALTH_NAME'].forEach(k => { if (keys.includes(k)) ordered.push(k); });
     if (keys.includes('argo')) ordered.push('argo');
     if (keys.includes('agn')) ordered.push('agn');
     if (keys.includes('agk')) ordered.push('agk');
@@ -1269,6 +1275,7 @@ document.getElementById('uuid').value = '';
       const exec = TEMPLATES[mode].exec;
       const shouldPreserveIppz = (command === 'list' && (ippzValue === '4' || ippzValue === '6'));
       const qrShareValue = document.getElementById('QR_SHARE').value;
+      const iosShareValue = document.getElementById('IOS_SHARE').value;
 
       if (command === 'rep') {
         render();
@@ -1277,7 +1284,8 @@ document.getElementById('uuid').value = '';
         resetForm(shouldPreserveIppz);
         if (command === 'list') {
           document.getElementById('QR_SHARE').value = qrShareValue;
-          const m = { QR_SHARE: qrShareValue };
+          document.getElementById('IOS_SHARE').value = iosShareValue;
+          const m = { QR_SHARE: qrShareValue, IOS_SHARE: iosShareValue };
           if (shouldPreserveIppz) {
             ippzSelect.value = ippzValue;
             m['ippz'] = ippzValue;

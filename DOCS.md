@@ -91,6 +91,7 @@
 | `gh_token` | GitHub Personal Access Token | 关闭 | 用于订阅节点信息自动推送 Gist |
 | `gh_gist_id`| 已有 GitHub Gist ID | 自动新建 | `gh_gist_id="abc123xxx"`（更新覆盖已有 Gist） |
 | `QR_SHARE` | 二维码分享页 | `1`（开启） | `QR_SHARE="0"` 关闭；选择持久化。Gist 推送成功时分享订阅二维码，否则逐节点二维码 |
+| `IOS_SHARE` | 同时生成 iOS 兼容版 | `1`（开启） | 原版始终保留；同时生成 `jh-ios.txt`、独立 Gist 订阅和兼容二维码，分别下载 PNG/SVG。`IOS_SHARE="0"` 手动关闭，选择持久化；兼容版 Hy2/TUIC5 跳过证书验证 |
 | `oap` | 开放所有协议与全部功能端口 | 关闭 | `oap="y"` |
 | `KNOCK` | 敲门唤醒 + 空闲自关总开关 | 关闭（0） | `KNOCK="1"` 开启极致隐身防御 |
 | `KNOCK_PORT`| 敲门唤醒端口（UDP/TCP） | 自动分配 | `KNOCK_PORT="38000"` |
