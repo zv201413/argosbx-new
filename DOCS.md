@@ -77,6 +77,11 @@
 |:---|:---|:---|:---|
 | `ippz` | 节点连接地址策略（Address） | 空（IPv4优先） | `ippz="6"`：IPv6优先（适合NAT端口映射） |
 | `ippref` | 非 WARP 原生出站分流偏好 | 空（IPv4优先） | `ippref="prefer_ipv6"`：IPv6出站优先 |
+| `nz_type` | 探针类型 | 命令行默认 `nezha`；网页默认 `komari` | `nezha` / `komari`，导入命令时自动识别 |
+| `nz_host` / `nz_port` | 探针服务端主机 / 端口 | 空 / `5555` | 网页根据服务器地址拆分 |
+| `nz_sec` / `nz_tls` | 探针密钥 / TLS | 空 / 空 | 哪吒通过 `NZ_*` 配置；`nz_tls="--tls"` 开启 TLS |
+| `nz_endpoint` | Komari 完整服务端 URL | 根据主机、端口及 TLS 构造 | `https://monitor.example.com/`；显式 URL 保留协议与路径 |
+| `nz_repo` | Komari 发布包来源 | `komari-monitor/komari-agent` | 导入 fork 时保留，如 `zv201413/komari-agent_new` |
 | `wippref` | WARP 出站路由选择 | 空（IPv6） | `wippref="sx4"`：双核均强制通过 WARP IPv4 出站 |
 | `argo` | Argo 隧道绑定目标 | 关闭 | `argo="vwpt"`（绑定Vless-ws）或 `argo="vmpt"` |
 | `agn` | Argo 固定隧道域名 | 临时隧道 | `agn="tunnel.yourdomain.com"`（Zero Trust 命名隧道） |
@@ -226,6 +231,10 @@ cat ~/agsbx/cert.crt
 ---
 
 ## 七、哪吒 / Komari 探针深度运维与规范卸载
+
+**通过本项目整合安装的探针**位于 `$AGSBX/komari` 或 `$AGSBX/nezha`。例如 `AGSBX_DIR=/var/www` 时，查看日志使用 `cat /var/www/agsbx/komari/agent.log`。`start.sh` 保存启动配置，`agent.pid` 记录进程；`agsbx res` 重启探针，`agsbx del` 清理对应进程、目录和开机任务。启动成功提示仅说明进程存活，是否已连接到面板需在面板确认。无可用 crontab 时会提示未设置开机自启。
+
+**网页生成的单独探针命令**使用安装目录输入框的路径，不添加 `agsbx` 子目录；日志为该目录下的 `agent.log`。下列卸载方式用于另行运行的官方安装脚本或独立命令。
 
 根据安装时采用的途径选择对应的彻底清理方案：
 

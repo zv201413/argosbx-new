@@ -836,6 +836,7 @@
       <details class="card nezha-agent" open>
         <summary>哪吒 / Komari 探针配置</summary>
         <div class="card-body">
+          <div class="row"><label for="nz_type">探针类型 <span class="pill">nz_type</span></label><select id="nz_type"><option value="komari">Komari</option><option value="nezha">哪吒</option></select></div>
           <div class="nezha-fields">
             <div class="nezha-field">
               <label for="nz_server">服务器地址 <span class="pill">nz_server</span></label>
@@ -927,6 +928,7 @@
     </div>
   </div>
 
+<script src="assets/agent.js"></script>
 <script>
 (function(){
   const SCRIPT_URL = 'https://raw.githubusercontent.com/zv201413/argosbx-new/main-new/argosbx.sh';
@@ -1309,31 +1311,13 @@ document.getElementById('uuid').value = '';
     if (keys.includes('agk')) ordered.push('agk');
     if (keys.includes('oap')) ordered.push('oap');
 
-    // 处理 nz_server → 拆分为 nz_host + nz_port + nz_tls
-    if (keys.includes('nz_server') && m['nz_server']) {
-      const parts = m['nz_server'].split(':');
-      const host = parts[0];
-      const port = parts[1] || '443';
-      // 自动 TLS：端口在列表中自动开启
-      const tlsPorts = ['443','8443','2096','2087','2083','2053'];
-      const tls = tlsPorts.includes(port) ? '--tls' : '';
-      ordered.push(`nz_host="${host}"`);
-      ordered.push(`nz_port="${port}"`);
-      if (tls) ordered.push(`nz_tls="${tls}"`);
-    }
-    if (keys.includes('nz_sec')) ordered.push(`nz_sec="${m['nz_sec']}"`);
-
+    let agentVars = {};
+    try {
+      agentVars = ArgosbxAgent.variables({type: document.getElementById('nz_type').value, server: m.nz_server, secret: m.nz_sec, repo: nzRepo});
+    } catch (_) { /* 输入尚未完整时，等待用户继续填写。 */ }
     keys.forEach(k => { if (!ordered.includes(k) && k !== 'nz_server' && k !== 'nz_sec') ordered.push(k); });
-
-    return ordered.map(k => {
-      if (k.includes('=')) return k;  // 已经是 key="val" 格式（nz_host/nz_port/nz_tls/nz_sec）
-      const val = m[k];
-      if (val === '') return `${k}=""`;
-      if (/[^\w\-\.:/]/.test(val)) {
-        return `${k}="${val.replace(/"/g, '\\"')}"`;
-      }
-      return `${k}="${val}"`;
-    });
+    return ordered.map(k => `${k}=${ArgosbxAgent.quote(m[k])}`)
+      .concat(Object.entries(agentVars).map(([k, v]) => `${k}=${ArgosbxAgent.quote(v)}`));
   }
 
   function render(){
@@ -1354,71 +1338,45 @@ document.getElementById('uuid').value = '';
     }
   }
 
-  // 哪吒/Komari 安装命令导入
+  // 导入时保留探针类型、完整地址、fork 来源与安装目录。
   const nezhaImportInput = document.getElementById('nezhaImportInput');
   const nzServerInput = document.getElementById('nz_server');
   const nzSecInput = document.getElementById('nz_sec');
+  const nzTypeInput = document.getElementById('nz_type');
+  let nzRepo = '';
 
   nezhaImportInput.addEventListener('input', () => {
-    const text = nezhaImportInput.value;
-    
-    // 匹配哪吒格式
-    let server = text.match(/NZ_SERVER=["']?([^\s"'#]+)/)?.[1];
-    let secret = text.match(/NZ_CLIENT_SECRET=["']?([^\s"'#]+)/)?.[1];
-    
-    // 如果没有，尝试匹配 Komari 格式 (-e 和 -t)
-    if (!server) {
-      server = text.match(/-(?:e|server)\s+["']?([^\s"'#]+)/)?.[1];
-      if (server) server = server.replace(/^https?:\/\//, ''); // 去除http前缀以适配 host:port 格式
+    const imported = ArgosbxAgent.importCommand(nezhaImportInput.value);
+    if (imported.type) { nzTypeInput.value = imported.type; nzRepo = imported.repo; }
+    if (imported.server) {
+      nzServerInput.value = imported.tls && !/^https?:\/\//.test(imported.server)
+        ? 'https://' + imported.server : imported.server;
     }
-    if (!secret) {
-      secret = text.match(/-(?:t|secret|key)\s+["']?([^\s"'#]+)/)?.[1];
-    }
-
-    if (server) nzServerInput.value = server;
-    if (secret) nzSecInput.value = secret;
-    if (server || secret) render();
+    if (imported.secret) nzSecInput.value = imported.secret;
+    if (imported.installDir) document.getElementById('AGSBX_DIR').value = imported.installDir;
+    render();
+    generateNzCommand(false);
   });
 
-  function generateNzCommand() {
-    const server = nzServerInput.value.trim();
-    const secret = nzSecInput.value.trim();
-    if (!server || !secret) {
-      showToast('❌ 请先填写服务器地址和密钥，或粘贴安装命令导入');
-      return;
+  function generateNzCommand(notify = true) {
+    try {
+      document.getElementById('nzOutput').value = ArgosbxAgent.command({
+        type: nzTypeInput.value, server: nzServerInput.value.trim(), secret: nzSecInput.value.trim(),
+        repo: nzRepo, installDir: document.getElementById('AGSBX_DIR').value.trim(),
+        mode: document.querySelector('input[name="nzEnvMode"]:checked').value,
+        downloader: document.querySelector('input[name="nzCmdType"]:checked').value
+      });
+      if (notify) showToast('✅ 免 systemd 专属命令已生成');
+    } catch (error) {
+      document.getElementById('nzOutput').value = '';
+      if (notify) showToast('❌ ' + error.message);
     }
-    
-    let host = server;
-    let port = '443';
-    if (server.includes(':')) {
-      const parts = server.split(':');
-      host = parts[0];
-      port = parts[1];
-    }
-    
-    const tlsPorts = ['443','8443','2096','2087','2083','2053'];
-    const protocol = tlsPorts.includes(port) ? 'https://' : 'http://';
-    
-    const env = document.querySelector('input[name="nzEnvMode"]:checked').value;
-    const cmd = document.querySelector('input[name="nzCmdType"]:checked').value;
-    
-    let dlCmd = '';
-    if (cmd === 'curl') {
-      dlCmd = `ARCH=$(uname -m) && case $ARCH in x86_64|amd64) a=amd64;; aarch64|arm64) a=arm64;; armv7l) a=armv7;; *) a=amd64;; esac && curl -sL "https://github.com/komari-monitor/komari-agent/releases/latest/download/komari-agent-linux-$a" -o komari-agent`;
-    } else {
-      dlCmd = `ARCH=$(uname -m) && case $ARCH in x86_64|amd64) a=amd64;; aarch64|arm64) a=arm64;; armv7l) a=armv7;; *) a=amd64;; esac && wget -qO komari-agent "https://github.com/komari-monitor/komari-agent/releases/latest/download/komari-agent-linux-$a"`;
-    }
-    
-    let runCmd = '';
-    if (env === 'std') {
-      runCmd = `nohup ./komari-agent -e ${protocol}${host}:${port} -t ${secret} --disable-auto-update > agent.log 2>&1 &`;
-    } else {
-      runCmd = `( ./komari-agent -e ${protocol}${host}:${port} -t ${secret} --disable-auto-update > agent.log 2>&1 & )`;
-    }
-    
-    document.getElementById('nzOutput').value = `${dlCmd} && \\\nchmod +x komari-agent && \\\n${runCmd}`;
-    showToast('✅ 免 systemd 专属命令已生成');
   }
+
+  nzTypeInput.addEventListener('change', () => { nzRepo = ''; render(); generateNzCommand(false); });
+  [nzServerInput, nzSecInput, document.getElementById('AGSBX_DIR')].forEach(input => {
+    input.addEventListener('input', () => generateNzCommand(false));
+  });
 
   document.getElementById('generateNzBtn').addEventListener('click', generateNzCommand);
 

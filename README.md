@@ -42,10 +42,15 @@
 - 确保在各类 Docker 容器、LXC、PaaS 环境下一键部署无阻。
 
 ### 2、哪吒 / Komari 探针一键转换（免 systemd）
-官方安装脚本强依赖 `systemd`，在 Docker 或 PaaS 容器中运行易报错：
-- **智能解析**：直接粘贴官方含 `-e` / `-t` 的安装命令，自动剥离 Server 与 Secret；
-- **TLS 自动探测**：填入 443、8443、2096 等端口自动启用安全连接；
-- **免 systemd 绿色命令**：一键生成 nohup 后台二进制运行指令，在极度受限容器中即可稳定驻留。
+直接下载探针二进制并后台运行，适用于 Docker 或 PaaS 容器：
+- **完整导入**：识别探针类型、Server、Secret、完整 HTTP(S) 地址、`--install-dir` 和 Komari 的 GitHub fork 来源；支持 `-e` / `-t`、`--endpoint` / `--token` 与哪吒 `NZ_*` 格式。
+- **独立选择类型**：手动填写时选择 Komari 或哪吒；整合命令携带 `nz_type`，避免把 Komari 密钥传给哪吒。
+- **TLS 自动探测**：未写协议时按端口推断；明确填写的 `http://` / `https://`、URL 路径和 IPv6 地址保持原意。
+- **目录与日志**：导入的目录填入 `AGSBX_DIR`。整合安装放在 `<目录>/agsbx/komari` 或 `<目录>/agsbx/nezha`，日志为该子目录内的 `agent.log`；单独探针命令使用填写的目录。`agsbx res`、`del` 同时管理本项目安装的探针。
+
+例如从 `zv201413/komari-agent_new` 导入带 `--install-dir /var/www` 的命令后，整合命令使用 `AGSBX_DIR="/var/www" nz_type="komari" nz_repo="zv201413/komari-agent_new"`，下载该 fork 的发布包，安装到 `/var/www/agsbx/komari`。直接命令行调用时，未传 `nz_type` 仍默认哪吒以兼容旧命令；Komari 应显式传 `nz_type=komari`。
+
+IPv4/IPv6 公网地址会通过多个站点验证。一次请求失败不会改掉 `ippz=6` 或 `ippref=prefer_ipv6`；未取得 IPv6 时节点地址暂用 IPv4，后续检测成功自动恢复 IPv6，出站偏好保留协议本身的 IPv4 回退能力。
 
 ### 3、ENC 加密按需启动
 支持 VLESS 协议的 ENC 加密（防止 TLS in TLS 阻断）：

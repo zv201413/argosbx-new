@@ -86,6 +86,9 @@ export nz_host=${nz_host:-''}
 export nz_port=${nz_port:-'5555'}
 export nz_sec=${nz_sec:-''}
 export nz_tls=${nz_tls:-''}
+export nz_type=${nz_type:-'nezha'}              # nezha / komari；旧命令仍默认哪吒
+export nz_endpoint=${nz_endpoint:-''}          # Komari 完整 URL，保留协议与路径
+export nz_repo=${nz_repo:-'komari-monitor/komari-agent'}
 # ───── 可选功能(默认全关,不传则与原行为一字不差)─────
 export KNOCK=${KNOCK:-''}                       # =1 启用「敲门+空闲自关」子系统
 export KNOCK_PORT=${KNOCK_PORT:-''}             # 敲门端口(KNOCK=1 且为空时自动分配)
@@ -320,9 +323,41 @@ fi
 #   - 支持wippref变量控制Warp出站路由
 # 依赖: uuid(可能由insuuid生成)
 # =============================================================================
+_public_ip_valid(){ # family address；拒绝 HTTP 错误页和错误协议族
+printf '%s\n' "$2" | awk -v family="$1" '
+NR != 1 {ok=0; exit}
+family == 4 {
+  n=split($0,a,"."); if(n!=4) exit 1
+  for(i=1;i<=n;i++) if(a[i]!~/^[0-9]+$/ || length(a[i])>3 || a[i]>255) exit 1
+  ok=1; next
+}
+family == 6 {
+  if($0!~/^[0-9a-fA-F:]+$/ || $0!~/:/ || $0~/:::/ || $0~/^:[^:]/ || $0~/[^:]:$/) exit 1
+  text=$0; compressed=gsub(/::/,"@",text); if(compressed>1) exit 1
+  n=split($0,a,":"); count=0
+  for(i=1;i<=n;i++) if(a[i]!="") {if(length(a[i])>4) exit 1; count++}
+  if((compressed==0 && (count!=8 || n!=8)) || (compressed==1 && count>=8)) exit 1
+  ok=1
+}
+END {exit !ok}'
+}
+_public_ip(){
+for _ip_url in "$v46url" https://api64.ipify.org https://ifconfig.co/ip; do
+  _ip_value=''
+  if command -v curl >/dev/null 2>&1; then
+    _ip_value=$(curl -fsS "-$1" --noproxy '*' --connect-timeout 3 --max-time 5 --retry 1 --retry-delay 0 "$_ip_url" 2>/dev/null) || _ip_value=''
+  fi
+  if ! _public_ip_valid "$1" "$_ip_value" && command -v wget >/dev/null 2>&1; then
+    _ip_value=$(timeout 6 wget "-$1" --no-proxy --timeout=5 --tries=1 -qO- "$_ip_url" 2>/dev/null) || _ip_value=''
+  fi
+  if _public_ip_valid "$1" "$_ip_value"; then printf '%s\n' "$_ip_value"; return 0; fi
+done
+return 1
+}
 v4v6(){
-v4=$( (command -v curl >/dev/null 2>&1 && curl -s4m5 -k "$v46url" 2>/dev/null) || (command -v wget >/dev/null 2>&1 && timeout 3 wget -4 --tries=2 -qO- "$v46url" 2>/dev/null) )
-v6=$( (command -v curl >/dev/null 2>&1 && curl -s6m5 -k "$v46url" 2>/dev/null) || (command -v wget >/dev/null 2>&1 && timeout 3 wget -6 --tries=2 -qO- "$v46url" 2>/dev/null) )
+# 多站点探测；同一次运行中已确认的出口地址不因后续临时失败而清空。
+_new_v4=$(_public_ip 4) && v4="$_new_v4"
+_new_v6=$(_public_ip 6) && v6="$_new_v6"
 v4dq=$( (command -v curl >/dev/null 2>&1 && curl -s4m5 -k https://ip.fm | sed -n 's/.*Location: //p' | sed 's/[{}"]//g; s/countryCode://g' 2>/dev/null) || (command -v wget >/dev/null 2>&1 && timeout 3 wget -4 --tries=2 -qO- https://ip.fm | grep '<span class="has-text-grey-light">Location:' | tail -n1 | sed -E 's/.*>Location: <\/span>([^<]+)<.*/\1/' 2>/dev/null) )
 v6dq=$( (command -v curl >/dev/null 2>&1 && curl -s6m5 -k https://ip.fm | sed -n 's/.*Location: //p' | sed 's/[{}"]//g; s/countryCode://g' 2>/dev/null) || (command -v wget >/dev/null 2>&1 && timeout 3 wget -6 --tries=2 -qO- https://ip.fm | grep '<span class="has-text-grey-light">Location:' | tail -n1 | sed -E 's/.*>Location: <\/span>([^<]+)<.*/\1/' 2>/dev/null) )
 }
@@ -344,12 +379,12 @@ echo
 echo "所有节点名称前缀：$name"
 fi
 v4v6
-# IPv4-only 兼容：v6 为空时自动降级 ippz/ippref/cloudflared edge-ip-version
+# 未取得 IPv6 时 Cloudflared 暂用 IPv4；保留用户偏好，节点输出时按可用地址回退。
 CF_IPV="auto"
 if [ -z "$v6" ]; then
 	CF_IPV="4"
-	[ "$ippz" = "6" ] && { echo "⚠️ IPv6 不可用，ippz 将自动回退为 IPv4 优先"; ippz=""; }
-	[ "$ippref" = "prefer_ipv6" ] && { echo "⚠️ IPv6 不可用，ippref 将自动回退为 prefer_ipv4"; ippref="prefer_ipv4"; }
+	[ "$ippz" = "6" ] && echo "⚠️ 本次未取得 IPv6 公网地址，节点地址暂用 IPv4；保留 ippz=6，后续探测成功自动使用 IPv6"
+	[ "$ippref" = "prefer_ipv6" ] && echo "⚠️ 本次未取得 IPv6 公网地址；保留 prefer_ipv6，出站连接可自动回退 IPv4"
 fi
 echo "$CF_IPV" > "$AGSBX/cf_ipv.txt"
 if echo "$v6" | grep -q '^2a09' || echo "$v4" | grep -q '^104.28'; then
@@ -380,16 +415,9 @@ esac
 fi
 fi
 case "$warp" in *x4*) wxryx='ForceIPv4' ;; *x6*) wxryx='ForceIPv6' ;; *) wxryx='ForceIPv6v4' ;; esac
-if command -v curl >/dev/null 2>&1; then
-curl -s4m5 -k "$v46url" >/dev/null 2>&1 && v4_ok=true
-elif command -v wget >/dev/null 2>&1; then
-timeout 3 wget -4 --tries=2 -qO- "$v46url" >/dev/null 2>&1 && v4_ok=true
-fi
-if command -v curl >/dev/null 2>&1; then
-curl -s6m5 -k "$v46url" >/dev/null 2>&1 && v6_ok=true
-elif command -v wget >/dev/null 2>&1; then
-timeout 3 wget -6 --tries=2 -qO- "$v46url" >/dev/null 2>&1 && v6_ok=true
-fi
+v4_ok=false; v6_ok=false
+[ -n "$v4" ] && v4_ok=true
+[ -n "$v6" ] && v6_ok=true
 if [ "$v4_ok" = true ] && [ "$v6_ok" = true ]; then
 case "$warp" in *s4*) sbyx='prefer_ipv4' ;; *) sbyx='prefer_ipv6' ;; esac
 case "$warp" in *x4*) xryx='ForceIPv4v6' ;; *x*) xryx='ForceIPv6v4' ;; *) xryx='ForceIPv4v6' ;; esac
@@ -1463,62 +1491,114 @@ fi
 #   - 可选敲门子系统(KNOCK=1): 生成 watchdog.sh + conf,空闲自关代理/敲门唤醒,固定隧道下 cloudflared 一并按需启停,watchdog 独占生命周期 + 保活cron
 # =============================================================================
 
-insnezha(){
-  if [ -n "$nz_host" ] && [ -n "$nz_sec" ]; then
-    echo "=========启用 哪吒探针 (Nezha Agent)========="
-    
-    NEZHA_DIR="$AGSBX/nezha"
-    NEZHA_BIN="${NEZHA_DIR}/nezha-agent"
-    
-    mkdir -p "$NEZHA_DIR"
-    if [ ! -e "$NEZHA_BIN" ]; then
-      case "$(uname -m)" in
-        x86_64|amd64) nz_arch="amd64" ;;
-        aarch64|arm64) nz_arch="arm64" ;;
-        armv7l|armv7) nz_arch="armv7" ;;
-        armv5*) nz_arch="armv5" ;;
-        s390x) nz_arch="s390x" ;;
-        *) echo "未知架构，跳过安装探针"; return 1 ;;
-      esac
-      
-      nz_url=$(curl -s "https://api.github.com/repos/nezhahq/agent/releases/latest" | grep "browser_download_url" | grep "linux-${nz_arch}.zip" | cut -d '"' -f 4)
-      echo "正在下载哪吒探针内核 (${nz_arch})..."
-      (command -v curl >/dev/null 2>&1 && curl -Lo "${NEZHA_DIR}/nezha.zip" -# --retry 2 "$nz_url") || wget -O "${NEZHA_DIR}/nezha.zip" --tries=2 "$nz_url"
-      unzip -q -o "${NEZHA_DIR}/nezha.zip" -d "$NEZHA_DIR/" 2>/dev/null
-      rm -f "${NEZHA_DIR}/nezha.zip"
-      chmod +x "$NEZHA_BIN"
-    fi
-
-    kill -15 $(pgrep -f 'nezha-agent' 2>/dev/null) >/dev/null 2>&1
-
-    local tls_flag=""
-    [ "$nz_tls" = "--tls" ] && tls_flag="--tls"
-
-    local safe_flags=""
-    if [ "$(id -u)" -ne 0 ]; then
-        safe_flags="--disable-auto-update --disable-command-execute"
-        echo "⚠️ 检测到非 Root 环境，已自动启用探针安全限制模式。"
-    fi
-
-    nohup "$NEZHA_BIN" -s "${nz_host}:${nz_port}" -p "${nz_sec}" ${tls_flag} ${safe_flags} >/dev/null 2>&1 &
-    
-    sleep 3
-    if pgrep -f 'nezha-agent' >/dev/null 2>&1; then
-        echo "✅ 哪吒探针启动成功！"
-    else
-        echo "❌ 哪吒探针启动失败，请检查参数或网络环境。"
-    fi
-
-    if command -v crontab >/dev/null 2>&1; then
-        crontab -l > /tmp/crontab.tmp 2>/dev/null
-        sed -i '/nezha-agent/d' /tmp/crontab.tmp
-        echo "@reboot sleep 15 && /bin/sh -c \"nohup ${NEZHA_BIN} -s ${nz_host}:${nz_port} -p ${nz_sec} ${tls_flag} ${safe_flags} >/dev/null 2>&1 &\"" >> /tmp/crontab.tmp
-        crontab /tmp/crontab.tmp >/dev/null 2>&1
-        rm -f /tmp/crontab.tmp
-    else
-        echo "⚠️ 提示：当前环境无 crontab 权限，探针无法设置开机自启，但本次已成功运行。"
-    fi
+_agent_quote(){ printf "'"; printf '%s' "$1" | sed "s/'/'\\\\''/g"; printf "'"; }
+_agent_running(){ # 仅检查当前安装目录内的进程，避免把别的探针误判为成功
+  _agent_pid=$(cat "$AGSBX/$1/agent.pid" 2>/dev/null)
+  case "$_agent_pid" in ''|*[!0-9]*) return 1;; esac
+  kill -0 "$_agent_pid" 2>/dev/null && tr '\000' '\n' < "/proc/$_agent_pid/cmdline" 2>/dev/null | grep -Fxq "$AGSBX/$1/$1-agent"
+}
+_agent_stop(){
+  for _agent_kind in nezha komari; do
+    if _agent_running "$_agent_kind"; then kill "$_agent_pid" 2>/dev/null; fi
+  done
+  # 兼容旧版没有 PID 文件的哪吒探针；按绝对可执行文件路径限定范围。
+  for _agent_proc in /proc/[0-9]*; do
+    _agent_exe=$(readlink "$_agent_proc/exe" 2>/dev/null) || continue
+    case "$_agent_exe" in "$AGSBX/nezha/nezha-agent"|"$AGSBX/komari/komari-agent") kill "${_agent_proc##*/}" 2>/dev/null;; esac
+  done
+}
+_agent_download(){ # url output；HTTP/网络失败不得继续 chmod 或启动
+  case "$1" in https://github.com/*/releases/*) ;; *) echo "❌ 探针下载地址无效"; return 1;; esac
+  if command -v curl >/dev/null 2>&1 && curl -fL --connect-timeout 10 --max-time 120 --retry 2 -o "$2" "$1"; then
+    [ -s "$2" ] && return 0
   fi
+  if command -v wget >/dev/null 2>&1 && wget --timeout=30 --tries=2 -O "$2" "$1"; then
+    [ -s "$2" ] && return 0
+  fi
+  rm -f "$2"
+  echo "❌ 探针下载失败：$1"
+  return 1
+}
+_agent_start(){
+  _agent_dir="$AGSBX/$1"
+  [ -f "$_agent_dir/start.sh" ] || return 0
+  nohup sh "$_agent_dir/start.sh" > "$_agent_dir/agent.log" 2>&1 &
+  printf '%s\n' "$!" > "$_agent_dir/agent.pid"
+  sleep 3
+  if _agent_running "$1"; then
+    echo "✅ $1 探针进程已启动；面板在线状态请在服务端确认。"
+  else
+    echo "❌ $1 探针启动失败，请查看日志：$_agent_dir/agent.log"
+    return 1
+  fi
+}
+insnezha(){
+  [ -n "$nz_sec" ] && { [ -n "$nz_host" ] || [ -n "$nz_endpoint" ]; } || return 0
+  case "$nz_type" in nezha|komari) ;; *) echo "❌ nz_type 仅支持 nezha / komari"; return 1;; esac
+  case "$(uname -m)" in
+    x86_64|amd64) nz_arch=amd64;; aarch64|arm64) nz_arch=arm64;;
+    armv5*|armv6*|armv7*) nz_arch=arm;; s390x) nz_arch=s390x;;
+    *) echo "未知架构，跳过安装探针"; return 1;;
+  esac
+  _agent_dir="$AGSBX/$nz_type"
+  _agent_bin="$_agent_dir/$nz_type-agent"
+  mkdir -p "$_agent_dir" || return 1
+  echo "=========启用 $nz_type 探针========="
+  if [ "$nz_type" = komari ]; then
+    case "$nz_repo" in
+      *[!a-zA-Z0-9_./-]*|*/../*|../*|*/..|/*|*/*/*|''|*/) echo "❌ nz_repo 格式应为 owner/repo"; return 1;;
+      */*) ;; *) echo "❌ nz_repo 格式应为 owner/repo"; return 1;;
+    esac
+    nz_url="https://github.com/$nz_repo/releases/latest/download/komari-agent-linux-$nz_arch"
+    if [ -z "$nz_endpoint" ]; then
+      _agent_scheme=http
+      case "$nz_tls:$nz_port" in --tls:*|*:443|*:8443|*:2096|*:2087|*:2083|*:2053) _agent_scheme=https;; esac
+      nz_endpoint="$_agent_scheme://$nz_host:$nz_port"
+    fi
+    case "$nz_endpoint" in http://?*|https://?*) ;; *) echo "❌ Komari 服务器地址须为完整 HTTP(S) URL"; return 1;; esac
+  else
+    nz_url="https://github.com/nezhahq/agent/releases/latest/download/nezha-agent_linux_$nz_arch.zip"
+    command -v unzip >/dev/null 2>&1 || { echo "❌ 安装哪吒探针需要 unzip"; return 1; }
+  fi
+  # 换用 fork 时重新下载，避免继续运行上次来源的内核。
+  if [ ! -s "$_agent_bin" ] || [ "$(cat "$_agent_dir/source" 2>/dev/null)" != "$nz_url" ]; then
+    echo "正在下载 $nz_type 探针内核 ($nz_arch)..."
+    _agent_download "$nz_url" "$_agent_dir/download.tmp" || return 1
+    if [ "$nz_type" = nezha ]; then
+      mkdir -p "$_agent_dir/unpack" || return 1
+      unzip -q -o "$_agent_dir/download.tmp" -d "$_agent_dir/unpack" && [ -s "$_agent_dir/unpack/nezha-agent" ] || { echo "❌ 哪吒探针解压失败"; return 1; }
+      mv "$_agent_dir/unpack/nezha-agent" "$_agent_dir/download.tmp" || return 1
+      rmdir "$_agent_dir/unpack" 2>/dev/null
+    fi
+    chmod +x "$_agent_dir/download.tmp" && mv "$_agent_dir/download.tmp" "$_agent_bin" || return 1
+    printf '%s\n' "$nz_url" > "$_agent_dir/source"
+  fi
+  _agent_stop
+  # 启动文件持久化完整参数，cron 与 res 复用；凭据不交给 shell 二次展开。
+  (umask 077
+    printf '#!/bin/sh\ncd '; _agent_quote "$_agent_dir"; printf ' || exit 1\n'
+    printf 'printf "%%s\\n" "$$" > agent.pid\n'
+    if [ "$nz_type" = komari ]; then
+      printf 'exec '; _agent_quote "$_agent_bin"; printf ' -e '; _agent_quote "$nz_endpoint"
+      printf ' -t '; _agent_quote "$nz_sec"; printf ' --disable-auto-update'
+    else
+      printf 'export NZ_SERVER='; _agent_quote "$nz_host:$nz_port"
+      printf '\nexport NZ_CLIENT_SECRET='; _agent_quote "$nz_sec"
+      _agent_tls=false; [ "$nz_tls" = --tls ] && _agent_tls=true
+      printf '\nexport NZ_TLS=%s\nexport NZ_DISABLE_AUTO_UPDATE=true\n' "$_agent_tls"
+      [ "$(id -u)" -eq 0 ] || printf 'export NZ_DISABLE_COMMAND_EXECUTE=true\nexport NZ_DISABLE_FORCE_UPDATE=true\n'
+      printf 'exec '; _agent_quote "$_agent_bin"; printf ' -c '; _agent_quote "$_agent_dir/config.yml"
+    fi
+    printf '\n'
+  ) > "$_agent_dir/start.sh" || return 1
+  chmod 700 "$_agent_dir/start.sh"
+  _agent_start "$nz_type" || return 1
+  _agent_cron=$(mktemp) || return 1
+  crontab -l > "$_agent_cron" 2>/dev/null
+  sed -i '/agsbx\/nezha\/start.sh/d; /agsbx\/komari\/start.sh/d' "$_agent_cron"
+  printf '@reboot sleep 15 && nohup sh %s > %s 2>&1 &\n' "$(_agent_quote "$_agent_dir/start.sh")" "$(_agent_quote "$_agent_dir/agent.log")" >> "$_agent_cron"
+  if ! crontab "$_agent_cron" 2>/dev/null; then echo "⚠️ crontab 不可用，探针未设置开机自启。"; fi
+  rm -f "$_agent_cron"
 }
 
 ins(){
@@ -1966,11 +2046,9 @@ echo "Argo (版本V$("$AGSBX/cloudflared" version 2>/dev/null | awk '{print $3}'
 else
 echo "Argo：未启用"
 fi
-if pgrep -f 'nezha-agent' >/dev/null 2>&1; then
-  echo "哪吒探针：运行中"
-else
-  echo "哪吒探针：未启用"
-fi
+for _agent_kind in nezha komari; do
+  if _agent_running "$_agent_kind"; then echo "$_agent_kind 探针：运行中"; else echo "$_agent_kind 探针：未启用"; fi
+done
 }
 
 # =============================================================================
@@ -2426,12 +2504,13 @@ sed -i '/agsbx\/sing-box/d' /tmp/crontab.tmp 2>/dev/null
 sed -i '/agsbx\/xray/d' /tmp/crontab.tmp 2>/dev/null
 sed -i '/agsbx\/cloudflared/d' /tmp/crontab.tmp 2>/dev/null
 sed -i '/nezha-agent/d' /tmp/crontab.tmp 2>/dev/null
+sed -i '/agsbx\/nezha\/start.sh/d; /agsbx\/komari\/start.sh/d' /tmp/crontab.tmp 2>/dev/null
 sed -i '/agsbx\/watchdog/d' /tmp/crontab.tmp 2>/dev/null
 crontab /tmp/crontab.tmp >/dev/null 2>&1
 rm /tmp/crontab.tmp 2>/dev/null
 rm -rf "$HOME/bin/agsbx" 2>/dev/null
-kill -15 $(pgrep -f 'nezha-agent' 2>/dev/null) >/dev/null 2>&1
-rm -rf "$AGSBX/nezha" 2>/dev/null
+_agent_stop
+rm -rf "$AGSBX/nezha" "$AGSBX/komari" 2>/dev/null
 if pidof systemd >/dev/null 2>&1; then
 for svc in xr sb argo; do
 systemctl stop "$svc" >/dev/null 2>&1
@@ -2665,6 +2744,8 @@ fi
 ;;
 esac
 done
+_agent_stop
+for _agent_kind in nezha komari; do _agent_start "$_agent_kind"; done
 sleep 5 && echo "重启完成" && sleep 3 && cip
 exit
 fi
