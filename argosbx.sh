@@ -2642,9 +2642,10 @@ response=$(curl -s -X POST "https://api.github.com/gists" \
 -d "{\"description\": \"Argosbx Nodes\",\"public\": false,\"files\": {$gist_files}}")
 fi
 
-if echo "$response" | grep -q '"id":'; then
-  gist_id=$(echo "$response" | grep -o '"id": "[^"]*"' | head -1 | cut -d'"' -f4)
-  gh_user=$(echo "$response" | grep -o '"login": "[^"]*"' | head -1 | cut -d'"' -f4)
+# 消费完整响应，避免 grep -q/head 提前关闭管道导致大响应触发 Broken pipe。
+if printf '%s\n' "$response" | grep '"id":' >/dev/null; then
+  gist_id=$(printf '%s\n' "$response" | grep -o '"id": "[^"]*"' | sed -n '1p' | cut -d'"' -f4)
+  gh_user=$(printf '%s\n' "$response" | grep -o '"login": "[^"]*"' | sed -n '1p' | cut -d'"' -f4)
   [ -z "$gh_gist_id" ] && echo "$gist_id" > "$AGSBX/gh_gist_id"
   # 按照用户指定的格式手动构造订阅链接
   raw_url="https://gist.github.com/${gh_user}/${gist_id}/raw/${gist_filename}"
@@ -2702,24 +2703,82 @@ _qrencode_run(){
 	fi
 }
 
-# Debian/Ubuntu 无 root 时只下载并解包发行版软件包，不运行安装脚本。
+# APT 失败重试使用项目临时索引，不修改系统软件源、索引或安装状态。
+_qrencode_apt(){ # $1=apt-get/apt-cache，其余参数原样传递
+	_qr_apt_command=$1
+	shift
+	if [ "${_qr_apt_private:-0}" = 1 ]; then
+		set -- -c "$_qr_stage/apt.conf" \
+			-o Dir::State::lists="$_qr_stage/lists" \
+			-o Dir::State::status=/dev/null \
+			-o Dir::Cache="$_qr_stage/cache" \
+			-o Acquire::Languages=none "$@"
+		if [ -f "$_qr_stage/sources.list" ]; then
+			set -- -o Dir::Etc::sourcelist="$_qr_stage/sources.list" \
+				-o Dir::Etc::sourceparts=- "$@"
+		fi
+	fi
+	"$_qr_apt_command" -o Acquire::Retries=1 -o Acquire::http::Timeout=15 -o Acquire::https::Timeout=15 "$@"
+}
+
+_qrencode_apt_refresh(){
+	mkdir -p "$_qr_stage/lists/partial" "$_qr_stage/cache/archives/partial" || return 1
+	# 清除系统 update hooks，普通用户和 root 均只操作临时索引。
+	cat > "$_qr_stage/apt.conf" <<'QR_APT_CONF'
+#clear APT::Update::Pre-Invoke;
+#clear APT::Update::Post-Invoke;
+#clear APT::Update::Post-Invoke-Success;
+#clear Acquire::IndexTargets;
+Acquire::IndexTargets::deb::Packages {
+    MetaKey "$(COMPONENT)/binary-$(ARCHITECTURE)/Packages";
+    flatMetaKey "Packages";
+    ShortDescription "Packages";
+    Description "$(RELEASE)/$(COMPONENT) $(ARCHITECTURE) Packages";
+    flatDescription "$(RELEASE) Packages";
+    Optional "false";
+};
+QR_APT_CONF
+	_qr_codename=$(. /etc/os-release; [ "$ID" = ubuntu ] && printf '%s' "${UBUNTU_CODENAME:-$VERSION_CODENAME}")
+	if [ -n "$_qr_codename" ]; then
+		case "$_qr_codename" in *[!a-z0-9-]*) return 1 ;; esac
+		case "$(dpkg --print-architecture)" in
+			amd64|i386) _qr_archive=https://archive.ubuntu.com/ubuntu ;;
+			*) _qr_archive=https://ports.ubuntu.com/ubuntu-ports ;;
+		esac
+		# qrencode 位于 universe，精简 VPS 的默认源可能只启用了 main。
+		printf 'deb [signed-by=/usr/share/keyrings/ubuntu-archive-keyring.gpg] %s %s main universe\n' \
+			"$_qr_archive" "$_qr_codename" > "$_qr_stage/sources.list" || return 1
+	fi
+	_qr_apt_private=1
+	_qrencode_apt apt-get update >> "$_qr_install_log" 2>&1
+}
+
+# Debian/Ubuntu 只下载并解包发行版软件包，无需 root，不运行安装脚本。
 _qrencode_local_install(){
+	_qr_install_log="$AGSBX/qrencode-install.log"
+	(umask 077; : > "$_qr_install_log") || return 1
+	chmod 600 "$_qr_install_log" || return 1
 	_qr_stage=$(mktemp -d "$AGSBX/.qrencode-XXXXXX") || return 1
 	(
 		cd "$_qr_stage" || exit 1
-		apt-get -o Acquire::Retries=0 -o Acquire::http::Timeout=15 -o Acquire::https::Timeout=15 download qrencode libqrencode4 >/dev/null 2>&1 || exit 1
+		_qr_apt_private=0
+		if ! _qrencode_apt apt-get download qrencode libqrencode4 >> "$_qr_install_log" 2>&1; then
+			echo "软件包下载失败，正在刷新独立 APT 索引后重试……"
+			_qrencode_apt_refresh || exit 1
+			_qrencode_apt apt-get download qrencode libqrencode4 >> "$_qr_install_log" 2>&1 || exit 1
+		fi
 		for _qr_deb in ./*.deb; do
-			dpkg-deb -x "$_qr_deb" "$AGSBX/qrencode-runtime" || exit 1
+			dpkg-deb -x "$_qr_deb" "$AGSBX/qrencode-runtime" >> "$_qr_install_log" 2>&1 || exit 1
 		done
-		_qrencode_run -V >/dev/null 2>&1 && exit 0
+		_qrencode_run -V >> "$_qr_install_log" 2>&1 && exit 0
 		# 极简容器可能缺少 libpng；只在需要时下载它。
-		_qr_png=$(apt-cache depends qrencode 2>/dev/null | awk '/Depends: libpng/ {print $2; exit}')
+		_qr_png=$(_qrencode_apt apt-cache depends qrencode 2>> "$_qr_install_log" | awk '/Depends: libpng/ && !found {print $2; found=1}')
 		[ -n "$_qr_png" ] || exit 1
-		apt-get -o Acquire::Retries=0 -o Acquire::http::Timeout=15 -o Acquire::https::Timeout=15 download "$_qr_png" >/dev/null 2>&1 || exit 1
+		_qrencode_apt apt-get download "$_qr_png" >> "$_qr_install_log" 2>&1 || exit 1
 		for _qr_deb in ./libpng*.deb; do
-			dpkg-deb -x "$_qr_deb" "$AGSBX/qrencode-runtime" || exit 1
+			dpkg-deb -x "$_qr_deb" "$AGSBX/qrencode-runtime" >> "$_qr_install_log" 2>&1 || exit 1
 		done
-		_qrencode_run -V >/dev/null 2>&1
+		_qrencode_run -V >> "$_qr_install_log" 2>&1
 	)
 	_qr_install_status=$?
 	rm -rf "$_qr_stage"
@@ -2753,6 +2812,7 @@ _qrencode_ensure(){
 		[ -n "$_qrencode_bin" ] && _qrencode_run -V >/dev/null 2>&1 && return 0
 	fi
 	echo "qrencode 安装不可用，终端二维码已跳过；可使用网页二维码分享。"
+	[ ! -s "$AGSBX/qrencode-install.log" ] || echo "安装失败详情：$AGSBX/qrencode-install.log"
 	return 1
 }
 

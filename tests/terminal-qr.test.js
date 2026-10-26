@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const {execFileSync} = require('node:child_process');
-const {mkdtempSync, writeFileSync, readFileSync, rmSync, readdirSync} = require('node:fs');
+const {execFileSync, spawnSync} = require('node:child_process');
+const {mkdtempSync, writeFileSync, readFileSync, rmSync, readdirSync, statSync} = require('node:fs');
 const {tmpdir} = require('node:os');
 const path = require('node:path');
 const script = readFileSync(path.join(__dirname, '../argosbx.sh'), 'utf8');
@@ -13,7 +13,7 @@ const fn = name => {
   return script.slice(start, script.indexOf('\n}\n', start) + 3);
 };
 const outputFunctions = ['_qr_terminal_print', '_qr_terminal_nodes', 'qr_terminal_output'].map(fn).join('\n');
-const encoderFunctions = ['_qrencode_run', '_qrencode_local_install', '_qrencode_ensure'].map(fn).join('\n');
+const encoderFunctions = ['_qrencode_run', '_qrencode_apt', '_qrencode_apt_refresh', '_qrencode_local_install', '_qrencode_ensure'].map(fn).join('\n');
 const temporary = action => {
   const dir = mkdtempSync(path.join(tmpdir(), 'argosbx-terminal-'));
   try { return action(dir); } finally { rmSync(dir, {recursive: true, force: true}); }
@@ -112,4 +112,124 @@ test('nonroot Debian/Ubuntu installation extracts packages locally and reuses it
   assert.match(output, /LOCAL_QR/);
   assert.equal(readFileSync(path.join(dir, 'downloads'), 'utf8'), 'download\n');
   assert.ok(readdirSync(dir).every(name => !name.startsWith('.qrencode-')));
+}));
+
+test('missing Ubuntu indexes retries with private signed main/universe sources and no update hooks', () => temporary(dir => {
+  writeFileSync(path.join(dir, 'os-release'), 'ID=ubuntu\nVERSION_CODENAME=jammy\n');
+  const code = encoderFunctions.replace('. /etc/os-release', '. "$AGSBX/os-release"') + `
+    dpkg(){ printf 'amd64\\n'; }
+    apt-get(){
+      printf '%s\\n' "$*" >> "$AGSBX/apt-calls"
+      case " $* " in
+        *' update ')
+          cp "$_qr_stage/sources.list" "$AGSBX/retry-sources"
+          cp "$_qr_stage/apt.conf" "$AGSBX/retry-config"
+          [ -d "$_qr_stage/lists/partial" ] && [ -d "$_qr_stage/cache/archives/partial" ]
+          ;;
+        *' download '*)
+          if [ "$_qr_apt_private" = 0 ]; then
+            echo 'E: Unable to locate package qrencode' >&2
+            return 100
+          fi
+          touch ./qrencode_test.deb ./libqrencode4_test.deb
+          ;;
+        *) return 1 ;;
+      esac
+    }
+    dpkg-deb(){
+      mkdir -p "$3/usr/bin"
+      printf '#!/bin/sh\\nexit 0\\n' > "$3/usr/bin/qrencode"
+      chmod +x "$3/usr/bin/qrencode"
+    }
+    qrencode(){ return 1; }
+    _qrencode_ensure || exit 1
+    _qrencode_ensure || exit 1
+  `;
+  const output = run(dir, code, {}, 'bash');
+  assert.match(output, /刷新独立 APT 索引/);
+  assert.doesNotMatch(output, /安装不可用/);
+  assert.equal(readFileSync(path.join(dir, 'retry-sources'), 'utf8'), 'deb [signed-by=/usr/share/keyrings/ubuntu-archive-keyring.gpg] https://archive.ubuntu.com/ubuntu jammy main universe\n');
+  assert.match(readFileSync(path.join(dir, 'retry-config'), 'utf8'), /#clear APT::Update::Post-Invoke-Success;/);
+  assert.match(readFileSync(path.join(dir, 'retry-config'), 'utf8'), /#clear APT::Update::Pre-Invoke;/);
+  assert.match(readFileSync(path.join(dir, 'retry-config'), 'utf8'), /#clear Acquire::IndexTargets;/);
+  const calls = readFileSync(path.join(dir, 'apt-calls'), 'utf8').trim().split('\n');
+  assert.equal(calls.length, 3);
+  assert.ok(calls.slice(1).every(call => call.includes(`Dir::State::lists=${dir}/.qrencode-`) && call.includes('Dir::State::status=/dev/null') && call.includes('Dir::Etc::sourceparts=-')));
+  assert.match(readFileSync(path.join(dir, 'qrencode-install.log'), 'utf8'), /Unable to locate package/);
+  assert.equal(statSync(path.join(dir, 'qrencode-install.log')).mode & 0o777, 0o600);
+  assert.ok(readdirSync(dir).every(name => !name.startsWith('.qrencode-')));
+}));
+
+test('APT download and refresh failures retain diagnostics and leave node output usable', () => temporary(dir => {
+  writeFileSync(path.join(dir, 'jh.txt'), fixture);
+  const output = run(dir, encoderFunctions + outputFunctions + `
+    qrencode(){ return 1; }
+    apt-get(){ echo 'E: temporary download failure' >&2; return 100; }
+    _qrencode_apt_refresh(){ echo 'E: mirror unreachable' >> "$_qr_install_log"; return 1; }
+    qr_terminal_output
+    printf 'NODES:'; cat "$AGSBX/jh.txt"
+  `, {}, 'bash');
+  assert.match(output, /终端二维码已跳过/);
+  assert.ok(output.includes(`安装失败详情：${dir}/qrencode-install.log`));
+  assert.ok(output.includes('NODES:' + fixture));
+  assert.match(readFileSync(path.join(dir, 'qrencode-install.log'), 'utf8'), /temporary download failure[\s\S]*mirror unreachable/);
+  assert.ok(readdirSync(dir).every(name => !name.startsWith('.qrencode-')));
+}));
+
+test('minimal Ubuntu retries libpng from the same private APT metadata', () => temporary(dir => {
+  const output = run(dir, encoderFunctions + `
+    qrencode(){ return 1; }
+    _qrencode_apt_refresh(){ _qr_apt_private=1; }
+    apt-cache(){
+      [ "$_qr_apt_private" = 1 ] || return 1
+      printf 'qrencode\\n  Depends: libpng16-16\\n'
+    }
+    apt-get(){
+      [ "$_qr_apt_private" = 1 ] || return 100
+      case " $* " in
+        *' download libpng16-16 '*) touch ./libpng16-16_test.deb ;;
+        *' download qrencode libqrencode4 '*) touch ./qrencode_test.deb ./libqrencode4_test.deb ;;
+        *) return 1 ;;
+      esac
+    }
+    dpkg-deb(){
+      mkdir -p "$3/usr/bin"
+      case "$2" in
+        *libpng*) touch "$3/png-ready" ;;
+        *)
+          printf '#!/bin/sh\\n[ -f "$AGSBX/qrencode-runtime/png-ready" ]\\n' > "$3/usr/bin/qrencode"
+          chmod +x "$3/usr/bin/qrencode"
+          ;;
+      esac
+    }
+    _qrencode_ensure || exit 1
+    printf 'READY\\n'
+  `, {}, 'bash');
+  assert.match(output, /READY/);
+  assert.ok(readdirSync(dir).every(name => !name.startsWith('.qrencode-')));
+}));
+
+test('large Gist responses produce subscription URLs without broken pipes under bash pipefail', () => temporary(dir => {
+  writeFileSync(path.join(dir, 'jh.txt'), fixture);
+  writeFileSync(path.join(dir, 'gh_token'), 'test-token');
+  writeFileSync(path.join(dir, 'name'), 'test');
+  const response = '{\n  "id": "gist-first",\n' + '  "content": "' + 'x'.repeat(1024 * 1024) + '",\n' +
+    '  "login": "example",\n' + '  "id": "other-id",\n  "login": "other-user",\n'.repeat(4096) + '}';
+  writeFileSync(path.join(dir, 'response.json'), response);
+  const result = spawnSync('bash', ['-c', fn('push_gist') + `
+    curl(){
+      case "$*" in
+        *ip-api.com*) printf '{"countryCode":"XX"}' ;;
+        *) cat "$AGSBX/response.json" ;;
+      esac
+    }
+    set -o pipefail
+    push_gist
+    printf 'SUB:%s\\n' "$QR_SUBSCRIPTION_URL"
+  `], {env: {...process.env, AGSBX: dir, hostname: 'test-host', IOS_SHARE: '0', gh_gist_id: ''}, encoding: 'utf8'});
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.stderr, '');
+  assert.match(result.stdout, /Gist 推送成功/);
+  assert.ok(result.stdout.includes('SUB:https://gist.github.com/example/gist-first/raw/test_XX_xr_test-host.txt'));
+  assert.equal(readFileSync(path.join(dir, 'gh_gist_id'), 'utf8'), 'gist-first\n');
 }));

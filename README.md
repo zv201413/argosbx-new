@@ -111,7 +111,7 @@ QR_TERM=0 agsbx list  # 关闭终端二维码并记住选择，也不安装 qren
 QR_TERM=1 agsbx list  # 恢复终端二维码（默认）
 ```
 
-Ubuntu amd64 的 `qrencode` 程序和 `libqrencode4` 软件包安装体积合计约 **136 KiB**（63 + 73 KiB；缺少 PNG 等依赖时会增加），只在生成时运行，无常驻进程。Debian/Ubuntu 使用发行版软件包，解包到 `$AGSBX/qrencode-runtime`，无需 root，卸载项目时随目录清理；Alpine/Fedora/RHEL/Arch 使用系统包管理器，需要 root。已有可用的 `qrencode` 时直接复用。下载失败、没有适用安装权限或节点过长时跳过相应二维码，继续提供节点链接和已开启的网页分享。终端太窄导致二维码换行时，请拉宽窗口或使用网页二维码。
+Ubuntu amd64 的 `qrencode` 程序和 `libqrencode4` 软件包安装体积合计约 **136 KiB**（63 + 73 KiB；缺少 PNG 等依赖时会增加），只在生成时运行，无常驻进程。Debian/Ubuntu 使用发行版软件包，解包到 `$AGSBX/qrencode-runtime`，无需 root，卸载项目时随目录清理。下载失败时自动刷新临时 APT 索引并重试；Ubuntu 使用对应版本的官方签名 `main + universe` 源，解决精简 VPS 缺少索引或未启用 `universe` 的情况，不修改系统软件源或安装状态。首次重试需要额外下载软件源索引，临时索引在结束后清理；具体错误保存在 `$AGSBX/qrencode-install.log`（仅当前用户可读写）。Alpine/Fedora/RHEL/Arch 使用系统包管理器，需要 root。已有可用的 `qrencode` 时直接复用。下载失败、没有适用安装权限或节点过长时跳过相应二维码，继续提供节点链接和已开启的网页分享。终端太窄导致二维码换行时，请拉宽窗口或使用网页二维码。
 
 **默认同时生成原版和 iOS 兼容版二维码**，在分享页并排展示，用户按需扫码或分别下载 PNG、SVG、节点文本。可在“订阅分享”的“二维码分享”下拉框中选择对应方式的“原版”选项，关闭 iOS 兼容版；原版始终保留原有证书参数。
 
