@@ -699,7 +699,7 @@
         <summary>高级系统设置</summary>
         <div class="card-body">
           <div class="row">
-            <label for="qrShareMode">二维码分享 <span class="pill">QR_SHARE</span></label>
+            <label for="qrShareMode">网页二维码分享 <span class="pill">QR_SHARE</span></label>
             <select id="qrShareMode">
               <option value="both">默认 开启（原版 + iOS 兼容版）</option>
               <option value="original">开启（仅原版）</option>
@@ -707,6 +707,13 @@
             </select>
             <input id="QR_SHARE" type="hidden" value="1"/>
             <input id="IOS_SHARE" type="hidden" value="1"/>
+          </div>
+          <div class="row">
+            <label for="QR_TERM">终端二维码 <span class="pill">QR_TERM</span></label>
+            <select id="QR_TERM">
+              <option value="1">默认 开启（自动安装 qrencode）</option>
+              <option value="0">关闭</option>
+            </select>
           </div>
           <div class="row"><label>自定义安装目录 <span class="pill">AGSBX_DIR</span></label><input id="AGSBX_DIR" type="text" placeholder="home目录不可写时填一个可写目录(如 /www);留空则自动探测。脚本会在其下创建 agsbx 子目录"/></div>
           <div class="row">
@@ -955,7 +962,7 @@
     }
   };
 const protoKeys = ['sopt','vmpt','vlpt','xhpt','vxpt','vwpt','arpt','anpt','hypt','tupt','sspt'];
-const optIds = ['warp','ippz','ippref','wippref','uuid','reym','cdnym', 'name', 'oap', 'argoip', 'nodeaddr', 'hyjpt', 'gh_token', 'gh_gist_id', 'QR_SHARE', 'IOS_SHARE', 'nz_server', 'nz_sec', 'KNOCK', 'KNOCK_PORT', 'IDLE_TIMEOUT', 'STEALTH_NAME', 'AGSBX_DIR'];
+const optIds = ['warp','ippz','ippref','wippref','uuid','reym','cdnym', 'name', 'oap', 'argoip', 'nodeaddr', 'hyjpt', 'gh_token', 'gh_gist_id', 'QR_SHARE', 'IOS_SHARE', 'QR_TERM', 'nz_server', 'nz_sec', 'KNOCK', 'KNOCK_PORT', 'IDLE_TIMEOUT', 'STEALTH_NAME', 'AGSBX_DIR'];
 
   const argoSelect = document.getElementById('argoSelect');
   const agn = document.getElementById('agn');
@@ -1326,7 +1333,7 @@ document.getElementById('uuid').value = '';
     if (keys.includes('AGSBX_DIR')) ordered.push('AGSBX_DIR');  // 安装目录置于命令最前缀,直观可见
     protoKeys.forEach(k => { if (keys.includes(k)) ordered.push(k); });
     ['vlpt_enc', 'xhpt_enc', 'vxpt_enc', 'vwpt_enc'].forEach(k => { if (keys.includes(k)) ordered.push(k); });
-    ['warp', 'uuid', 'reym', 'cdnym', 'name', 'hyjpt', 'ippz', 'ippref', 'wippref', 'argoip', 'nodeaddr', 'gh_token', 'gh_gist_id', 'QR_SHARE', 'IOS_SHARE', 'KNOCK', 'KNOCK_PORT', 'IDLE_TIMEOUT', 'STEALTH_NAME'].forEach(k => { if (keys.includes(k)) ordered.push(k); });
+    ['warp', 'uuid', 'reym', 'cdnym', 'name', 'hyjpt', 'ippz', 'ippref', 'wippref', 'argoip', 'nodeaddr', 'gh_token', 'gh_gist_id', 'QR_SHARE', 'IOS_SHARE', 'QR_TERM', 'KNOCK', 'KNOCK_PORT', 'IDLE_TIMEOUT', 'STEALTH_NAME'].forEach(k => { if (keys.includes(k)) ordered.push(k); });
     if (keys.includes('argo')) ordered.push('argo');
     if (keys.includes('agn')) ordered.push('agn');
     if (keys.includes('agk')) ordered.push('agk');
@@ -1440,6 +1447,7 @@ document.getElementById('uuid').value = '';
       const shouldPreserveIppz = (command === 'list' && (ippzValue === '4' || ippzValue === '6'));
       const qrShareValue = document.getElementById('QR_SHARE').value;
       const iosShareValue = document.getElementById('IOS_SHARE').value;
+      const qrTermValue = document.getElementById('QR_TERM').value;
 
       if (command === 'rep') {
         render();
@@ -1449,7 +1457,8 @@ document.getElementById('uuid').value = '';
         if (command === 'list') {
           document.getElementById('QR_SHARE').value = qrShareValue;
           document.getElementById('IOS_SHARE').value = iosShareValue;
-          const m = { QR_SHARE: qrShareValue, IOS_SHARE: iosShareValue };
+          document.getElementById('QR_TERM').value = qrTermValue;
+          const m = { QR_SHARE: qrShareValue, IOS_SHARE: iosShareValue, QR_TERM: qrTermValue };
           if (shouldPreserveIppz) {
             ippzSelect.value = ippzValue;
             m['ippz'] = ippzValue;

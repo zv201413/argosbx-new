@@ -78,6 +78,9 @@ export QR_SHARE=${QR_SHARE:-'1'}              # 默认输出二维码分享页�
 _ios_share_explicit=0
 [ "${IOS_SHARE+x}" = x ] && _ios_share_explicit=1
 export IOS_SHARE=${IOS_SHARE:-'1'}            # 默认同时输出原版和 iOS 兼容版二维码；=0 仅原版
+_qr_term_explicit=0
+[ "${QR_TERM+x}" = x ] && _qr_term_explicit=1
+export QR_TERM=${QR_TERM:-'1'}                # 默认安装 qrencode 并在终端输出二维码；=0 关闭
 QR_SUBSCRIPTION_URL=''
 QR_IOS_SUBSCRIPTION_URL=''
 export nodeaddr=${nodeaddr:-''}
@@ -156,6 +159,20 @@ _agsbx_ios_sync(){
 	export IOS_SHARE
 }
 _agsbx_ios_sync
+
+# 终端二维码独立于网页分享开关，list 复用已保存的选择。
+_agsbx_qr_term_sync(){
+	if [ "$_qr_term_explicit" = 0 ] && [ -f "$AGSBX/qr_term" ]; then
+		IFS= read -r QR_TERM < "$AGSBX/qr_term" || QR_TERM=1
+	fi
+	case "$QR_TERM" in
+		0|1) ;;
+		*) echo "⚠️ QR_TERM 仅支持 0/1，使用默认值 1" >&2; QR_TERM=1 ;;
+	esac
+	printf '%s\n' "$QR_TERM" > "$AGSBX/qr_term"
+	export QR_TERM
+}
+_agsbx_qr_term_sync
 
 # 两份订阅按相同顺序写入；其他协议在兼容版中沿用原链接。
 _share_append(){ # original optional_ios
@@ -2480,6 +2497,7 @@ echo "重启脚本命令：agsbx res"
 echo "卸载脚本命令：agsbx del"
 echo "双栈VPS显示IPv4/IPv6节点配置命令：ippz=4 或 ippz=6 agsbx list"
 echo "二维码分享开关：QR_SHARE=0 agsbx list 关闭；QR_SHARE=1 agsbx list 恢复"
+echo "终端二维码（默认开启）：QR_TERM=0 agsbx list 关闭；QR_TERM=1 agsbx list 恢复"
 echo "iOS 兼容版二维码（默认同时生成）：IOS_SHARE=0 agsbx list 关闭；IOS_SHARE=1 agsbx list 恢复"
 echo "---------------------------------------------------------"
 echo
@@ -2675,6 +2693,106 @@ fi
 echo "分享链接已保存：$AGSBX/qr-share-url.txt"
 }
 
+# 只给本项目的本地 qrencode 设置库路径，不影响代理内核或系统环境。
+_qrencode_run(){
+	if [ -n "${_qrencode_libpath:-}" ]; then
+		LD_LIBRARY_PATH="$_qrencode_libpath${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" "$_qrencode_bin" "$@"
+	else
+		"$_qrencode_bin" "$@"
+	fi
+}
+
+# Debian/Ubuntu 无 root 时只下载并解包发行版软件包，不运行安装脚本。
+_qrencode_local_install(){
+	_qr_stage=$(mktemp -d "$AGSBX/.qrencode-XXXXXX") || return 1
+	(
+		cd "$_qr_stage" || exit 1
+		apt-get -o Acquire::Retries=0 -o Acquire::http::Timeout=15 -o Acquire::https::Timeout=15 download qrencode libqrencode4 >/dev/null 2>&1 || exit 1
+		for _qr_deb in ./*.deb; do
+			dpkg-deb -x "$_qr_deb" "$AGSBX/qrencode-runtime" || exit 1
+		done
+		_qrencode_run -V >/dev/null 2>&1 && exit 0
+		# 极简容器可能缺少 libpng；只在需要时下载它。
+		_qr_png=$(apt-cache depends qrencode 2>/dev/null | awk '/Depends: libpng/ {print $2; exit}')
+		[ -n "$_qr_png" ] || exit 1
+		apt-get -o Acquire::Retries=0 -o Acquire::http::Timeout=15 -o Acquire::https::Timeout=15 download "$_qr_png" >/dev/null 2>&1 || exit 1
+		for _qr_deb in ./libpng*.deb; do
+			dpkg-deb -x "$_qr_deb" "$AGSBX/qrencode-runtime" || exit 1
+		done
+		_qrencode_run -V >/dev/null 2>&1
+	)
+	_qr_install_status=$?
+	rm -rf "$_qr_stage"
+	return "$_qr_install_status"
+}
+
+_qrencode_ensure(){
+	_qrencode_libpath=''
+	_qrencode_bin=$(command -v qrencode 2>/dev/null)
+	if [ -n "$_qrencode_bin" ] && _qrencode_run -V >/dev/null 2>&1; then
+		return 0
+	fi
+	_qrencode_bin="$AGSBX/qrencode-runtime/usr/bin/qrencode"
+	_qrencode_libpath="$AGSBX/qrencode-runtime/usr/lib/x86_64-linux-gnu:$AGSBX/qrencode-runtime/usr/lib/aarch64-linux-gnu:$AGSBX/qrencode-runtime/usr/lib"
+	_qrencode_run -V >/dev/null 2>&1 && return 0
+	echo "正在安装轻量二维码工具 qrencode……"
+	if command -v apt-get >/dev/null 2>&1 && command -v dpkg-deb >/dev/null 2>&1; then
+		_qrencode_local_install && return 0
+	elif [ "$(id -u)" = 0 ]; then
+		if command -v apk >/dev/null 2>&1; then
+			apk add --no-cache libqrencode-tools >/dev/null 2>&1
+		elif command -v dnf >/dev/null 2>&1; then
+			dnf install -y qrencode >/dev/null 2>&1
+		elif command -v yum >/dev/null 2>&1; then
+			yum install -y qrencode >/dev/null 2>&1
+		elif command -v pacman >/dev/null 2>&1; then
+			pacman -S --needed --noconfirm qrencode >/dev/null 2>&1
+		fi
+		_qrencode_libpath=''
+		_qrencode_bin=$(command -v qrencode 2>/dev/null)
+		[ -n "$_qrencode_bin" ] && _qrencode_run -V >/dev/null 2>&1 && return 0
+	fi
+	echo "qrencode 安装不可用，终端二维码已跳过；可使用网页二维码分享。"
+	return 1
+}
+
+_qr_terminal_print(){ # $1=标题 $2=节点或订阅 URI
+	printf '\n%s\n' "$1"
+	# 从 stdin 读取，URI 不出现在 qrencode 进程参数中；单条过长不影响其他节点。
+	if ! printf '%s' "$2" | _qrencode_run -t UTF8 -l L -m 4 2>/dev/null; then
+		echo "二维码生成失败或节点过长，请复制节点链接或使用网页分享导入。"
+	fi
+}
+
+_qr_terminal_nodes(){ # $1=版本 $2=节点文件
+	_qr_index=0
+	while IFS= read -r _qr_node || [ -n "$_qr_node" ]; do
+		case "$_qr_node" in *[![:space:]]*) ;; *) continue ;; esac
+		_qr_index=$((_qr_index+1))
+		_qr_terminal_print "$1 · 节点 $_qr_index" "$_qr_node"
+	done < "$2"
+}
+
+qr_terminal_output(){
+	[ "$QR_TERM" = 1 ] || return 0
+	[ -s "$AGSBX/jh.txt" ] || return 0
+	_qrencode_ensure || return 0
+	echo
+	echo "💣【 终端二维码 】请扫码导入（若显示换行，请拉宽终端或使用网页分享）："
+	if [ -n "${QR_SUBSCRIPTION_URL:-}" ]; then
+		_qr_terminal_print "原版 · 全部节点订阅" "$QR_SUBSCRIPTION_URL"
+	else
+		_qr_terminal_nodes "原版" "$AGSBX/jh.txt"
+	fi
+	if [ "$IOS_SHARE" = 1 ] && [ -s "$AGSBX/jh-ios.txt" ]; then
+		if [ -n "${QR_IOS_SUBSCRIPTION_URL:-}" ]; then
+			_qr_terminal_print "iOS 兼容版 · 全部节点订阅" "$QR_IOS_SUBSCRIPTION_URL"
+		else
+			_qr_terminal_nodes "iOS 兼容版" "$AGSBX/jh-ios.txt"
+		fi
+	fi
+}
+
 # =============================================================================
 # SECTION 17: 命令行参数路由处理
 # 使用: ./argosbx.sh [del|rep|list|upx|ups|res|help]
@@ -2701,6 +2819,7 @@ gh_token=$(cat "$AGSBX/gh_token" 2>/dev/null)
 gh_gist_id=$(cat "$AGSBX/gh_gist_id" 2>/dev/null)
 [ -n "$gh_token" ] && push_gist
 qr_share_output
+qr_terminal_output
 exit
 elif [ "$1" = "upx" ]; then
 for P in /proc/[0-9]*; do [ -L "$P/exe" ] || continue; TARGET=$(readlink -f "$P/exe" 2>/dev/null) || continue; case "$TARGET" in *"/agsbx/x"*) kill "$(basename "$P")" 2>/dev/null ;; esac; done
@@ -2797,6 +2916,7 @@ if [ -n "$gh_token" ]; then
   push_gist
 fi
 qr_share_output
+qr_terminal_output
 showmode
 echo
 else
@@ -2805,6 +2925,7 @@ echo
 cip
 node_output
 qr_share_output
+qr_terminal_output
 showmode
 echo
 exit
