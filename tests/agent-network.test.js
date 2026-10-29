@@ -28,7 +28,7 @@ test('Komari import preserves type, fork, full HTTPS endpoint and install direct
   const document = {getElementById: element, querySelector: selector => ({value: selector.includes('nzEnvMode') ? 'std' : 'curl'})};
   const varsCode = html.slice(html.indexOf('  function toBashVars('), html.indexOf('  function render(){'));
   const importCode = html.slice(html.indexOf('  // 导入时保留探针类型'), html.indexOf("  document.getElementById('generateNzBtn')"));
-  const context = vm.createContext({ArgosbxAgent: agent, document, protoKeys: [], showToast() {}});
+  const context = vm.createContext({ArgosbxAgent: agent, document, window: {addEventListener() {}}, protoKeys: [], showToast() {}});
   vm.runInContext(varsCode + '\nfunction render(){globalThis.main = toBashVars({AGSBX_DIR: document.getElementById("AGSBX_DIR").value, nz_server: document.getElementById("nz_server").value, nz_sec: document.getElementById("nz_sec").value}).join(" ");}\n' + importCode, context);
   element('nezhaImportInput').value = importText;
   element('nezhaImportInput').input();

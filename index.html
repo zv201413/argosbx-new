@@ -707,6 +707,8 @@
         </div></div>
           <div class="connection-group common-settings">
             <h3>安装设置</h3>
+            <div class="row"><label for="LOG_MAX_MB">单个日志上限（MB）</label><input id="LOG_MAX_MB" type="number" min="1" max="1024" step="1" value="50" placeholder="默认 50" style="min-width:0;width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--input-bg);color:var(--ink);font:inherit;font-size:13px;"></div>
+            <p class="field-note" style="margin:0 0 14px;">默认每个运行日志 50MB，可填 1–1024；每 10 秒检查，超限清理旧日志并继续记录。</p>
             <div class="row"><label>自定义安装目录 <span class="pill">AGSBX_DIR</span></label><input id="AGSBX_DIR" type="text" placeholder="留空自动选择，如 /www" title="home目录不可写时填一个可写目录(如 /www);留空则自动探测。脚本会在其下创建 agsbx 子目录"></div><div class="row">
             <label>UUID 密码 <span class="pill">uuid</span></label>
             <div class="input-with-button">
@@ -932,7 +934,7 @@
     }
   };
 const protoKeys = ['sopt','vmpt','vlpt','xhpt','vxpt','vwpt','arpt','anpt','hypt','tupt','sspt'];
-const optIds = ['warp','ippz','ippref','wippref','uuid','reym','cdnym', 'name', 'oap', 'argoip', 'nodeaddr', 'hyjpt', 'gh_token', 'gh_gist_id', 'QR_SHARE', 'IOS_SHARE', 'QR_TERM', 'nz_server', 'nz_sec', 'KNOCK', 'KNOCK_PORT', 'IDLE_TIMEOUT', 'STEALTH_NAME', 'AGSBX_DIR'];
+const optIds = ['warp','ippz','ippref','wippref','uuid','reym','cdnym', 'name', 'oap', 'argoip', 'nodeaddr', 'hyjpt', 'gh_token', 'gh_gist_id', 'QR_SHARE', 'IOS_SHARE', 'QR_TERM', 'nz_server', 'nz_sec', 'KNOCK', 'KNOCK_PORT', 'IDLE_TIMEOUT', 'STEALTH_NAME', 'AGSBX_DIR', 'LOG_MAX_MB'];
 
   const argoSelect = document.getElementById('argoSelect');
   const agn = document.getElementById('agn');
@@ -1252,6 +1254,14 @@ document.getElementById('uuid').value = '';
     radio.addEventListener('change', render);
   });
 
+  function getLogMaxMB(){
+    const input = document.getElementById('LOG_MAX_MB');
+    const size = Number(input.value);
+    const valid = /^\d+$/.test(input.value) && Number.isInteger(size) && size >= 1 && size <= 1024;
+    input.setCustomValidity(valid || !input.value ? '' : '请输入 1–1024 的整数');
+    return valid ? String(size) : '50';
+  }
+
   function collectVars(){
     const m = {};
     protoKeys.forEach(k => {
@@ -1316,6 +1326,7 @@ document.getElementById('uuid').value = '';
   }
 
   function render(){
+    const logMaxMB = getLogMaxMB();
     const gistId = document.getElementById('gh_gist_id');
     const gistToken = document.getElementById('gh_token');
     if (isAgentCredential({ id: gistId.value, password: gistToken.value })) {
@@ -1324,6 +1335,7 @@ document.getElementById('uuid').value = '';
       showToast('探针记录不能填入 Gist，请选择 Gist 凭据');
     }
     const m = collectVars();
+    m.LOG_MAX_MB = logMaxMB;
     const varsArray = toBashVars(m);
     const varsStr = varsArray.length > 0 ? varsArray.join(' ') + ' ' : '';
 
@@ -1442,7 +1454,7 @@ document.getElementById('uuid').value = '';
     try {
       document.getElementById('nzOutput').value = ArgosbxAgent.command({
         type: nzTypeInput.value, server: nzServerInput.value.trim(), secret: nzSecInput.value.trim(),
-        repo: nzRepo, installDir: document.getElementById('AGSBX_DIR').value.trim(),
+        repo: nzRepo, installDir: document.getElementById('AGSBX_DIR').value.trim(), logMaxMB: document.getElementById('LOG_MAX_MB').value || '50',
         mode: document.querySelector('input[name="nzEnvMode"]:checked').value,
         downloader: document.querySelector('input[name="nzCmdType"]:checked').value
       });
@@ -1500,6 +1512,7 @@ document.getElementById('uuid').value = '';
       const qrShareValue = document.getElementById('QR_SHARE').value;
       const iosShareValue = document.getElementById('IOS_SHARE').value;
       const qrTermValue = document.getElementById('QR_TERM').value;
+      const logMaxMB = getLogMaxMB();
 
       if (command === 'rep') {
         render();
@@ -1510,7 +1523,7 @@ document.getElementById('uuid').value = '';
           document.getElementById('QR_SHARE').value = qrShareValue;
           document.getElementById('IOS_SHARE').value = iosShareValue;
           document.getElementById('QR_TERM').value = qrTermValue;
-          const m = { QR_SHARE: qrShareValue, IOS_SHARE: iosShareValue, QR_TERM: qrTermValue };
+          const m = { QR_SHARE: qrShareValue, IOS_SHARE: iosShareValue, QR_TERM: qrTermValue, LOG_MAX_MB: logMaxMB };
           if (shouldPreserveIppz) {
             ippzSelect.value = ippzValue;
             m['ippz'] = ippzValue;
@@ -1521,10 +1534,11 @@ document.getElementById('uuid').value = '';
             ? `${varsStr}${template} ${command}`
             : `${template} ${varsStr}${exec} ${command}`;
         } else {
+          const logVars = command === 'del' ? '' : toBashVars({LOG_MAX_MB: logMaxMB}).join(' ') + ' ';
           if (mode === 'std') {
-            output.value = `${template} ${command}`;
+            output.value = `${logVars}${template} ${command}`;
           } else {
-            output.value = `${template} ${exec} ${command}`;
+            output.value = `${template} ${logVars}${exec} ${command}`;
           }
         }
       }
@@ -1532,6 +1546,7 @@ document.getElementById('uuid').value = '';
   });
 
   document.getElementById('copy').addEventListener('click', async () => {
+    if (!document.getElementById('LOG_MAX_MB').reportValidity()) return;
     const t = document.getElementById('output');
     t.select(); t.setSelectionRange(0, 99999);
     try { await navigator.clipboard.writeText(t.value); showToast('已复制到剪贴板'); } catch (e) { document.execCommand('copy'); showToast('已复制'); }

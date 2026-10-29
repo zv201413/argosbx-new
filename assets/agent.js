@@ -50,7 +50,7 @@
     }
     return vars;
   }
-  function command({type, server, secret, repo, installDir, downloader = 'curl', mode = 'std'}) {
+  function command({type, server, secret, repo, installDir, logMaxMB = 50, downloader = 'curl', mode = 'std'}) {
     const vars = variables({type, server, secret, repo});
     if (!vars.nz_sec) throw new Error('请先填写服务器地址和密钥，或粘贴安装命令导入');
     const binary = type + '-agent';
@@ -72,7 +72,10 @@
     const run = type === 'komari'
       ? prefix + './komari-agent -e ' + quote(vars.nz_endpoint) + ' -t ' + quote(secret) + ' --disable-auto-update'
       : 'NZ_SERVER=' + quote(vars.nz_host + ':' + vars.nz_port) + ' NZ_CLIENT_SECRET=' + quote(secret) + ' NZ_TLS=' + (vars.nz_tls ? 'true' : 'false') + ' NZ_DISABLE_AUTO_UPDATE=true ' + prefix + './nezha-agent -c ./config.yml';
-    lines.push('( ' + run + ' > agent.log 2>&1 & )');
+    const requestedSize = String(logMaxMB).trim();
+    const logSize = /^\d+$/.test(requestedSize) && Number(requestedSize) >= 1 && Number(requestedSize) <= 1024 ? Number(requestedSize) : 50;
+    const guard = 'p="$1"; limit="$2"; while kill -0 "$p" 2>/dev/null; do if [ -f agent.log ] && [ ! -L agent.log ] && [ "$(stat -c %h agent.log 2>/dev/null)" = 1 ]; then size=$(stat -c %s agent.log 2>/dev/null); [ "${size:-0}" -lt "$limit" ] || : > agent.log; fi; sleep 10; done';
+    lines.push('( ' + run + ' >> agent.log 2>&1 & _agent_log_pid=$!; ' + prefix + 'sh -c ' + quote(guard) + ' _ "$_agent_log_pid" ' + quote(logSize * 1024 * 1024) + ' </dev/null >/dev/null 2>&1 & )');
     return lines.join(' && \\\n');
   }
   return {quote, importCommand, parseServer, variables, command};

@@ -81,6 +81,9 @@ export IOS_SHARE=${IOS_SHARE:-'1'}            # 默认同时输出原版和 iOS 
 _qr_term_explicit=0
 [ "${QR_TERM+x}" = x ] && _qr_term_explicit=1
 export QR_TERM=${QR_TERM:-'1'}                # 默认安装 qrencode 并在终端输出二维码；=0 关闭
+_log_max_explicit=0
+[ "${LOG_MAX_MB+x}" = x ] && _log_max_explicit=1
+export LOG_MAX_MB=${LOG_MAX_MB:-'50'}         # 每个运行日志的大小上限（MB，1–1024）
 QR_SUBSCRIPTION_URL=''
 QR_IOS_SUBSCRIPTION_URL=''
 export nodeaddr=${nodeaddr:-''}
@@ -173,6 +176,113 @@ _agsbx_qr_term_sync(){
 	export QR_TERM
 }
 _agsbx_qr_term_sync
+
+_agsbx_log_sync(){
+	if [ "$_log_max_explicit" = 0 ] && [ -f "$AGSBX/log_max_mb" ]; then
+		IFS= read -r LOG_MAX_MB < "$AGSBX/log_max_mb" || LOG_MAX_MB=50
+	fi
+	LOG_MAX_MB=$(printf '%s' "$LOG_MAX_MB" | sed 's/^0*//')
+	case "$LOG_MAX_MB" in ''|*[!0-9]*|?????*) LOG_MAX_MB=50;; esac
+	[ "$LOG_MAX_MB" -ge 1 ] && [ "$LOG_MAX_MB" -le 1024 ] || LOG_MAX_MB=50
+	(umask 077; printf '%s\n' "$LOG_MAX_MB" > "$AGSBX/log_max_mb")
+	export LOG_MAX_MB
+}
+_agsbx_log_sync
+
+# A self-contained guard for systemd, containers and cron. Never scan *.log indiscriminately:
+# server_ip.log / sbargotoken.log / argoport.log are configuration, not runtime output.
+_agsbx_log_script(){
+cat <<'LOG_GUARD'
+#!/bin/sh
+umask 077
+AGSBX=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P) || exit 1
+_log_once(){
+  _lg_mb=$(cat "$AGSBX/log_max_mb" 2>/dev/null | sed 's/^0*//')
+  case "$_lg_mb" in ''|*[!0-9]*|?????*) _lg_mb=50;; esac
+  [ "$_lg_mb" -ge 1 ] && [ "$_lg_mb" -le 1024 ] || _lg_mb=50
+  _lg_bytes=$((_lg_mb * 1024 * 1024))
+  for _lg_name in xray.log xray.out.log xray.err.log sing-box.log sing-box.out.log sing-box.err.log argo.log qrencode-install.log nezha/agent.log komari/agent.log; do
+    _lg_file="$AGSBX/$_lg_name"
+    [ -f "$_lg_file" ] && [ ! -L "$_lg_file" ] && [ ! -L "$(dirname -- "$_lg_file")" ] || continue
+    [ "$(stat -c %h "$_lg_file" 2>/dev/null)" = 1 ] || continue
+    _lg_size=$(stat -c %s "$_lg_file" 2>/dev/null) || continue
+    [ "$_lg_size" -ge "$_lg_bytes" ] || continue
+    if [ "$_lg_name" = argo.log ]; then
+      # Keep the tunnel address in the two-line shape consumed by cip/list.
+      _lg_domain=$(grep -a trycloudflare.com "$_lg_file" | awk 'NR==2{print}' | grep -oE 'https://[a-zA-Z0-9-]+\.trycloudflare\.com' | head -n 1)
+      if [ -n "$_lg_domain" ]; then
+        printf 'Requesting tunnel at trycloudflare.com\n%s\n' "$_lg_domain" > "$_lg_file"
+        continue
+      fi
+    fi
+    : > "$_lg_file"
+  done
+}
+[ "${1:-}" = --once ] && { _log_once; exit; }
+if [ -f "$AGSBX/log-limit.pid" ]; then
+  _lg_old=$(cat "$AGSBX/log-limit.pid" 2>/dev/null)
+  case "$_lg_old" in ''|*[!0-9]*) ;; *)
+    if kill -0 "$_lg_old" 2>/dev/null && tr '\0' '\n' < "/proc/$_lg_old/cmdline" 2>/dev/null | grep -Fxq "$AGSBX/log-limit.sh"; then exit; fi;;
+  esac
+fi
+printf '%s\n' "$$" > "$AGSBX/log-limit.pid"
+_log_exit(){
+  [ -z "${_lg_sleep:-}" ] || kill "$_lg_sleep" 2>/dev/null
+  [ "$(cat "$AGSBX/log-limit.pid" 2>/dev/null)" != "$$" ] || rm -f "$AGSBX/log-limit.pid"
+  exit
+}
+trap _log_exit TERM INT HUP
+while [ -d "$AGSBX" ]; do
+  _log_once
+  sleep 10 & _lg_sleep=$!
+  wait "$_lg_sleep"
+done
+_log_exit
+LOG_GUARD
+}
+
+_agsbx_log_running(){
+	_lg_pid=$(cat "$AGSBX/log-limit.pid" 2>/dev/null)
+	case "$_lg_pid" in ''|*[!0-9]*) return 1;; esac
+	kill -0 "$_lg_pid" 2>/dev/null && tr '\0' '\n' < "/proc/$_lg_pid/cmdline" 2>/dev/null | grep -Fxq "$AGSBX/log-limit.sh"
+}
+
+_agsbx_log_stop(){
+	if _agsbx_log_running; then kill "$_lg_pid" 2>/dev/null; fi
+}
+
+_agsbx_log_start(){
+	_lg_tmp=$(mktemp "$AGSBX/.log-limit.XXXXXX") || return 1
+	_agsbx_log_script > "$_lg_tmp" && chmod 700 "$_lg_tmp" && mv "$_lg_tmp" "$AGSBX/log-limit.sh" || return 1
+	_agsbx_log_running && return 0
+	if pidof systemd >/dev/null 2>&1 && [ "$(id -u)" = 0 ]; then
+		cat > /etc/systemd/system/agsbx-log-limit.service <<EOF
+[Unit]
+Description=Argosbx runtime log size guard
+After=local-fs.target
+[Service]
+ExecStart=/bin/sh "$AGSBX/log-limit.sh"
+Restart=always
+RestartSec=5
+StandardOutput=null
+StandardError=null
+[Install]
+WantedBy=multi-user.target
+EOF
+		systemctl daemon-reload >/dev/null 2>&1
+		systemctl enable --now agsbx-log-limit >/dev/null 2>&1 && return 0
+	fi
+	nohup sh "$AGSBX/log-limit.sh" </dev/null >/dev/null 2>&1 &
+	if command -v crontab >/dev/null 2>&1; then
+		_lg_cron=$(mktemp "$AGSBX/.log-cron.XXXXXX") || return 1
+		crontab -l 2>/dev/null | sed '/# agsbx-log-limit$/d' > "$_lg_cron"
+		printf '@reboot nohup sh %s </dev/null >/dev/null 2>&1 & # agsbx-log-limit\n' "$(_agent_quote "$AGSBX/log-limit.sh")" >> "$_lg_cron"
+		crontab "$_lg_cron" 2>/dev/null || echo '⚠️ 日志大小守护已启动，但无法写入开机任务。'
+		rm -f "$_lg_cron"
+	else
+		echo '⚠️ 日志大小守护已启动；当前环境无 crontab，重启容器后需重新运行 agsbx。'
+	fi
+}
 
 # 两份订阅按相同顺序写入；其他协议在兼容版中沿用原链接。
 _share_append(){ # original optional_ios
@@ -1341,8 +1451,8 @@ TimeoutStartSec=0
 ExecStart=$AGSBX/xray run -c $AGSBX/xr.json
 Restart=on-failure
 RestartSec=5s
-StandardOutput=journal
-StandardError=journal
+StandardOutput=append:$AGSBX/xray.log
+StandardError=append:$AGSBX/xray.log
 [Install]
 WantedBy=multi-user.target
 EOF
@@ -1376,10 +1486,14 @@ rc-update add xray default >/dev/null 2>&1
 	startsecs=3
 	stdout_logfile=$AGSBX/xray.out.log
 	stderr_logfile=$AGSBX/xray.err.log
+	stdout_logfile_maxbytes=${LOG_MAX_MB}MB
+	stderr_logfile_maxbytes=${LOG_MAX_MB}MB
+	stdout_logfile_backups=0
+	stderr_logfile_backups=0
 EOFBAS
 	supervisorctl update >/dev/null 2>&1 || true
 	else
-	nohup "$AGSBX/xray" run -c "$AGSBX/xr.json" > "$AGSBX/xray.log" 2>&1 &
+	nohup "$AGSBX/xray" run -c "$AGSBX/xr.json" >> "$AGSBX/xray.log" 2>&1 &
 fi
 fi
 if [ -e "$AGSBX/sb.json" ]; then
@@ -1454,8 +1568,8 @@ TimeoutStartSec=0
 ExecStart=$AGSBX/sing-box run -c $AGSBX/sb.json
 Restart=on-failure
 RestartSec=5s
-StandardOutput=journal
-StandardError=journal
+StandardOutput=append:$AGSBX/sing-box.log
+StandardError=append:$AGSBX/sing-box.log
 [Install]
 WantedBy=multi-user.target
 EOF
@@ -1489,10 +1603,14 @@ autorestart=true
 startsecs=3
 stdout_logfile=$AGSBX/sing-box.out.log
 stderr_logfile=$AGSBX/sing-box.err.log
+stdout_logfile_maxbytes=${LOG_MAX_MB}MB
+stderr_logfile_maxbytes=${LOG_MAX_MB}MB
+stdout_logfile_backups=0
+stderr_logfile_backups=0
 EOFBAS
 supervisorctl update >/dev/null 2>&1 || true
 else
-nohup "$AGSBX/sing-box" run -c "$AGSBX/sb.json" > "$AGSBX/sing-box.log" 2>&1 &
+nohup "$AGSBX/sing-box" run -c "$AGSBX/sb.json" >> "$AGSBX/sing-box.log" 2>&1 &
 fi
 fi
 }
@@ -1539,7 +1657,7 @@ _agent_download(){ # url output；HTTP/网络失败不得继续 chmod 或启动
 _agent_start(){
   _agent_dir="$AGSBX/$1"
   [ -f "$_agent_dir/start.sh" ] || return 0
-  nohup sh "$_agent_dir/start.sh" > "$_agent_dir/agent.log" 2>&1 &
+  nohup sh "$_agent_dir/start.sh" >> "$_agent_dir/agent.log" 2>&1 &
   printf '%s\n' "$!" > "$_agent_dir/agent.pid"
   sleep 3
   if _agent_running "$1"; then
@@ -1613,12 +1731,13 @@ insnezha(){
   _agent_cron=$(mktemp) || return 1
   crontab -l > "$_agent_cron" 2>/dev/null
   sed -i '/agsbx\/nezha\/start.sh/d; /agsbx\/komari\/start.sh/d' "$_agent_cron"
-  printf '@reboot sleep 15 && nohup sh %s > %s 2>&1 &\n' "$(_agent_quote "$_agent_dir/start.sh")" "$(_agent_quote "$_agent_dir/agent.log")" >> "$_agent_cron"
+  printf '@reboot sleep 15 && nohup sh %s >> %s 2>&1 &\n' "$(_agent_quote "$_agent_dir/start.sh")" "$(_agent_quote "$_agent_dir/agent.log")" >> "$_agent_cron"
   if ! crontab "$_agent_cron" 2>/dev/null; then echo "⚠️ crontab 不可用，探针未设置开机自启。"; fi
   rm -f "$_agent_cron"
 }
 
 ins(){
+_agsbx_log_start
 # =============================================================================
 # 安装模式判断逻辑：
 #   - 情况A: 只启用 Xray 协议 (xhp/vlp/vxp) 且不启用 SB 协议
@@ -1684,6 +1803,7 @@ echo "下载Cloudflared-argo最新正式版内核：$argocore"
 url="https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-$cpu"; out="$AGSBX/cloudflared"; (command -v curl>/dev/null 2>&1 && curl -Lo "$out" -# --retry 2 "$url") || (command -v wget>/dev/null 2>&1 && timeout 3 wget -O "$out" --tries=2 "$url")
 chmod +x "$AGSBX/cloudflared"
 fi
+: > "$AGSBX/argo.log"
 if [ "$argo" = "vmpt" ]; then argoport=$(cat "$AGSBX/port_vm_ws" 2>/dev/null); echo "Vmess" > "$AGSBX/vlvm"; elif [ "$argo" = "vwpt" ]; then argoport=$(cat "$AGSBX/port_vw" 2>/dev/null); echo "Vless" > "$AGSBX/vlvm"; fi; echo "$argoport" > "$AGSBX/argoport.log"
 
 # 智能选择传输协议 (UDP受限时自动切换为HTTP2)
@@ -1712,6 +1832,8 @@ TimeoutStartSec=0
 ExecStart=$AGSBX/cloudflared tunnel ${argoproto} --no-autoupdate --edge-ip-version $(cat "$AGSBX/cf_ipv.txt" 2>/dev/null || echo auto) run --token "${ARGO_AUTH}"
 Restart=on-failure
 RestartSec=5s
+StandardOutput=append:$AGSBX/argo.log
+StandardError=append:$AGSBX/argo.log
 [Install]
 WantedBy=multi-user.target
 EOF
@@ -1741,9 +1863,9 @@ echo "${ARGO_AUTH}" > "$AGSBX/sbargotoken.log"
 else
 argoname='临时'
 if [ -n "$cfn" ] && command -v bash >/dev/null 2>&1; then
-nohup bash -c 'exec -a "$1" "$AGSBX/cloudflared" "${@:2}"' _ "$cfn" tunnel ${argoproto} --url "http://localhost:$(cat $AGSBX/argoport.log)" --edge-ip-version $(cat "$AGSBX/cf_ipv.txt" 2>/dev/null || echo auto) --no-autoupdate > $AGSBX/argo.log 2>&1 &
+nohup bash -c 'exec -a "$1" "$AGSBX/cloudflared" "${@:2}"' _ "$cfn" tunnel ${argoproto} --url "http://localhost:$(cat $AGSBX/argoport.log)" --edge-ip-version $(cat "$AGSBX/cf_ipv.txt" 2>/dev/null || echo auto) --no-autoupdate >> $AGSBX/argo.log 2>&1 &
 else
-nohup "$AGSBX/cloudflared" tunnel ${argoproto} --url http://localhost:$(cat $AGSBX/argoport.log) --edge-ip-version $(cat "$AGSBX/cf_ipv.txt" 2>/dev/null || echo auto) --no-autoupdate > $AGSBX/argo.log 2>&1 &
+nohup "$AGSBX/cloudflared" tunnel ${argoproto} --url http://localhost:$(cat $AGSBX/argoport.log) --edge-ip-version $(cat "$AGSBX/cf_ipv.txt" 2>/dev/null || echo auto) --no-autoupdate >> $AGSBX/argo.log 2>&1 &
 fi
 fi
 echo "申请Argo$argoname隧道中……请稍等"
@@ -1782,14 +1904,14 @@ _sb_up=0; _xr_up=0
 	if [ "$_sb_need" = 1 ] && [ "$_sb_up" = 0 ]; then
 		echo "WARNING: sing-box 进程未检测到，尝试 nohup 直接启动..."
 		systemctl reset-failed sb >/dev/null 2>&1
-		nohup "$AGSBX/sing-box" run -c "$AGSBX/sb.json" > "$AGSBX/sing-box.log" 2>&1 &
+		nohup "$AGSBX/sing-box" run -c "$AGSBX/sb.json" >> "$AGSBX/sing-box.log" 2>&1 &
 		sleep 3
 		( find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null | grep -q 'agsbx/s' || pgrep -f 'agsbx/s' >/dev/null 2>&1 ) && _sb_up=1
 	fi
 	if [ "$_xr_need" = 1 ] && [ "$_xr_up" = 0 ]; then
 		echo "WARNING: xray 进程未检测到，尝试 nohup 直接启动..."
 		systemctl reset-failed xr >/dev/null 2>&1
-		nohup "$AGSBX/xray" run -c "$AGSBX/xr.json" > "$AGSBX/xray.log" 2>&1 &
+		nohup "$AGSBX/xray" run -c "$AGSBX/xr.json" >> "$AGSBX/xray.log" 2>&1 &
 		sleep 3
 		( find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null | grep -q 'agsbx/x' || pgrep -f 'agsbx/x' >/dev/null 2>&1 ) && _xr_up=1
 	fi
@@ -1832,10 +1954,10 @@ sed -i '/agsbx\/cloudflared/d' /tmp/crontab.tmp
 if [ -n "$argo" ] && [ -n "$vmag" ]; then
 if [ -n "${ARGO_DOMAIN}" ] && [ -n "${ARGO_AUTH}" ]; then
 if ! pidof systemd >/dev/null 2>&1 && ! command -v rc-service >/dev/null 2>&1; then
-echo '@reboot sleep 10 && /bin/sh -c "nohup $AGSBX/cloudflared tunnel $(cat $AGSBX/argoproto.log 2>/dev/null) --no-autoupdate --edge-ip-version $(cat "$AGSBX/cf_ipv.txt" 2>/dev/null || echo auto) run --token $(cat $AGSBX/sbargotoken.log 2>/dev/null) >/dev/null 2>&1 &"' >> /tmp/crontab.tmp
+echo '@reboot sleep 10 && /bin/sh -c ": > $AGSBX/argo.log && nohup $AGSBX/cloudflared tunnel $(cat $AGSBX/argoproto.log 2>/dev/null) --no-autoupdate --edge-ip-version $(cat "$AGSBX/cf_ipv.txt" 2>/dev/null || echo auto) run --token $(cat $AGSBX/sbargotoken.log 2>/dev/null) >/dev/null 2>&1 &"' >> /tmp/crontab.tmp
 fi
 else
-echo '@reboot sleep 10 && /bin/sh -c "nohup $AGSBX/cloudflared tunnel $(cat $AGSBX/argoproto.log 2>/dev/null) --url http://localhost:$(cat $AGSBX/argoport.log) --edge-ip-version $(cat "$AGSBX/cf_ipv.txt" 2>/dev/null || echo auto) --no-autoupdate > $AGSBX/argo.log 2>&1 &"' >> /tmp/crontab.tmp
+echo '@reboot sleep 10 && /bin/sh -c ": > $AGSBX/argo.log && nohup $AGSBX/cloudflared tunnel $(cat $AGSBX/argoproto.log 2>/dev/null) --url http://localhost:$(cat $AGSBX/argoport.log) --edge-ip-version $(cat "$AGSBX/cf_ipv.txt" 2>/dev/null || echo auto) --no-autoupdate >> $AGSBX/argo.log 2>&1 &"' >> /tmp/crontab.tmp
 fi
 fi
 # ═════════ 可选:敲门 + 空闲自关子系统(仅 KNOCK=1 启用;非 KNOCK 完全跳过,以下 cron 照旧)═════════
@@ -2495,6 +2617,7 @@ echo "更新脚本命令：原已安装的自定义各种协议变量组 主脚�
 echo "更新Xray或Singbox内核命令：agsbx upx 或 agsbx ups"
 echo "重启脚本命令：agsbx res"
 echo "卸载脚本命令：agsbx del"
+echo "单个运行日志上限：LOG_MAX_MB=50 agsbx list（MB，1–1024，默认 50）"
 echo "双栈VPS显示IPv4/IPv6节点配置命令：ippz=4 或 ippz=6 agsbx list"
 echo "二维码分享开关：QR_SHARE=0 agsbx list 关闭；QR_SHARE=1 agsbx list 恢复"
 echo "终端二维码（默认开启）：QR_TERM=0 agsbx list 关闭；QR_TERM=1 agsbx list 恢复"
@@ -2512,6 +2635,7 @@ echo
 #   - 清理 bashrc 环境变量
 # =============================================================================
 cleandel(){
+_agsbx_log_stop
 for P in /proc/[0-9]*; do if [ -L "$P/exe" ]; then TARGET=$(readlink -f "$P/exe" 2>/dev/null); if echo "$TARGET" | grep -qE '/agsbx/c|/agsbx/s|/agsbx/x'; then PID=$(basename "$P"); kill "$PID" 2>/dev/null; fi; fi; done
 kill -15 $(pgrep -f 'agsbx/s' 2>/dev/null) $(pgrep -f 'agsbx/c' 2>/dev/null) $(pgrep -f 'agsbx/x' 2>/dev/null) $(pgrep -f 'agsbx/watchdog.sh' 2>/dev/null) >/dev/null 2>&1
 sed -i '/agsbx/d' ~/.bashrc 2>/dev/null
@@ -2524,17 +2648,19 @@ sed -i '/agsbx\/cloudflared/d' /tmp/crontab.tmp 2>/dev/null
 sed -i '/nezha-agent/d' /tmp/crontab.tmp 2>/dev/null
 sed -i '/agsbx\/nezha\/start.sh/d; /agsbx\/komari\/start.sh/d' /tmp/crontab.tmp 2>/dev/null
 sed -i '/agsbx\/watchdog/d' /tmp/crontab.tmp 2>/dev/null
+sed -i '/# agsbx-log-limit$/d' /tmp/crontab.tmp 2>/dev/null
 crontab /tmp/crontab.tmp >/dev/null 2>&1
 rm /tmp/crontab.tmp 2>/dev/null
 rm -rf "$HOME/bin/agsbx" 2>/dev/null
 _agent_stop
 rm -rf "$AGSBX/nezha" "$AGSBX/komari" 2>/dev/null
 if pidof systemd >/dev/null 2>&1; then
-for svc in xr sb argo; do
+for svc in xr sb argo agsbx-log-limit; do
 systemctl stop "$svc" >/dev/null 2>&1
 systemctl disable "$svc" >/dev/null 2>&1
 done
 rm -rf /etc/systemd/system/xr.service /etc/systemd/system/sb.service /etc/systemd/system/argo.service 2>/dev/null
+rm -f /etc/systemd/system/agsbx-log-limit.service 2>/dev/null
 elif command -v rc-service >/dev/null 2>&1; then
 for svc in sing-box xray argo; do
 rc-service "$svc" stop >/dev/null 2>&1
@@ -2857,6 +2983,7 @@ qr_terminal_output(){
 # SECTION 17: 命令行参数路由处理
 # 使用: ./argosbx.sh [del|rep|list|upx|ups|res|help]
 # =============================================================================
+case "$1" in del|rep|help|-h) ;; *) _agsbx_log_start;; esac
 if [ "$1" = "del" ]; then
 cleandel
 rm -rf sbx_update "$AGSBX" "$HOME/agsb"
@@ -2907,6 +3034,7 @@ xrestart
 *"/agsbx/c"*)
 kill "$(basename "$P")" 2>/dev/null
 kill -15 $(pgrep -f 'agsbx/c' 2>/dev/null) >/dev/null 2>&1
+: > "$AGSBX/argo.log"
 if pidof systemd >/dev/null 2>&1; then
 systemctl restart argo >/dev/null 2>&1
 elif command -v rc-service >/dev/null 2>&1; then
@@ -2917,7 +3045,7 @@ if ! pidof systemd >/dev/null 2>&1 && ! command -v rc-service >/dev/null 2>&1; t
 nohup $AGSBX/cloudflared tunnel $(cat $AGSBX/argoproto.log 2>/dev/null) --no-autoupdate --edge-ip-version $(cat "$AGSBX/cf_ipv.txt" 2>/dev/null || echo auto) run --token $(cat $AGSBX/sbargotoken.log 2>/dev/null) >/dev/null 2>&1 &
 fi
 else
-nohup $AGSBX/cloudflared tunnel $(cat $AGSBX/argoproto.log 2>/dev/null) --url http://localhost:$(cat $AGSBX/argoport.log 2>/dev/null) --edge-ip-version $(cat "$AGSBX/cf_ipv.txt" 2>/dev/null || echo auto) --no-autoupdate > $AGSBX/argo.log 2>&1 &
+nohup $AGSBX/cloudflared tunnel $(cat $AGSBX/argoproto.log 2>/dev/null) --url http://localhost:$(cat $AGSBX/argoport.log 2>/dev/null) --edge-ip-version $(cat "$AGSBX/cf_ipv.txt" 2>/dev/null || echo auto) --no-autoupdate >> $AGSBX/argo.log 2>&1 &
 fi
 fi
 ;;
