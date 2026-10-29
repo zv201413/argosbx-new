@@ -583,28 +583,6 @@
       white-space: nowrap;
       border-radius: 8px;
     }
-    .input-with-preview {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      width: 100%;
-      min-width: 0;
-    }
-    .input-with-preview input {
-      flex: 1 1 180px;
-      min-width: 0;
-    }
-    .name-preview {
-      white-space: nowrap;
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      padding: 5px 8px;
-      background: rgba(79, 124, 255, 0.1);
-      border-radius: 6px;
-      font-size: 12px;
-      color: var(--sub);
-    }
     .protocol-group {
       margin-bottom: 16px;
     }
@@ -714,11 +692,8 @@
             <div class="row"><label>CF解析IP的域名 <span class="pill">cdnym</span></label><input id="cdnym" type="text" placeholder="Vmess-ws、Vless-xhttp/ws启用80、回源CDN时可用" disabled></div>
           </div>
         </details></div>
-          <div class="connection-group node-group"><h3>节点设置</h3><div class="row"><label>节点名称前缀 <span class="pill">name</span></label>
-          <div class="input-with-preview">
-            <input id="name" type="text" placeholder="留空使用默认节点名" title="留空则默认协议名前缀">
-            <div class="name-preview" id="namePreview"></div>
-          </div>
+          <div class="connection-group node-group"><h3>节点设置</h3><div class="row"><label for="name">节点名称前缀</label>
+          <input id="name" type="text" placeholder="将显示为：前缀+国家代码+ISP" title="留空使用默认节点名；实际命名由部署脚本生成">
         </div><div class="row"><label>Address: IPv4/IPv6 <span class="pill">ippz</span></label>
           <select id="ippz">
             <option value="">默认IPv4优先</option>
@@ -1233,22 +1208,6 @@ document.getElementById('uuid').value = '';
     uuidInput.value = crypto.randomUUID();
     render();
   });
-
-  // 节点名称前缀实时预览
-  const nameInput = document.getElementById('name');
-  const namePreview = document.getElementById('namePreview');
-
-  function updateNamePreview() {
-    const prefix = nameInput.value.trim();
-    if (prefix) {
-      namePreview.innerHTML = `预览: <b>${prefix}_country_protocol_hostname</b>`;
-    } else {
-      namePreview.innerHTML = `预览: <b>country_protocol_hostname</b>`;
-    }
-  }
-
-  nameInput.addEventListener('input', updateNamePreview);
-  updateNamePreview();
 
   // wippref 联动逻辑
   const warpSelect = document.getElementById('warp');
