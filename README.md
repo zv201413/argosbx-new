@@ -52,6 +52,25 @@
 
 IPv4/IPv6 公网地址会通过多个站点验证。一次请求失败不会改掉 `ippz=6` 或 `ippref=prefer_ipv6`；未取得 IPv6 时节点地址暂用 IPv4，后续检测成功自动恢复 IPv6，出站偏好保留协议本身的 IPv4 回退能力。
 
+### 第三方 DNS64/NAT64（Komari 默认开启，可手动关闭）
+
+`index.html` 的“探针配置”默认勾选第三方 DNS64/NAT64，使用
+[nat64.net](https://nat64.net/) 的 `2a00:1098:2c::1`。整合命令生成
+`nz_nat64="1" nz_dns64="2a00:1098:2c::1"`，单独命令添加
+`--custom-dns "2a00:1098:2c::1"`。取消勾选后，整合命令明确生成
+`nz_nat64="0"`，单独命令不再包含自定义 DNS 或 NAT64 下载回退。
+命令行 Komari 安装也默认开启；哪吒的运行参数不受此选项影响。
+
+这解决“被监控服务器只有 IPv6、Komari 面板只有 IPv4”的连接问题。
+直接下载 GitHub 发布包失败时，脚本可用 DNS64/NAT64 回退下载，需 Python 3.8+；
+缺少依赖或下载失败会明确报错，不启动空文件。不改动系统 DNS，也不跳过 HTTPS/WSS 证书验证。
+单独命令的安装目录保持原义；整合安装把 DNS 参数保存到 `start.sh`，`agsbx res` 和开机任务复用。
+
+公共 NAT64 是第三方网络依赖，可能观察域名及流量元数据、造成连接中断。
+HTTPS/WSS 正常验证证书时，中转不解密 Token、终端指令或回显；面板账号及终端权限仍需保护。
+Komari 节点的列表 IP 与真实连接来源可能不同，勿隐式信任未显示的公共中转出口。
+`rep` 仍只用于重置代理协议；探针离线应先查 `agent.log` 和连接路径，不应为重装探针随意重置协议。
+
 ### 3、ENC 加密按需启动
 支持 VLESS 协议的 ENC 加密（防止 TLS in TLS 阻断）：
 - **支持协议**：`Vless-tcp-reality-vision`（vlpt）、`Vless-xhttp-reality`（xhpt）、`Vless-xhttp`（vxpt）、`Vless-ws`（vwpt）；

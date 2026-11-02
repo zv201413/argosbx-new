@@ -95,6 +95,8 @@ export nz_tls=${nz_tls:-''}
 export nz_type=${nz_type:-'nezha'}              # nezha / komari；旧命令仍默认哪吒
 export nz_endpoint=${nz_endpoint:-''}          # Komari 完整 URL，保留协议与路径
 export nz_repo=${nz_repo:-'komari-monitor/komari-agent'}
+export nz_nat64=${nz_nat64:-1}                 # Komari DNS64/NAT64 compatibility; 0 disables it.
+export nz_dns64=${nz_dns64:-'2a00:1098:2c::1'}
 # ───── 可选功能(默认全关,不传则与原行为一字不差)─────
 export KNOCK=${KNOCK:-''}                       # =1 启用「敲门+空闲自关」子系统
 export KNOCK_PORT=${KNOCK_PORT:-''}             # 敲门端口(KNOCK=1 且为空时自动分配)
@@ -1642,12 +1644,30 @@ _agent_stop(){
     case "$_agent_exe" in "$AGSBX/nezha/nezha-agent"|"$AGSBX/komari/komari-agent") kill "${_agent_proc##*/}" 2>/dev/null;; esac
   done
 }
+_agent_dns64_download(){
+  [ "$nz_type" = komari ] && [ "${nz_nat64:-1}" = 1 ] || return 1
+  command -v python3 >/dev/null 2>&1 || { echo "❌ DNS64 下载回退需要 Python 3.8+，请安装 python3 或手动上传内核。"; return 1; }
+  _dns64_helper=$(mktemp) || return 1
+  _dns64_url="https://raw.githubusercontent.com/zv201413/komari-agent_new/main/nat64-download.py"
+  _dns64_status=1
+  if { command -v curl >/dev/null 2>&1 && curl -fsSL --connect-timeout 10 --max-time 30 -o "$_dns64_helper" "$_dns64_url"; } ||
+     { command -v wget >/dev/null 2>&1 && wget --timeout=15 --tries=2 -qO "$_dns64_helper" "$_dns64_url"; }; then
+    echo "正在通过 DNS64/NAT64 回退下载；保留 HTTPS 证书验证。"
+    python3 "$_dns64_helper" --dns "${nz_dns64:-2a00:1098:2c::1}" --url "$1" --output "$2"
+    _dns64_status=$?
+  fi
+  rm -f "$_dns64_helper"
+  return "$_dns64_status"
+}
 _agent_download(){ # url output；HTTP/网络失败不得继续 chmod 或启动
   case "$1" in https://github.com/*/releases/*) ;; *) echo "❌ 探针下载地址无效"; return 1;; esac
   if command -v curl >/dev/null 2>&1 && curl -fL --connect-timeout 10 --max-time 120 --retry 2 -o "$2" "$1"; then
     [ -s "$2" ] && return 0
   fi
   if command -v wget >/dev/null 2>&1 && wget --timeout=30 --tries=2 -O "$2" "$1"; then
+    [ -s "$2" ] && return 0
+  fi
+  if _agent_dns64_download "$1" "$2"; then
     [ -s "$2" ] && return 0
   fi
   rm -f "$2"
@@ -1716,6 +1736,7 @@ insnezha(){
     if [ "$nz_type" = komari ]; then
       printf 'exec '; _agent_quote "$_agent_bin"; printf ' -e '; _agent_quote "$nz_endpoint"
       printf ' -t '; _agent_quote "$nz_sec"; printf ' --disable-auto-update'
+      if [ "${nz_nat64:-1}" = 1 ]; then printf ' --custom-dns '; _agent_quote "${nz_dns64:-2a00:1098:2c::1}"; fi
     else
       printf 'export NZ_SERVER='; _agent_quote "$nz_host:$nz_port"
       printf '\nexport NZ_CLIENT_SECRET='; _agent_quote "$nz_sec"

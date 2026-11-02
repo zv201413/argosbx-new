@@ -832,6 +832,8 @@
               <input id="nz_sec" type="text" placeholder="agent_secret_key" style="flex:1; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:var(--input-bg); color:var(--ink); font-size:13px; outline:none; margin:0;">
             </div>
           </div>
+              <div class="row"><label for="nz_nat64"><input id="nz_nat64" type="checkbox" checked> 第三方 DNS64/NAT64 兼容（默认开启）</label></div>
+              <p class="muted" style="font-size:12px">Komari 使用 nat64.net 的 2a00:1098:2c::1，帮助 IPv6-only 节点连接 IPv4 面板。取消勾选即关闭；不修改系统 DNS，不跳过 TLS 验证。</p>
               <details class="agent-standalone"><summary><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 7 5 5-5 5M13 17h6"/></svg>单独安装探针<span class="fold-note">展开命令</span></summary><div class="nezha-command">
             <div class="nezha-controls">
               <div>
@@ -1081,6 +1083,7 @@ document.getElementById('uuid').value = '';
   document.getElementById('hyjpt').value = '';
   document.getElementById('nz_server').value = '';
   document.getElementById('nz_sec').value = '';
+  document.getElementById('nz_nat64').checked = true;
   document.getElementById('nezhaImportInput').value = '';
   document.querySelector('.agent-import-control').dataset.masked = 'true';
   document.getElementById('toggleAgentImport').textContent = '显示';
@@ -1318,7 +1321,7 @@ document.getElementById('uuid').value = '';
 
     let agentVars = {};
     try {
-      agentVars = ArgosbxAgent.variables({type: document.getElementById('nz_type').value, server: m.nz_server, secret: m.nz_sec, repo: nzRepo});
+      agentVars = ArgosbxAgent.variables({type: document.getElementById('nz_type').value, server: m.nz_server, secret: m.nz_sec, repo: nzRepo, nat64: document.getElementById('nz_nat64').checked !== false, dns64: nzDNS64});
     } catch (_) { /* 输入尚未完整时，等待用户继续填写。 */ }
     keys.forEach(k => { if (!ordered.includes(k) && k !== 'nz_server' && k !== 'nz_sec') ordered.push(k); });
     return ordered.map(k => `${k}=${ArgosbxAgent.quote(m[k])}`)
@@ -1358,6 +1361,7 @@ document.getElementById('uuid').value = '';
   const nzSecInput = document.getElementById('nz_sec');
   const nzTypeInput = document.getElementById('nz_type');
   let nzRepo = '';
+  let nzDNS64 = '2a00:1098:2c::1';
   const agentCredentialPrefix = '[探针] ';
 
   function importAgentConfiguration() {
@@ -1368,6 +1372,8 @@ document.getElementById('uuid').value = '';
         ? 'https://' + imported.server : imported.server;
     }
     if (imported.secret) nzSecInput.value = imported.secret;
+    if (typeof imported.nat64 === 'boolean') document.getElementById('nz_nat64').checked = imported.nat64;
+    if (imported.dns64) nzDNS64 = imported.dns64;
     if (imported.installDir) document.getElementById('AGSBX_DIR').value = imported.installDir;
     render();
     generateNzCommand(false);
@@ -1454,6 +1460,7 @@ document.getElementById('uuid').value = '';
     try {
       document.getElementById('nzOutput').value = ArgosbxAgent.command({
         type: nzTypeInput.value, server: nzServerInput.value.trim(), secret: nzSecInput.value.trim(),
+        nat64: document.getElementById('nz_nat64').checked !== false, dns64: nzDNS64,
         repo: nzRepo, installDir: document.getElementById('AGSBX_DIR').value.trim(), logMaxMB: document.getElementById('LOG_MAX_MB').value || '50',
         mode: document.querySelector('input[name="nzEnvMode"]:checked').value,
         downloader: document.querySelector('input[name="nzCmdType"]:checked').value
@@ -1465,7 +1472,8 @@ document.getElementById('uuid').value = '';
     }
   }
 
-  nzTypeInput.addEventListener('change', () => { nzRepo = ''; render(); generateNzCommand(false); });
+  nzTypeInput.addEventListener('change', () => { nzRepo = ''; document.getElementById('nz_nat64').disabled = nzTypeInput.value !== 'komari'; render(); generateNzCommand(false); });
+  document.getElementById('nz_nat64').addEventListener('change', () => { render(); generateNzCommand(false); });
   [nzServerInput, nzSecInput, document.getElementById('AGSBX_DIR')].forEach(input => {
     input.addEventListener('input', () => generateNzCommand(false));
   });

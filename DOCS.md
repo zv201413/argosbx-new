@@ -82,6 +82,7 @@
 | `nz_sec` / `nz_tls` | 探针密钥 / TLS | 空 / 空 | 哪吒通过 `NZ_*` 配置；`nz_tls="--tls"` 开启 TLS |
 | `nz_endpoint` | Komari 完整服务端 URL | 根据主机、端口及 TLS 构造 | `https://monitor.example.com/`；显式 URL 保留协议与路径 |
 | `nz_repo` | Komari 发布包来源 | `komari-monitor/komari-agent` | 导入 fork 时保留，如 `zv201413/komari-agent_new` |
+| `nz_nat64` / `nz_dns64` | Komari 第三方 DNS64/NAT64 | `1` / `2a00:1098:2c::1` | 网页默认勾选；取消后生成 `nz_nat64="0"`。仅作用于 Komari 运行及下载回退，不改系统 DNS；回退下载需 Python 3.8+ |
 | `wippref` | WARP 出站路由选择 | 空（IPv6） | `wippref="sx4"`：双核均强制通过 WARP IPv4 出站 |
 | `argo` | Argo 隧道绑定目标 | 关闭 | `argo="vwpt"`（绑定Vless-ws）或 `argo="vmpt"` |
 | `agn` | Argo 固定隧道域名 | 临时隧道 | `agn="tunnel.yourdomain.com"`（Zero Trust 命名隧道） |

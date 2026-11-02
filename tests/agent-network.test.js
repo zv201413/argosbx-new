@@ -16,7 +16,7 @@ function fn(name) {
   return next < 0 ? rest : rest.slice(0, next + 1);
 }
 const networkFunctions = ['_public_ip_valid', '_public_ip', 'v4v6', 'warpsx'].map(fn).join('\n');
-const agentFunctions = ['_agent_quote', '_agent_running', '_agent_stop', '_agent_download', '_agent_start', 'insnezha'].map(fn).join('\n');
+const agentFunctions = ['_agent_quote', '_agent_running', '_agent_stop', '_agent_dns64_download', '_agent_download', '_agent_start', 'insnezha'].map(fn).join('\n');
 const importText = '(command -v curl >/dev/null 2>&1 && curl -sL https://raw.githubusercontent.com/zv201413/komari-agent_new/refs/heads/main/install.sh || wget -qO- https://raw.githubusercontent.com/zv201413/komari-agent_new/refs/heads/main/install.sh) | bash -s -- -e https://p02--komari--example.code.run -t fixture-secret --install-dir /var/www';
 
 test('Komari import preserves type, fork, full HTTPS endpoint and install directory in both commands', () => {
@@ -151,6 +151,7 @@ test('integrated Komari and Nezha start from the chosen directory with their own
       assert.equal(args[0], target);
       if (type === 'komari') {
         assert.deepEqual(args.slice(1, 6), ['-e', 'https://host.test/monitor/', '-t', secret, '--disable-auto-update']);
+        assert.deepEqual(args.slice(6, 8), ['--custom-dns', '2a00:1098:2c::1']);
       } else {
         assert.deepEqual(args.slice(1), ['-c', path.join(target, 'config.yml'), 'host.test:443', secret, 'true']);
       }
@@ -161,4 +162,43 @@ test('integrated Komari and Nezha start from the chosen directory with their own
       rmSync(dir, {recursive: true, force: true});
     }
   }
+});
+
+test('NAT64 defaults on, can be disabled and preserves import choices', () => {
+  assert.match(html, /id="nz_nat64" type="checkbox" checked/);
+  const options = {type: 'komari', server: 'https://host.test', secret: 'fixture-secret'};
+  const enabled = agent.command(options);
+  assert.match(enabled, /--custom-dns "2a00:1098:2c::1"/);
+  assert.match(enabled, /nat64-download.py/);
+  assert.doesNotMatch(enabled, /resolv.conf|--insecure|--ignore-unsafe-cert/);
+  const disabled = agent.command({...options, nat64: false});
+  assert.doesNotMatch(disabled, /--custom-dns|nat64-download.py/);
+  assert.equal(agent.variables({...options, nat64: false}).nz_nat64, '0');
+  assert.equal(agent.importCommand(importText + ' --install-dns64 off').nat64, false);
+  assert.equal(agent.importCommand(importText + ' --custom-dns 2a00:1098:2c::1').dns64, '2a00:1098:2c::1');
+  const customFork = agent.importCommand(agent.command({...options, repo: 'example/komari-agent'}));
+  assert.equal(customFork.repo, 'example/komari-agent');
+  assert.equal(customFork.nat64, true);
+  for (const downloader of ['curl', 'wget']) {
+    const parsed = spawnSync('sh', ['-n'], {input: agent.command({...options, downloader})});
+    assert.equal(parsed.status, 0, parsed.stderr.toString());
+  }
+});
+
+test('download falls back through DNS64 only when enabled and keeps its HTTPS URL', () => {
+  const dir = mkdtempSync(path.join(tmpdir(), 'argosbx-dns64-'));
+  try {
+    const output = execFileSync('sh', ['-c', `
+      curl(){ case "$*" in *nat64-download.py*) while [ "$#" -gt 0 ]; do if [ "$1" = -o ]; then shift; printf '# fixture' > "$1"; break; fi; shift; done;; *) return 7;; esac; }
+      wget(){ return 1; }
+      python3(){ shift; [ "$1" = --dns ] && [ "$2" = 2a00:1098:2c::1 ] && [ "$3" = --url ] && [ "$4" = https://github.com/owner/repo/releases/latest/download/agent ] || return 1; printf fixture > "$6"; }
+      ${agentFunctions}
+      _agent_download https://github.com/owner/repo/releases/latest/download/agent "$1/download.tmp"
+    `, 'fixture', dir], {env: {...process.env, nz_type: 'komari', nz_nat64: '1'}, encoding: 'utf8'});
+    assert.match(output, /DNS64\/NAT64/);
+    assert.equal(readFileSync(path.join(dir, 'download.tmp'), 'utf8'), 'fixture');
+    const disabled = spawnSync('sh', ['-c', `curl(){ return 7; }; wget(){ return 1; }; ${agentFunctions}\n_agent_download https://github.com/owner/repo/releases/latest/download/agent "$1/off.tmp"`, 'fixture', dir], {env: {...process.env, nz_type: 'komari', nz_nat64: '0'}, encoding: 'utf8'});
+    assert.equal(disabled.status, 1);
+    assert.equal(existsSync(path.join(dir, 'off.tmp')), false);
+  } finally {rmSync(dir, {recursive: true, force: true});}
 });
