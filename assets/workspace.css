@@ -72,29 +72,34 @@
 .field-note { font-size: 12px; color: var(--sub); line-height: 1.85; margin: 20px 0 0; opacity: .8; }
 .config-panel > details { background: rgba(255,255,255,.015); }
 .config-panel > details > summary { min-height: 46px; }
+.deploy-workspace #panel-agent { padding-top: 16px; }
+.deploy-workspace #panel-agent .panel-intro { margin-bottom: 12px; }
+.deploy-workspace #panel-agent .row { margin: 8px 0; }
+.deploy-workspace #panel-agent input[type="text"], .deploy-workspace #panel-agent select { min-height: 32px; padding: 6px 10px; line-height: 18px; }
 .deploy-workspace .nezha-import { grid-template-columns: 132px minmax(0,1fr); gap: 8px 14px; margin-bottom: 18px; }
 .deploy-workspace .nezha-import label { font-size: 12px; white-space: nowrap; }
-.deploy-workspace .nezha-import input { min-height: 43px; }
-.deploy-workspace #agentCredentials { margin-bottom: 20px; }
+.deploy-workspace #agentCredentials { margin-bottom: 12px; }
 .deploy-workspace #agentCredentials .nezha-import { margin-bottom: 0; }
-.deploy-workspace #agentCredentials .actions { padding-top: 5px; gap: 8px; }
-.deploy-workspace #agentCredentials button { font-size: 12px; border-radius: 7px; padding: 9px 12px; }
+.deploy-workspace #agentCredentials .actions { margin-top: 8px; padding-top: 0; gap: 8px; }
+.deploy-workspace #agentCredentials button { min-height: 32px; font-size: 12px; line-height: 18px; border-radius: 7px; padding: 6px 10px; }
 .agent-import-editor { position: relative; flex: 1; min-width: 0; }
-.deploy-workspace #agentCredentials textarea { display: block; width: 100%; min-height: 43px; margin: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--input-bg); color: var(--ink); font: inherit; font-size: 13px; line-height: 20px; resize: vertical; }
+.deploy-workspace #agentCredentials textarea { display: block; width: 100%; min-height: 32px; margin: 0; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--input-bg); color: var(--ink); font: inherit; font-size: 13px; line-height: 18px; resize: vertical; }
 .deploy-workspace #agentCredentials textarea::placeholder { white-space: nowrap; }
 .deploy-workspace #agentCredentials textarea:placeholder-shown { overflow: hidden; }
-.agent-import-mask { display: none; position: absolute; inset: 0; align-items: center; overflow: hidden; padding: 10px 12px; color: var(--ink); white-space: nowrap; pointer-events: none; }
+.agent-import-mask { display: none; position: absolute; inset: 0; align-items: center; overflow: hidden; padding: 6px 10px; color: var(--ink); white-space: nowrap; pointer-events: none; }
 .agent-import-control[data-masked="true"] textarea:not(:placeholder-shown) { color: transparent !important; caret-color: var(--ink); }
 .agent-import-control[data-masked="true"] textarea:not(:placeholder-shown)::selection { color: transparent; }
 .agent-import-control[data-masked="true"] textarea:not(:placeholder-shown) + .agent-import-mask { display: flex; }
-.deploy-workspace .nezha-fields { gap: 16px; margin-top: 14px; }
+.deploy-workspace .nezha-fields { gap: 10px; margin-top: 10px; }
+.deploy-workspace .nezha-field { gap: 4px; }
 .deploy-workspace .nezha-field label { font-size: 12px; gap: 4px; }
-.deploy-workspace .nezha-fields input { min-height: 43px; }
 .deploy-workspace .row.agent-compatibility { grid-template-columns: minmax(0,1fr); }
 .deploy-workspace .agent-compatibility label { white-space: nowrap; }
 .agent-compatibility input { flex-shrink: 0; }
 .agent-standalone { margin-top: 22px; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }
 .agent-standalone > summary, .maintenance-commands > summary, .client-resources > summary { display: flex; align-items: center; gap: 8px; padding: 13px 14px; list-style: none; cursor: pointer; font-size: 12px; color: var(--sub); }
+.deploy-workspace .agent-standalone { margin-top: 12px; }
+.deploy-workspace .agent-standalone > summary { min-height: 34px; padding: 8px 12px; }
 .agent-standalone > summary::-webkit-details-marker, .maintenance-commands > summary::-webkit-details-marker, .client-resources > summary::-webkit-details-marker { display: none; }
 .agent-standalone summary svg { width: 16px; height: 16px; }
 .fold-note { margin-left: auto; font-size: 11px; color: var(--sub); opacity: .6; }
