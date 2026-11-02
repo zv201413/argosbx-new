@@ -802,11 +802,11 @@
           </details>
             </div>
             <div class="config-panel" id="panel-agent" role="tabpanel" aria-labelledby="tab-agent" hidden>
-              <div class="panel-intro"><h3>哪吒 / Komari 探针</h3><p>填写后随主脚本一起安装，也可从现有安装命令导入。</p></div>
+              <div class="panel-intro"><h3>哪吒 / Komari 探针</h3></div>
               <form id="agentCredentials" method="post" autocomplete="off">
                 <div class="nezha-import">
                   <label for="agentCredentialNote">备注</label>
-                  <input id="agentCredentialNote" name="agent-label" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="如：Komari 主面板，作为保存账号">
+                  <input id="agentCredentialNote" name="agent-label" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="如：Komari 主面板">
                   <label for="nezhaImportInput">📥 从安装命令导入</label>
                   <div class="input-with-button agent-import-control" data-masked="true">
                     <div class="agent-import-editor">
@@ -832,8 +832,7 @@
               <input id="nz_sec" type="text" placeholder="agent_secret_key" style="flex:1; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:var(--input-bg); color:var(--ink); font-size:13px; outline:none; margin:0;">
             </div>
           </div>
-              <div class="row"><label for="nz_nat64"><input id="nz_nat64" type="checkbox" checked> 第三方 DNS64/NAT64 兼容（默认开启）</label></div>
-              <p class="muted" style="font-size:12px">Komari 使用 nat64.net 的 2a00:1098:2c::1，帮助 IPv6-only 节点连接 IPv4 面板。取消勾选即关闭；不修改系统 DNS，不跳过 TLS 验证。</p>
+              <div class="row agent-compatibility"><label for="nz_nat64"><input id="nz_nat64" type="checkbox" checked> DNS64/NAT64 兼容（默认开启）</label></div>
               <details class="agent-standalone"><summary><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 7 5 5-5 5M13 17h6"/></svg>单独安装探针<span class="fold-note">展开命令</span></summary><div class="nezha-command">
             <div class="nezha-controls">
               <div>
