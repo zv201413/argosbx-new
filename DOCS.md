@@ -47,13 +47,15 @@
 |:---|:---|:---|:---|
 | `vlpt` | Vless-tcp-reality-vision | `vlpt="443"` | 支持 ENC 加密扩展 |
 | `xhpt` | Vless-xhttp-reality | `xhpt="443"` | 支持 ENC 加密扩展 |
+| `xupt` | Vless-xhttp-tls-UDP | `xupt="10443"` | Xray HTTP/3 UDP 直连 |
+| `xcpt` | Vless-xhttp-tls-TCP/UDP | `xcpt="10444"` | Xray TCP 回源，CDN 端可用 HTTP/3 |
 | `vxpt` | Vless-xhttp | `vxpt="443"` | 支持 ENC 加密扩展 |
 | `vwpt` | Vless-ws | `vwpt="8080"` | 支持 ENC 加密，支持 Argo 隧道 |
 | `vmpt` | Vmess-ws | `vmpt="8080"` | 支持 Argo 隧道 |
 | `anpt` | AnyTLS | `anpt="443"` | 任意 SNI 模拟 |
 | `arpt` | Any-reality | `arpt="443"` | Reality 增强 |
 | `sspt` | Shadowsocks-2022 | `sspt="8388"` | 现代加密标准 |
-| `hypt` | Hysteria2 | `hypt="443"` | 支持端口跳跃与证书钉扎 |
+| `hypt` | Hysteria2 | `hypt="443"` | 跟随 Xray / Sing-box，支持端口跳跃与证书钉扎 |
 | `hyjpt`| Hysteria2 端口跳跃 | `hyjpt="20000:30000 40000"` | 依赖 `hypt` 启用 |
 | `tupt` | Tuic v5 | `tupt="443"` | 支持证书公钥验证 |
 | `sopt` | Socks5 | `sopt="1080"` | 明文/基础代理出站 |
@@ -69,7 +71,21 @@
 | `vxpt_enc` | Vless-xhttp 加密 | 赋值 `1` 或 `y` 启用 ENC |
 | `vwpt_enc` | Vless-ws 加密 | 赋值 `1` 或 `y` 启用 ENC |
 
-> 📌 **内核按需调度机制**：新版进行了资源解耦——未开启 ENC 时，协议优先以轻量的 Sing-box 核心运行；仅在勾选对应 `_enc` 变量时，才会按需拉起 Xray 内核处理加解密，绝不多占内存。
+> 📌 **内核按需调度机制**：`vlpt/xhpt/vxpt/xupt/xcpt` 为 Xray 协议；`vwpt` 启用 ENC 时也需要 Xray。`hypt/vmpt/sopt` 和未加密的 `vwpt` 跟随本次核心选择；没有 Xray 需求时使用 Sing-box，容器不支持 Sing-box 时回退 Xray。ENC 状态从已安装的入站配置回读，`list` 无需重传开关。`0/n` 关闭 ENC，`1/y` 开启。
+
+新增 XHTTP TLS 配置（TLS 与 ENC 独立）：
+
+| 参数 | 用途 |
+|:---|:---|
+| `xupt` / `xcpt` | 内部监听端口；显式赋空字符串时随机生成 |
+| `xupt_ext` / `xcpt_ext` | 公网节点端口，未指定时使用内部端口，保存并回读 |
+| `tls_cert` / `tls_key` | 服务器上已有的证书链与私钥路径；自定义时两项都必填 |
+| `tls_sni` | 自定义证书覆盖的域名，必须匹配证书 |
+| `cdnym` / `argoip` | `xcpt` 的 CDN 主机名 / 优选地址，需与证书、HTTPS 边缘端口和 TCP 回源配套 |
+
+留空使用现有稳定自签证书，SNI 为 `www.bing.com`；XHTTP 自签链接的 `pcs` 是整证书 SHA256 **hex**，Hy2 原有 `pinSHA256` 则为公钥 SHA256 **base64**，两者不可混用。未支持 `pcs` 的客户端需手动配置信任证书。
+
+`xupt` 是 HTTP/3 UDP 直连；`xcpt` 服务器只监听 TCP，CDN 节点的 UDP 指客户端至 CDN 的 HTTP/3。CDN 需要受信任的域名证书、允许的 HTTPS 边缘端口（443、2053、2083、2087、2096、8443）、可用的 TCP 回源映射，并开启 HTTP/3。自签 / 私有 CA 证书不能直接假定满足 CDN 严格验证。Xray 在启动前校验配置，不支持新增功能的旧核心须先 `agsbx upx`。
 
 ### 3. 可选功能与网络控制变量
 
@@ -223,11 +239,11 @@ cat ~/agsbx/cert.crt
 | 模式 | 节点 Address 字段 | 端口策略 | 适用网络效果 |
 |:---|:---|:---|:---|
 | **默认（IPv4）** | `31.22.111.169` | 外部映射端口 `22325` | 依赖商家 NAT 转发稳定性，特殊协议可能受限 |
-| **IPv6 优先 (`ippz=6`)** | `[2001:470:1f18::15b]` | 内部真实端口 `2325` | 直接打通容器内网端口，免除 NAT 映射，全协议畅通 |
+| **IPv6 优先 (`ippz=6`)** | `[2001:470:1f18::15b]` | 仍优先使用已保存的 `*_ext`；未设置时使用内部端口 | IPv6 直连须核对输出端口与监听端口一致 |
 
 ### 3. 选用建议
 - 常规独立公网 IP 的 VPS：保持默认留空即可。
-- 存在外部端口映射、或 AnyTLS 握手报错的 NAT VPS：在安装命令中追加 `ippz="6"`。
+- NAT VPS 可使用 `ippz="6"` 选择 IPv6 地址，但它不切换端口。已保存 `*_ext` 时仍使用该值；IPv6 无 NAT 的机器须确保节点端口等于内部监听端口。临时传入 `*_ext=内部端口` 会更新保存值，恢复 IPv4 NAT 前需重新传回公网映射值。
 - 在已安装的机器上临时查看 IPv6 节点：执行 `ippz=6 agsbx list`。
 
 ---
@@ -302,6 +318,7 @@ ippz=4 agsbx list
 
 | 外部端口参数 | 持久化文件 |
 |---|---|
+| `xupt_ext` / `xcpt_ext` | `port_xu_ext` / `port_xc_ext` |
 | `hypt_ext` | `port_hy2_ext` |
 | `tupt_ext` | `port_tu_ext` |
 | `anpt_ext` | `port_an_ext` |

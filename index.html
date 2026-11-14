@@ -651,12 +651,13 @@
             <label style="font-size:10px"><input type="checkbox" data-proto="vlpt"> Vless-tcp-reality-vision <span class="pill">vlpt</span></label><div class="port-inputs"><input type="text" placeholder="端口(留空随机)" data-port="vlpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="vlpt" hidden></div><label style="font-size:11px"><input type="checkbox" data-enc="vlpt"> ENC<span style="font-size:12px">加密</span></label>
             <label style="font-size:11px"><input type="checkbox" data-proto="xhpt"> Vless-xhttp-reality <span class="pill">xhpt</span></label><div class="port-inputs"><input type="text" placeholder="端口(留空随机)" data-port="xhpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="xhpt" hidden></div><label style="font-size:11px"><input type="checkbox" data-enc="xhpt"> ENC<span style="font-size:12px">加密</span></label>
             <label><input type="checkbox" data-proto="vxpt"> Vless-xhttp <span class="pill">vxpt</span></label><div class="port-inputs"><input type="text" placeholder="端口(留空随机)" data-port="vxpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="vxpt" hidden></div><label style="font-size:11px"><input type="checkbox" data-enc="vxpt"> ENC<span style="font-size:12px">加密</span></label>
+            <label style="font-size:11px"><input type="checkbox" data-proto="xupt"> Vless-xhttp-tls-UDP <span class="pill">xupt</span></label><div class="port-inputs"><input type="text" placeholder="端口(留空随机)" data-port="xupt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="xupt" hidden></div><span class="field-note">HTTP/3 直连</span>
+            <label style="font-size:11px"><input type="checkbox" data-proto="xcpt"> Vless-xhttp-tls-TCP/UDP <span class="pill">xcpt</span></label><div class="port-inputs"><input type="text" placeholder="端口(留空随机)" data-port="xcpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="xcpt" hidden></div><span class="field-note">TCP 回源 / CDN HTTP/3</span>
           </div>
         </div>
         <div class="protocol-group separator">
           <h3>Singbox可选协议：</h3>
           <div class="protocol-grid">
-            <label><input type="checkbox" data-proto="hypt"> Hysteria2 <span class="pill">hypt</span></label><div class="port-inputs"><input type="text" placeholder="端口(留空随机)" data-port="hypt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="hypt" hidden></div><input id="hyjpt" type="text" placeholder="端口跳跃 xx:xx xx" disabled style="width:100%;padding:8px 8px;border:1px solid var(--line);border-radius:8px;background:var(--input-bg);color:var(--ink);outline:none;box-sizing:border-box;font-size:12px;"/>
             <label><input type="checkbox" data-proto="tupt"> Tuic <span class="pill">tupt</span></label><div class="port-inputs"><input type="text" placeholder="端口(留空随机)" data-port="tupt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="tupt" hidden></div><label></label>
             <label><input type="checkbox" data-proto="anpt"> AnyTLS <span class="pill">anpt</span></label><div class="port-inputs"><input type="text" placeholder="端口(留空随机)" data-port="anpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="anpt" hidden></div><label></label>
             <label><input type="checkbox" data-proto="arpt"> Any-reality <span class="pill">arpt</span></label><div class="port-inputs"><input type="text" placeholder="端口(留空随机)" data-port="arpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="arpt" hidden></div><label></label>
@@ -664,8 +665,10 @@
           </div>
         </div>
         <div class="protocol-group">
-          <h3>Xray/Singbox自动分配协议：</h3>
+          <h3>自动（已选 Xray 则用 Xray，否则 Sing-box）：</h3>
+          <p class="field-note">Vless-ws 开启 ENC 时使用 Xray；容器不支持 Sing-box 时自动回退。</p>
           <div class="protocol-grid">
+            <label><input type="checkbox" data-proto="hypt"> Hysteria2 <span class="pill">hypt</span></label><div class="port-inputs"><input type="text" placeholder="端口(留空随机)" data-port="hypt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="hypt" hidden></div><input id="hyjpt" type="text" placeholder="端口跳跃 xx:xx xx" disabled style="width:100%;padding:8px 8px;border:1px solid var(--line);border-radius:8px;background:var(--input-bg);color:var(--ink);outline:none;box-sizing:border-box;font-size:12px;"/>
             <label><input type="checkbox" data-proto="vwpt"> Vless-ws <span class="pill">vwpt</span></label><div class="port-inputs"><input type="text" placeholder="端口(留空随机)" data-port="vwpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="vwpt" hidden></div><label style="font-size:11px"><input type="checkbox" data-enc="vwpt"> ENC<span style="font-size:12px">加密</span></label>
             <label><input type="checkbox" data-proto="vmpt"> Vmess-ws <span class="pill">vmpt</span></label><div class="port-inputs"><input type="text" placeholder="端口(留空随机)" data-port="vmpt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="vmpt" hidden></div><label></label>
             <label><input type="checkbox" data-proto="sopt"> Socks5 <span class="pill">sopt</span></label><div class="port-inputs"><input type="text" placeholder="端口(留空随机)" data-port="sopt"><input type="text" placeholder="外部端口(留空同内部)" data-extport="sopt" hidden></div><label></label>
@@ -689,9 +692,19 @@
           </summary>
           <div style="padding:0 14px 14px;">
             <div class="row"><label>Argo优选IP/域名 <span class="pill">argoip</span></label><input id="argoip" type="text" placeholder="多个用 ; 分隔，如 ip1;ip2;domain1"></div>
-            <div class="row"><label>CF解析IP的域名 <span class="pill">cdnym</span></label><input id="cdnym" type="text" placeholder="Vmess-ws、Vless-xhttp/ws启用80、回源CDN时可用" disabled></div>
+            <div class="row"><label>CF解析IP的域名 <span class="pill">cdnym</span></label><input id="cdnym" type="text" placeholder="Vmess-ws、Vless-xhttp/ws回源 CDN；xcpt 填证书覆盖的 CF 域名" disabled></div>
           </div>
         </details></div>
+        <details style="margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:0;">
+          <summary style="cursor:pointer;padding:10px 14px;">XHTTP TLS 证书与 CDN</summary>
+          <div style="padding:0 14px 14px;">
+            <p class="field-note">xupt 为 UDP/HTTP3 直连；xcpt 为 TCP 回源，CDN 端可使用 HTTP3。留空使用稳定自签证书，直连链接携带证书指纹；客户端需支持证书钉扎。</p>
+            <div class="row"><label for="tls_cert">服务器证书路径</label><input id="tls_cert" type="text" placeholder="如 /etc/ssl/example/fullchain.pem"></div>
+            <div class="row"><label for="tls_key">服务器私钥路径</label><input id="tls_key" type="text" placeholder="如 /etc/ssl/example/privkey.pem"></div>
+            <div class="row"><label for="tls_sni">证书域名 / SNI</label><input id="tls_sni" type="text" placeholder="自定义证书时必填，如 example.com"></div>
+            <p class="field-note">自定义证书须同时填写以上三项。xcpt 经 CDN 使用时，填写上方 CF 域名及优选地址；CDN 需支持对应 HTTPS 端口、开启 HTTP3 并允许该 TCP 回源端口。</p>
+          </div>
+        </details>
           <div class="connection-group node-group"><h3>节点设置</h3><div class="row"><label for="name">节点名称前缀</label>
           <input id="name" type="text" placeholder="将显示为：前缀+国家代码+ISP" title="留空使用默认节点名；实际命名由部署脚本生成">
         </div><div class="row"><label>Address: IPv4/IPv6 <span class="pill">ippz</span></label>
@@ -934,8 +947,8 @@
       exec: `bash argosbx.sh`
     }
   };
-const protoKeys = ['sopt','vmpt','vlpt','xhpt','vxpt','vwpt','arpt','anpt','hypt','tupt','sspt'];
-const optIds = ['warp','ippz','ippref','wippref','uuid','reym','cdnym', 'name', 'oap', 'argoip', 'nodeaddr', 'hyjpt', 'gh_token', 'gh_gist_id', 'QR_SHARE', 'IOS_SHARE', 'QR_TERM', 'nz_server', 'nz_sec', 'KNOCK', 'KNOCK_PORT', 'IDLE_TIMEOUT', 'STEALTH_NAME', 'AGSBX_DIR', 'LOG_MAX_MB'];
+const protoKeys = ['sopt','vmpt','vlpt','xhpt','vxpt','xupt','xcpt','vwpt','arpt','anpt','hypt','tupt','sspt'];
+const optIds = ['warp','ippz','ippref','wippref','uuid','reym','cdnym', 'name', 'oap', 'argoip', 'nodeaddr', 'hyjpt', 'gh_token', 'gh_gist_id', 'QR_SHARE', 'IOS_SHARE', 'QR_TERM', 'nz_server', 'nz_sec', 'KNOCK', 'KNOCK_PORT', 'IDLE_TIMEOUT', 'STEALTH_NAME', 'AGSBX_DIR', 'LOG_MAX_MB', 'tls_cert', 'tls_key', 'tls_sni'];
 
   const argoSelect = document.getElementById('argoSelect');
   const agn = document.getElementById('agn');
@@ -1096,7 +1109,7 @@ document.getElementById('uuid').value = '';
   }
 
   function updateCdnymState() {
-      const isAnyProtocolChecked = vmessWsCheckbox.checked || vlessXhttpCheckbox.checked || vlessWsVCheckbox.checked;
+      const isAnyProtocolChecked = vmessWsCheckbox.checked || vlessXhttpCheckbox.checked || vlessWsVCheckbox.checked || document.querySelector('[data-proto="xcpt"]').checked;
 
       cdnymInput.disabled = !isAnyProtocolChecked;
 
@@ -1168,7 +1181,7 @@ document.getElementById('uuid').value = '';
         ck.checked = true;
       }
 
-      if (key === 'vmpt' || key === 'vwpt' || key === 'vxpt') {
+      if (key === 'vmpt' || key === 'vwpt' || key === 'vxpt' || key === 'xcpt') {
         updateCdnymState();
       }
       render();
@@ -1183,6 +1196,7 @@ document.getElementById('uuid').value = '';
       if (inp.value.trim() !== '' && !ck.checked) {
         ck.checked = true;
       }
+      if (key === 'xcpt') updateCdnymState();
       render();
     });
   });
@@ -1201,7 +1215,7 @@ document.getElementById('uuid').value = '';
         }
       }
 
-      if (ck.getAttribute('data-proto') === 'vmpt' || ck.getAttribute('data-proto') === 'vxpt' || ck.getAttribute('data-proto') === 'vwpt') {
+      if (['vmpt', 'vxpt', 'vwpt', 'xcpt'].includes(ck.getAttribute('data-proto'))) {
           updateCdnymState();
       }
       render();
@@ -1280,7 +1294,7 @@ document.getElementById('uuid').value = '';
     const encKeys = ['vlpt', 'xhpt', 'vxpt', 'vwpt'];
     encKeys.forEach(k => {
       const encCb = document.querySelector(`[data-enc="${k}"]`);
-      if (encCb && encCb.checked) {
+      if (encCb && encCb.checked && document.querySelector(`[data-proto="${k}"]`).checked) {
         m[k + '_enc'] = 'y';
       }
     });

@@ -19,6 +19,8 @@ export LANG=en_US.UTF-8
 [ -z "${tupt+x}" ] || tup=yes
 [ -z "${xhpt+x}" ] || xhp=yes
 [ -z "${vxpt+x}" ] || vxp=yes
+[ -z "${xupt+x}" ] || xup=yes
+[ -z "${xcpt+x}" ] || xcp=yes
 [ -z "${anpt+x}" ] || anp=yes
 [ -z "${sspt+x}" ] || ssp=yes
 [ -z "${arpt+x}" ] || arp=yes
@@ -26,10 +28,10 @@ export LANG=en_US.UTF-8
 [ -z "${warp+x}" ] || wap=yes
 if find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null | grep -Eq 'agsbx/(s|x)' || pgrep -f 'agsbx/(s|x)' >/dev/null 2>&1; then
 if [ "$1" = "rep" ]; then
-[ "$vwp" = yes ] || [ "$sop" = yes ] || [ "$vxp" = yes ] || [ "$ssp" = yes ] || [ "$vlp" = yes ] || [ "$vmp" = yes ] || [ "$hyp" = yes ] || [ "$tup" = yes ] || [ "$xhp" = yes ] || [ "$anp" = yes ] || [ "$arp" = yes ] || { echo "提示：rep重置协议时，请在脚本前至少设置一个协议变量哦，再见！💣"; exit; }
+[ "$xup" = yes ] || [ "$xcp" = yes ] || [ "$vwp" = yes ] || [ "$sop" = yes ] || [ "$vxp" = yes ] || [ "$ssp" = yes ] || [ "$vlp" = yes ] || [ "$vmp" = yes ] || [ "$hyp" = yes ] || [ "$tup" = yes ] || [ "$xhp" = yes ] || [ "$anp" = yes ] || [ "$arp" = yes ] || { echo "提示：rep重置协议时，请在脚本前至少设置一个协议变量哦，再见！💣"; exit; }
 fi
 else
-[ "$1" = "del" ] || [ "$vwp" = yes ] || [ "$sop" = yes ] || [ "$vxp" = yes ] || [ "$ssp" = yes ] || [ "$vlp" = yes ] || [ "$vmp" = yes ] || [ "$hyp" = yes ] || [ "$tup" = yes ] || [ "$xhp" = yes ] || [ "$anp" = yes ] || [ "$arp" = yes ] || { echo "提示：未安装argosbx脚本，请在脚本前至少设置一个协议变量哦，再见！💣"; exit; }
+[ "$1" = "del" ] || [ "$xup" = yes ] || [ "$xcp" = yes ] || [ "$vwp" = yes ] || [ "$sop" = yes ] || [ "$vxp" = yes ] || [ "$ssp" = yes ] || [ "$vlp" = yes ] || [ "$vmp" = yes ] || [ "$hyp" = yes ] || [ "$tup" = yes ] || [ "$xhp" = yes ] || [ "$anp" = yes ] || [ "$arp" = yes ] || { echo "提示：未安装argosbx脚本，请在脚本前至少设置一个协议变量哦，再见！💣"; exit; }
 fi
 export uuid=${uuid:-''}
 export port_vl_re=${vlpt:-''}
@@ -50,6 +52,13 @@ export port_xh=${xhpt:-''}
 export port_xh_ext=${xhpt_ext:-''}
 export port_vx=${vxpt:-''}
 export port_vx_ext=${vxpt_ext:-''}
+export port_xu=${xupt:-''}
+export port_xu_ext=${xupt_ext:-''}
+export port_xc=${xcpt:-''}
+export port_xc_ext=${xcpt_ext:-''}
+export tls_cert=${tls_cert:-''}
+export tls_key=${tls_key:-''}
+export tls_sni=${tls_sni:-''}
 export port_an=${anpt:-''}
 export port_an_ext=${anpt_ext:-''}
 export port_ar=${arpt:-''}
@@ -327,7 +336,7 @@ _agsbx_ext_sync(){ # $1=变量名 $2=端口文件：有值落盘；无值且文�
 		IFS= read -r _es_v < "$2" && eval "$1=\$_es_v"
 	fi
 }
-for _pe in vl_re xh vx vw vm_ws ss so hy2 tu an ar; do
+for _pe in vl_re xh vx xu xc vw vm_ws ss so hy2 tu an ar; do
 	_agsbx_ext_sync "port_${_pe}_ext" "$AGSBX/port_${_pe}_ext"
 done
 unset _pe
@@ -412,7 +421,7 @@ check_netlink_full_support(){
 
 SB_SUPPORTED=1
 case "$1" in
-    del|list|upx|ups|res|help|-h|rep)
+    del|list|upx|ups|res|help|-h)
         # 运维指令无需进行环境兼容性检测，直接跳过
         ;;
     *)
@@ -422,7 +431,6 @@ esac
 
 if [ "$SB_SUPPORTED" = 0 ]; then
     SB_SKIP_REASON=""
-    [ -n "$hyp" ] && SB_SKIP_REASON="${SB_SKIP_REASON}hyp "
     [ -n "$tup" ] && SB_SKIP_REASON="${SB_SKIP_REASON}tup "
     [ -n "$anp" ] && SB_SKIP_REASON="${SB_SKIP_REASON}anp "
     [ -n "$arp" ] && SB_SKIP_REASON="${SB_SKIP_REASON}arp "
@@ -437,7 +445,7 @@ if [ "$SB_SUPPORTED" = 0 ]; then
     
     XRAY_FORCE_MODE=1
     
-    hyp="" tup="" anp="" arp="" ssp=""
+    tup="" anp="" arp="" ssp=""
 fi
 
 # =============================================================================
@@ -663,6 +671,148 @@ uuid=$(cat "$AGSBX/uuid")
 echo "UUID密码：$uuid"
 }
 
+_agsbx_cert_ensure(){
+# 证书去重：SHA256.txt 存在则跳过生成（保证客户端 pinSHA256 指纹稳定不变）
+# 确保 openssl 存在（多发行版，apk 需先 update）
+if [ ! -f "$AGSBX/SHA256.txt" ]; then
+	if ! command -v openssl >/dev/null 2>&1; then
+		command -v apk     >/dev/null 2>&1 && { apk update >/dev/null 2>&1; apk add --no-cache openssl >/dev/null 2>&1; }
+		command -v apt-get >/dev/null 2>&1 && { apt-get update >/dev/null 2>&1; DEBIAN_FRONTEND=noninteractive apt-get install -y openssl >/dev/null 2>&1; }
+		command -v dnf     >/dev/null 2>&1 && dnf install -y openssl >/dev/null 2>&1
+		command -v yum     >/dev/null 2>&1 && yum install -y openssl >/dev/null 2>&1
+	fi
+	# 一步生成匹配的 key+cert (ECC P-256)
+	if command -v openssl >/dev/null 2>&1; then
+		openssl ecparam -genkey -name prime256v1 -out "$AGSBX/private.key" >/dev/null 2>&1
+		openssl req -new -x509 -days 36500 -key "$AGSBX/private.key" -out "$AGSBX/cert.crt" -subj "/CN=www.bing.com" -addext "subjectAltName=DNS:www.bing.com" >/dev/null 2>&1
+	fi
+	# 内容校验 + SHA256 指纹计算
+	if ! grep -q "BEGIN CERTIFICATE" "$AGSBX/cert.crt" 2>/dev/null; then
+		echo "ERROR: 自签证书生成失败（openssl 不可用？）。请在 VPS 手动安装 openssl 后重装。"
+		return 1
+	fi
+	SHA256=$(openssl x509 -in "$AGSBX/cert.crt" -outform DER | sha256sum | awk '{print $1}')
+	echo "$SHA256" > "$AGSBX/SHA256.txt"
+	# sing-box certificate_public_key_sha256: 公钥 SHA256 base64 (兼容 NekoBox/sing-box GUI 等客户端)
+	PUBKEY_SHA256_B64=$(openssl x509 -in "$AGSBX/cert.crt" -pubkey -noout 2>/dev/null | openssl pkey -pubin -outform der 2>/dev/null | openssl dgst -sha256 -binary | openssl enc -base64)
+	echo "$PUBKEY_SHA256_B64" > "$AGSBX/PUBKEY_SHA256_B64.txt"
+fi
+}
+
+# Read fields from one top-level JSON object, respecting quoted braces and escapes.
+# Works with both generated and compact xr.json; no Python/jq runtime dependency.
+_agsbx_inbound_field(){ # config tag field
+    [ -f "$1" ] || return 0
+    LC_ALL=C awk -v tag="$2" -v field="$3" '
+    function value(o, k, v) {
+        if (!match(o, "\"" k "\"[[:space:]]*:[[:space:]]*\"[^\"]*\"")) return ""
+        v=substr(o,RSTART,RLENGTH); sub(/^[^:]*:[[:space:]]*"/,"",v); sub(/"$/,"",v); return v
+    }
+    { for(i=1;i<=length($0);i++) {
+        c=substr($0,i,1)
+        if(depth>=2) obj=obj c
+        if(quoted) { if(escaped) escaped=0; else if(c=="\\") escaped=1; else if(c=="\"") quoted=0; continue }
+        if(c=="\"") { quoted=1; continue }
+        if(c=="{") { depth++; if(depth==2) obj="{" }
+        if(c=="}") { if(depth==2 && value(obj,"tag")==tag) { print value(obj,field); exit }; depth-- }
+    }; if(depth>=2) obj=obj "\n" }' "$1"
+}
+_agsbx_vless_encryption(){
+    _ve=$(_agsbx_inbound_field "$AGSBX/xr.json" "$1" decryption)
+    case "$_ve" in ''|none) printf 'none';; *) cat "$AGSBX/xrk/enkey";; esac
+}
+_agsbx_enc_enabled(){
+    case "$1" in 1|y) return 0;; ''|0|n) return 1;; *) echo "❌ ENC 开关仅支持 1/y 或 0/n" >&2; exit 1;; esac
+}
+_agsbx_json_string(){
+    printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
+}
+_agsbx_tls_setup(){
+    _agsbx_cert_ensure || return 1
+    if [ -n "$tls_cert" ] || [ -n "$tls_key" ]; then
+        [ -s "$tls_cert" ] && [ -s "$tls_key" ] && [ -n "$tls_sni" ] || { echo '❌ 自定义 TLS 需要 tls_cert、tls_key 和 tls_sni'; return 1; }
+        XHTTP_CERT=$tls_cert; XHTTP_KEY=$tls_key; XHTTP_SNI=$tls_sni
+        openssl verify -partial_chain -trusted "$XHTTP_CERT" -verify_hostname "$XHTTP_SNI" "$XHTTP_CERT" >/dev/null 2>&1 || { echo '❌ TLS 证书无效或不匹配 tls_sni'; return 1; }
+        XHTTP_CUSTOM=1
+    else
+        [ -z "$tls_sni" ] || [ "$tls_sni" = www.bing.com ] || { echo '❌ 自签模式的 tls_sni 须为 www.bing.com；其它域名请提供匹配证书'; return 1; }
+        XHTTP_CERT="$AGSBX/cert.crt"; XHTTP_KEY="$AGSBX/private.key"; XHTTP_SNI=www.bing.com; XHTTP_CUSTOM=0
+    fi
+    _tc_pub=$(openssl x509 -in "$XHTTP_CERT" -pubkey -noout 2>/dev/null) || return 1
+    _tk_pub=$(openssl pkey -in "$XHTTP_KEY" -pubout -passin pass: 2>/dev/null) || return 1
+    [ "$_tc_pub" = "$_tk_pub" ] || { echo '❌ TLS 证书与私钥不匹配'; return 1; }
+    XHTTP_TRUSTED=0
+    if openssl verify -untrusted "$XHTTP_CERT" "$XHTTP_CERT" >/dev/null 2>&1; then XHTTP_TRUSTED=1; fi
+    printf '%s\n' "$XHTTP_SNI" > "$AGSBX/xhttp_tls_sni"
+    printf '%s\n' "$XHTTP_CUSTOM" > "$AGSBX/xhttp_tls_custom"
+    printf '%s\n' "$XHTTP_TRUSTED" > "$AGSBX/xhttp_tls_trusted"
+    printf '%s\n' "$XHTTP_CERT" > "$AGSBX/xhttp_tls_cert"
+    [ -z "$cdnym" ] || printf '%s\n' "$cdnym" > "$AGSBX/cdnym"
+    return 0
+}
+_agsbx_xhttp_tls(){ # xu/xc port alpn
+    _xt_kind=$1; _xt_port=$2; _xt_alpn=$3
+    cat >> "$AGSBX/xr.json" <<EOF
+    {
+      "tag": "xhttp-tls-${_xt_kind}",
+      "listen": "::",
+      "port": ${_xt_port},
+      "protocol": "vless",
+      "settings": {"clients": [{"id": "${uuid}"}], "decryption": "none"},
+      "streamSettings": {
+        "network": "xhttp", "security": "tls",
+        "xhttpSettings": {"mode": "auto", "path": "/${uuid}-${_xt_kind}"},
+        "tlsSettings": {
+          "alpn": [${_xt_alpn}],
+          "certificates": [{"certificateFile": "$(_agsbx_json_string "$XHTTP_CERT")", "keyFile": "$(_agsbx_json_string "$XHTTP_KEY")"}]
+        }
+      }
+    },
+EOF
+}
+_agsbx_core_plan(){
+    NEED_XRAY=0; NEED_SB=0
+    if [ "$XRAY_FORCE_MODE" = 1 ] || [ "$vlp" = yes ] || [ "$xhp" = yes ] || [ "$vxp" = yes ] || [ "$xup" = yes ] || [ "$xcp" = yes ]; then NEED_XRAY=1; fi
+    if [ "$vwp" = yes ] && _agsbx_enc_enabled "$port_vw_enc"; then NEED_XRAY=1; fi
+    if [ "$XRAY_FORCE_MODE" != 1 ]; then
+        if [ "$tup" = yes ] || [ "$anp" = yes ] || [ "$arp" = yes ] || [ "$ssp" = yes ] || [ "$NEED_XRAY" = 0 ]; then NEED_SB=1; fi
+    fi
+}
+xrsbhy2(){
+    [ "$hyp" = yes ] || { hyp=hyptargo; return 0; }
+    _agsbx_cert_ensure || exit 1
+    hyp=hypt
+    if [ -n "$port_hy2" ]; then echo "$port_hy2" > "$AGSBX/port_hy2"; fi
+    if [ ! -e "$AGSBX/port_hy2" ]; then shuf -i 10000-65535 -n 1 > "$AGSBX/port_hy2"; fi
+    port_hy2=$(cat "$AGSBX/port_hy2")
+    if [ -e "$AGSBX/xr.json" ]; then
+        cat >> "$AGSBX/xr.json" <<EOF
+    {
+      "tag": "hy2-xr", "listen": "::", "port": ${port_hy2},
+      "protocol": "hysteria",
+      "settings": {"version": 2, "clients": [{"auth": "${uuid}"}]},
+      "streamSettings": {
+        "network": "hysteria", "security": "tls",
+        "tlsSettings": {"alpn": ["h3"], "certificates": [{"certificateFile": "$(_agsbx_json_string "$AGSBX/cert.crt")", "keyFile": "$(_agsbx_json_string "$AGSBX/private.key")"}]}
+      }
+    },
+EOF
+    else
+        cat >> "$AGSBX/sb.json" <<EOF
+    {
+      "type": "hysteria2", "tag": "hy2_sb", "listen": "::", "listen_port": ${port_hy2},
+      "users": [{"password": "${uuid}"}], "ignore_client_bandwidth": false,
+      "tls": {"enabled": true, "alpn": ["h3"], "certificate_path": "$(_agsbx_json_string "$AGSBX/cert.crt")", "key_path": "$(_agsbx_json_string "$AGSBX/private.key")"}
+    },
+EOF
+    fi
+}
+share_xhttp_tls_link(){ # uuid host public_port sni kind alpn optional_hex_cert_pin name
+    _xl_sni=$(printf '%s' "$4" | _share_urlencode)
+    _xl_name=$(printf '%s' "$8" | _share_urlencode)
+    printf 'vless://%s@%s:%s?encryption=none&security=tls&sni=%s&host=%s&type=xhttp&path=%%2F%s-%s&mode=auto&alpn=%s&insecure=0&allowInsecure=0%s#%s\n' "$1" "$2" "$3" "$_xl_sni" "$_xl_sni" "$1" "$5" "$6" "${7:+&pcs=$7}" "$_xl_name"
+}
+
 # =============================================================================
 # SECTION 4: installxray - Xray内核配置生成(仅Xray协议)
 # 功能:
@@ -711,7 +861,7 @@ public_key_x=$(cat "$AGSBX/xrk/public_key")
 short_id_x=$(cat "$AGSBX/xrk/short_id")
 fi
 
-if [ -n "$port_vl_re_enc" ] || [ -n "$port_xh_enc" ] || [ -n "$port_vx_enc" ] || [ -n "$port_vw_enc" ] || [ "$vlpt_enc" = "y" ] || [ "$xhpt_enc" = "y" ] || [ "$vxpt_enc" = "y" ] || [ "$vwpt_enc" = "y" ]; then
+if _agsbx_enc_enabled "$port_vl_re_enc" || _agsbx_enc_enabled "$port_xh_enc" || _agsbx_enc_enabled "$port_vx_enc" || _agsbx_enc_enabled "$port_vw_enc"; then
 if [ ! -e "$AGSBX/xrk/dekey" ]; then
 vlkey=$("$AGSBX/xray" vlessenc)
 dekey=$(echo "$vlkey" | grep '"decryption":' | sed -n '2p' | cut -d' ' -f2- | tr -d '"')
@@ -733,7 +883,7 @@ echo "$port_xh" > "$AGSBX/port_xh"
 fi
 port_xh=$(cat "$AGSBX/port_xh")
 echo "Vless-xhttp-reality端口：$port_xh"
-if [ -n "$port_xh_enc" ]; then
+if _agsbx_enc_enabled "$port_xh_enc"; then
 dec_xh="$dekey"
 else
 dec_xh="none"
@@ -795,7 +945,7 @@ if [ -n "$cdnym" ]; then
 echo "$cdnym" > "$AGSBX/cdnym"
 echo "80系CDN或者回源CDN的host域名 (确保IP已解析在CF域名)：$cdnym"
 fi
-if [ -n "$port_vx_enc" ]; then
+if _agsbx_enc_enabled "$port_vx_enc"; then
 dec_vx="$dekey"
 else
 dec_vx="none"
@@ -843,7 +993,7 @@ echo "$port_vl_re" > "$AGSBX/port_vl_re"
 fi
 port_vl_re=$(cat "$AGSBX/port_vl_re")
 echo "Vless-tcp-reality-v端口：$port_vl_re"
-if [ -n "$port_vl_re_enc" ]; then
+if _agsbx_enc_enabled "$port_vl_re_enc"; then
 dec_vl="$dekey"
 else
 dec_vl="none"
@@ -886,6 +1036,17 @@ EOF
 else
 vlp=vlptargo
 fi
+if [ "$xup" = yes ] || [ "$xcp" = yes ]; then
+    _agsbx_tls_setup || exit 1
+    for _xt_kind in xu xc; do
+        case "$_xt_kind" in xu) [ "$xup" = yes ] || continue; _xt_port=$port_xu; _xt_alpn='"h3"';; xc) [ "$xcp" = yes ] || continue; _xt_port=$port_xc; _xt_alpn='"h2","http/1.1"';; esac
+        if [ -n "$_xt_port" ]; then echo "$_xt_port" > "$AGSBX/port_$_xt_kind"; fi
+        if [ ! -e "$AGSBX/port_$_xt_kind" ]; then shuf -i 10000-65535 -n 1 > "$AGSBX/port_$_xt_kind"; fi
+        _xt_port=$(cat "$AGSBX/port_$_xt_kind")
+        _agsbx_xhttp_tls "$_xt_kind" "$_xt_port" "$_xt_alpn"
+    done
+fi
+
 }
 
 # =============================================================================
@@ -922,66 +1083,8 @@ cat > "$AGSBX/sb.json" <<EOF
   "inbounds": [
 EOF
 insuuid
-# 证书去重：SHA256.txt 存在则跳过生成（保证客户端 pinSHA256 指纹稳定不变）
-# 确保 openssl 存在（多发行版，apk 需先 update）
-if [ ! -f "$AGSBX/SHA256.txt" ]; then
-	if ! command -v openssl >/dev/null 2>&1; then
-		command -v apk     >/dev/null 2>&1 && { apk update >/dev/null 2>&1; apk add --no-cache openssl >/dev/null 2>&1; }
-		command -v apt-get >/dev/null 2>&1 && { apt-get update >/dev/null 2>&1; DEBIAN_FRONTEND=noninteractive apt-get install -y openssl >/dev/null 2>&1; }
-		command -v dnf     >/dev/null 2>&1 && dnf install -y openssl >/dev/null 2>&1
-		command -v yum     >/dev/null 2>&1 && yum install -y openssl >/dev/null 2>&1
-	fi
-	# 一步生成匹配的 key+cert (ECC P-256)
-	if command -v openssl >/dev/null 2>&1; then
-		openssl ecparam -genkey -name prime256v1 -out "$AGSBX/private.key" >/dev/null 2>&1
-		openssl req -new -x509 -days 36500 -key "$AGSBX/private.key" -out "$AGSBX/cert.crt" -subj "/CN=www.bing.com" -addext "subjectAltName=DNS:www.bing.com" >/dev/null 2>&1
-	fi
-	# 内容校验 + SHA256 指纹计算
-	if ! grep -q "BEGIN CERTIFICATE" "$AGSBX/cert.crt" 2>/dev/null; then
-		echo "ERROR: 自签证书生成失败（openssl 不可用？）。请在 VPS 手动安装 openssl 后重装。"
-		exit 1
-	fi
-	SHA256=$(openssl x509 -in "$AGSBX/cert.crt" -outform DER | sha256sum | awk '{print $1}')
-	echo "$SHA256" > "$AGSBX/SHA256.txt"
-	# sing-box certificate_public_key_sha256: 公钥 SHA256 base64 (兼容 NekoBox/sing-box GUI 等客户端)
-	PUBKEY_SHA256_B64=$(openssl x509 -in "$AGSBX/cert.crt" -pubkey -noout 2>/dev/null | openssl pkey -pubin -outform der 2>/dev/null | openssl dgst -sha256 -binary | openssl enc -base64)
-	echo "$PUBKEY_SHA256_B64" > "$AGSBX/PUBKEY_SHA256_B64.txt"
-fi
-if [ -n "$hyp" ]; then
-hyp=hypt
-if [ -z "$port_hy2" ] && [ ! -e "$AGSBX/port_hy2" ]; then
-port_hy2=$(shuf -i 10000-65535 -n 1)
-echo "$port_hy2" > "$AGSBX/port_hy2"
-elif [ -n "$port_hy2" ]; then
-echo "$port_hy2" > "$AGSBX/port_hy2"
-fi
-port_hy2=$(cat "$AGSBX/port_hy2")
-echo "Hysteria2端口：$port_hy2"
-cat >> "$AGSBX/sb.json" <<EOF
-    {
-        "type": "hysteria2",
-        "tag": "hy2_sb",
-        "listen": "::",
-        "listen_port": ${port_hy2},
-        "users": [
-            {
-                "password": "${uuid}"
-            }
-        ],
-        "ignore_client_bandwidth":false,
-        "tls": {
-            "enabled": true,
-            "alpn": [
-                "h3"
-            ],
-            "certificate_path": "$AGSBX/cert.crt",
-            "key_path": "$AGSBX/private.key"
-        }
-    },
-EOF
-else
-hyp=hyptargo
-fi
+_agsbx_cert_ensure || exit 1
+
 if [ -n "$tup" ]; then
 tup=tupt
 if [ -z "$port_tu" ] && [ ! -e "$AGSBX/port_tu" ]; then
@@ -1236,11 +1339,11 @@ if [ -n "$cdnym" ]; then
 echo "$cdnym" > "$AGSBX/cdnym"
 echo "80系CDN或者回源CDN的host域名 (确保IP已解析在CF域名)：$cdnym"
 fi
-if [ -n "$port_vw_enc" ] && [ ! -e "$AGSBX/xr.json" ]; then
+if _agsbx_enc_enabled "$port_vw_enc" && [ ! -e "$AGSBX/xr.json" ]; then
 installxray
 fi
 if [ -e "$AGSBX/xr.json" ]; then
-if [ -n "$port_vw_enc" ]; then
+if _agsbx_enc_enabled "$port_vw_enc"; then
 dec_vw="$dekey"
 else
 dec_vw="none"
@@ -1441,6 +1544,11 @@ cat >> "$AGSBX/xr.json" <<EOF
   }
 }
 EOF
+if ! "$AGSBX/xray" run -test -c "$AGSBX/xr.json" > "$AGSBX/xray-check.log" 2>&1; then
+    echo "❌ Xray 配置校验失败；旧核心可能不支持 Hy2/HTTP3。请先执行 agsbx upx，再重试部署。详情：$AGSBX/xray-check.log"
+    exit 1
+fi
+
 if pidof systemd >/dev/null 2>&1 && [ "$(id -u)" -eq 0 ]; then
 cat > /etc/systemd/system/xr.service <<EOF
 [Unit]
@@ -1759,50 +1867,15 @@ insnezha(){
 
 ins(){
 _agsbx_log_start
-# =============================================================================
-# 安装模式判断逻辑：
-#   - 情况A: 只启用 Xray 协议 (xhp/vlp/vxp) 且不启用 SB 协议
-#   - 情况B: 只启用 SB 协议 (hyp/tup/anp/arp/ssp/vwp) 且不启用 Xray 协议
-#   - 情况C: 混合模式 (同时启用两边协议)
-# 说明: VLESS-WS 和 VMess-WS 现在可以跟随 Sing-box 单独运行
-# 特殊: 如果 XRAY_FORCE_MODE=1，强制使用 Xray 模式
-# =============================================================================
-if [ "$XRAY_FORCE_MODE" = 1 ]; then
-# 强制Xray模式 (容器环境不支持 Sing-box)
-installxray
+# Choose cores before injecting the automatic protocols; stale JSON must not steer rep.
+_agsbx_core_plan
+if [ "$NEED_XRAY" = 1 ]; then installxray; else rm -f "$AGSBX/xr.json"; fi
+if [ "$NEED_SB" = 1 ]; then installsb; else rm -f "$AGSBX/sb.json"; fi
+xrsbhy2
 xrsbvm
 xrsbso
 warpsx
 xrsbout
-hyp="hyptargo"; tup="tuptargo"; anp="anptargo"; arp="arptargo"; ssp="ssptargo"; vwp="vwptargo"
-elif [ "$hyp" != yes ] && [ "$tup" != yes ] && [ "$anp" != yes ] && [ "$arp" != yes ] && [ "$ssp" != yes ]; then
-# 情况A: 无 sing-box 专属协议 → 纯Xray模式 (vless-ws/vmess-ws/socks5 等双栖协议改走 Xray，不依赖 netlink，容器友好)
-installxray
-xrsbvm
-xrsbso
-warpsx
-xrsbout
-hyp="hyptargo"; tup="tuptargo"; anp="anptargo"; arp="arptargo"; ssp="ssptargo"; vwp="vwptargo"
-elif [ "$xhp" != yes ] && [ "$vlp" != yes ] && [ "$vxp" != yes ]; then
-# 情况B: 纯SB模式 (不启用任何Xray协议，vwp跟随Sing-box)
-installsb
-if [ -n "$port_vw_enc" ]; then
-installxray
-fi
-xrsbvm
-xrsbso
-warpsx
-xrsbout
-xhp="xhptargo"; vlp="vlptargo"; vxp="vxptargo"
-else
-# 情况C: 双核模式 (同时启用Xray和SB协议)
-installsb
-installxray
-xrsbvm
-xrsbso
-warpsx
-xrsbout
-fi
 # 启动Xray内核（如果xr.json存在但Xray未启动）
 if [ -f "$AGSBX/xr.json" ]; then
 if ! find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null | grep -q 'agsbx/x' && ! pgrep -f 'agsbx/x' >/dev/null 2>&1; then
@@ -2146,7 +2219,7 @@ else
 		tail -25 "$AGSBX/sing-box.log" 2>/dev/null
 		if grep -q 'operation not supported' "$AGSBX/sing-box.log" 2>/dev/null; then
 			echo "⚠️ 该容器不支持 sing-box 网络监控(netlink route 订阅)，故 sing-box 专属协议无法运行。"
-			echo "   解决：请勿启用 hypt/tupt/anpt/arpt/sspt；改用 vless-ws/vmess-ws/reality/socks5 等 Xray 协议(不受影响)。"
+			echo "   解决：请勿启用 tupt/anpt/arpt/sspt；改用 vless-ws/vmess-ws/reality/socks5 等 Xray 协议(不受影响)。"
 		fi
 	fi
 	if [ -f "$AGSBX/xray.log" ]; then
@@ -2338,16 +2411,45 @@ short_id_s=$(cat "$AGSBX/sbk/short_id" 2>/dev/null)
 sskey=$(cat "$AGSBX/sskey" 2>/dev/null)
 fi
 
+# XHTTP TLS: UDP direct is xu/h3; xc is TCP origin, optional HTTP/3 at CDN edge.
+_xl_sni=$(cat "$AGSBX/xhttp_tls_sni" 2>/dev/null)
+_xl_trusted=$(cat "$AGSBX/xhttp_tls_trusted" 2>/dev/null)
+_xl_cert=$(cat "$AGSBX/xhttp_tls_cert" 2>/dev/null)
+for _xl_kind in xu xc; do
+    grep -q "xhttp-tls-$_xl_kind" "$AGSBX/xr.json" 2>/dev/null || continue
+    _xl_port=$(cat "$AGSBX/port_$_xl_kind")
+    case "$_xl_kind" in xu) _xl_port=${port_xu_ext:-$_xl_port}; _xl_alpn=h3;; xc) _xl_port=${port_xc_ext:-$_xl_port}; _xl_alpn=h2;; esac
+    _xl_pin=''
+    if [ "$_xl_trusted" != 1 ]; then
+        _xl_pin=$(openssl x509 -in "$_xl_cert" -outform DER 2>/dev/null | sha256sum | awk '{print $1}')
+    fi
+    _xl_link=$(share_xhttp_tls_link "$uuid" "$server_ip" "$_xl_port" "$_xl_sni" "$_xl_kind" "$_xl_alpn" "$_xl_pin" "${sxname}${country}_xhttp_tls_${_xl_kind}_$hostname")
+    _share_append "$_xl_link"
+    printf '%s\n' "$_xl_link"
+    # Public domain certificate, explicit CDN hostname and a supported PUBLIC edge port.
+    if [ "$_xl_kind" = xc ] && [ "$_xl_trusted" = 1 ] && [ -n "$xvvmcdnym" ]; then
+        case "$_xl_port" in 443|2053|2083|2087|2096|8443)
+                if openssl verify -partial_chain -trusted "$_xl_cert" -verify_hostname "$xvvmcdnym" "$_xl_cert" >/dev/null 2>&1; then
+                for _xl_alpn in h2 h3; do
+                    _xl_ips=$preferred_ips
+                    [ -n "$argoip" ] || _xl_ips=$xvvmcdnym
+                    for ip in $_xl_ips; do
+                        _xl_link=$(share_xhttp_tls_link "$uuid" "$ip" "$_xl_port" "$xvvmcdnym" xc "$_xl_alpn" '' "${sxname}${country}_xhttp_cdn_${_xl_alpn}_$hostname")
+                        _share_append "$_xl_link"; printf '%s\n' "$_xl_link"
+                    done
+                done
+            fi;;
+        esac
+    fi
+done
+
 # Vless-xhttp-reality with ENC
 if grep xhttp-reality "$AGSBX/xr.json" >/dev/null 2>&1; then
 echo "💣【 Vless-xhttp-reality 】节点信息如下："
 port_xh=$(cat "$AGSBX/port_xh")
 display_port_xh="${port_xh_ext:-${port_xh}}"
-if [ -n "$port_xh_enc" ]; then
-vl_xh_link="vless://$uuid@$server_ip:$display_port_xh?encryption=$enkey&security=reality&sni=$ym_vl_re&fp=chrome&pbk=$public_key_x&sid=$short_id_x&type=xhttp&path=/xhttp&mode=auto#${sxname}${country}_vl_xhttp_reality_$hostname"
-else
-vl_xh_link="vless://$uuid@$server_ip:$display_port_xh?encryption=none&security=reality&sni=$ym_vl_re&fp=chrome&pbk=$public_key_x&sid=$short_id_x&type=xhttp&path=/xhttp&mode=auto#${sxname}${country}_vl_xhttp_reality_$hostname"
-fi
+effective_encryption=$(_agsbx_vless_encryption "xhttp-reality")
+vl_xh_link="vless://$uuid@$server_ip:$display_port_xh?encryption=$effective_encryption&security=reality&sni=$ym_vl_re&fp=chrome&pbk=$public_key_x&sid=$short_id_x&type=xhttp&path=/xhttp&mode=auto#${sxname}${country}_vl_xhttp_reality_$hostname"
 _share_append "$vl_xh_link"
 echo "$vl_xh_link"
 echo
@@ -2358,11 +2460,8 @@ if grep vless-xhttp "$AGSBX/xr.json" >/dev/null 2>&1; then
 echo "💣【 Vless-xhttp 】节点信息如下："
 port_vx=$(cat "$AGSBX/port_vx")
 display_port_vx="${port_vx_ext:-${port_vx}}"
-if [ -n "$port_vx_enc" ]; then
-vl_vx_link="vless://$uuid@$server_ip:$display_port_vx?encryption=$enkey&type=xhttp&path=/xhttp&mode=auto#${sxname}${country}_vl_xhttp_$hostname"
-else
-vl_vx_link="vless://$uuid@$server_ip:$display_port_vx?encryption=none&type=xhttp&path=/xhttp&mode=auto#${sxname}${country}_vl_xhttp_$hostname"
-fi
+effective_encryption=$(_agsbx_vless_encryption "vless-xhttp")
+vl_vx_link="vless://$uuid@$server_ip:$display_port_vx?encryption=$effective_encryption&type=xhttp&path=/xhttp&mode=auto#${sxname}${country}_vl_xhttp_$hostname"
 _share_append "$vl_vx_link"
 echo "$vl_vx_link"
 echo
@@ -2373,7 +2472,7 @@ idx=1
 for ip in $preferred_ips; do
   ip_suffix=""
   [ "$ip_count" -gt 1 ] && ip_suffix="-$idx"
-  if [ -n "$port_vx_enc" ]; then
+  if [ "$effective_encryption" != none ]; then
 vl_vx_cdn_link="vless://$uuid@$ip:$display_port_vx?encryption=$enkey&type=xhttp&host=$xvvmcdnym&path=/xhttp&mode=auto#${sxname}${country}_vl_xhttp_cdn_${hostname}${ip_suffix}"
 else
 vl_vx_cdn_link="vless://$uuid@$ip:$display_port_vx?encryption=none&type=xhttp&host=$xvvmcdnym&path=/xhttp&mode=auto#${sxname}${country}_vl_xhttp_cdn_${hostname}${ip_suffix}"
@@ -2391,11 +2490,7 @@ if grep vless-ws "$AGSBX/xr.json" >/dev/null 2>&1 || grep vless-ws-sb "$AGSBX/sb
 echo "💣【 Vless-ws 】节点信息如下："
 port_vw=$(cat "$AGSBX/port_vw")
 display_port_vw="${port_vw_ext:-${port_vw}}"
-if [ -n "$port_vw_enc" ] || [ "$vwpt_enc" = "y" ]; then
-en_vw="$enkey"
-else
-en_vw="none"
-fi
+en_vw=$(_agsbx_vless_encryption "vless-ws-xr")
 vl_vw_link="vless://$uuid@$server_ip:$display_port_vw?encryption=$en_vw&type=ws&path=%2F${uuid}-vw#${sxname}${country}_vl_ws_$hostname"
 _share_append "$vl_vw_link"
 echo "$vl_vw_link"
@@ -2407,7 +2502,7 @@ idx=1
 for ip in $preferred_ips; do
   ip_suffix=""
   [ "$ip_count" -gt 1 ] && ip_suffix="-$idx"
-  if [ -n "$port_vw_enc" ] || [ "$vwpt_enc" = "y" ]; then
+  if [ "$en_vw" != none ]; then
 vl_vw_cdn_link="vless://$uuid@$ip:$display_port_vw?encryption=$en_vw&type=ws&host=$xvvmcdnym&path=%2F${uuid}-vw#${sxname}${country}_vl_ws_cdn_${hostname}${ip_suffix}"
 else
 vl_vw_cdn_link="vless://$uuid@$ip:$display_port_vw?encryption=none&type=ws&host=$xvvmcdnym&path=%2F${uuid}-vw#${sxname}${country}_vl_ws_cdn_${hostname}${ip_suffix}"
@@ -2425,11 +2520,8 @@ if grep reality-vision "$AGSBX/xr.json" >/dev/null 2>&1; then
 echo "💣【 Vless-tcp-reality-vision 】节点信息如下："
 port_vl_re=$(cat "$AGSBX/port_vl_re")
 display_port_vl_re="${port_vl_re_ext:-${port_vl_re}}"
-if [ -n "$port_vl_re_enc" ]; then
-vl_link="vless://$uuid@$server_ip:$display_port_vl_re?encryption=$enkey&security=reality&sni=$ym_vl_re&fp=chrome&pbk=$public_key_x&sid=$short_id_x&type=tcp&headerType=none#${sxname}${country}_vl_reality_vision_$hostname"
-else
-vl_link="vless://$uuid@$server_ip:$display_port_vl_re?encryption=none&security=reality&sni=$ym_vl_re&fp=chrome&pbk=$public_key_x&sid=$short_id_x&type=tcp&headerType=none#${sxname}${country}_vl_reality_vision_$hostname"
-fi
+effective_encryption=$(_agsbx_vless_encryption "reality-vision")
+vl_link="vless://$uuid@$server_ip:$display_port_vl_re?encryption=$effective_encryption&security=reality&sni=$ym_vl_re&fp=chrome&pbk=$public_key_x&sid=$short_id_x&type=tcp&headerType=none#${sxname}${country}_vl_reality_vision_$hostname"
 _share_append "$vl_link"
 echo "$vl_link"
 echo
@@ -2494,7 +2586,7 @@ echo
 fi
 
 # Hysteria2
-if grep hy2_sb "$AGSBX/sb.json" >/dev/null 2>&1; then
+if grep -q hy2_sb "$AGSBX/sb.json" 2>/dev/null || grep -q hy2-xr "$AGSBX/xr.json" 2>/dev/null; then
     echo "💣【 Hysteria2 】节点信息如下："
     port_hy2=$(cat "$AGSBX/port_hy2")
     display_port_hy2="${port_hy2_ext:-${port_hy2}}"
@@ -2595,11 +2687,7 @@ for ip in $argo_addrs; do
 done
 
 elif [ "$vlvm" = "Vless" ]; then
-if [ -n "$port_vw_enc" ] || [ "$vwpt_enc" = "y" ]; then
-en_vw="$enkey"
-else
-en_vw="none"
-fi
+en_vw=$(_agsbx_vless_encryption "vless-ws-xr")
 echo "1、💣443端口的Vless-ws-tls-argo节点"
 idx=1
 for ip in $argo_addrs; do
@@ -3017,7 +3105,9 @@ showmode
 exit
 elif [ "$1" = "rep" ]; then
 cleandel
-rm -rf "$AGSBX"/{sb.json,xr.json,sbargoym.log,sbargotoken.log,argo.log,argoport.log,cdnym,name}
+for _reset_file in sb.json xr.json sbargoym.log sbargotoken.log argo.log argoport.log cdnym name; do
+    rm -f "$AGSBX/$_reset_file"
+done
 echo "Argosbx重置协议完成，开始更新相关协议变量……" && sleep 2
 echo
 elif [ "$1" = "list" ]; then

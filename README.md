@@ -74,7 +74,7 @@ Komari 节点的列表 IP 与真实连接来源可能不同，勿隐式信任未
 ### 3、ENC 加密按需启动
 支持 VLESS 协议的 ENC 加密（防止 TLS in TLS 阻断）：
 - **支持协议**：`Vless-tcp-reality-vision`（vlpt）、`Vless-xhttp-reality`（xhpt）、`Vless-xhttp`（vxpt）、`Vless-ws`（vwpt）；
-- **资源解耦**：原版只要涉及 ENC 即强制全量拉起 Xray。新版默认走极轻量的 Sing-box，仅在明确开启 ENC 时才按需调用 Xray 处理加密，内存占用大幅下降。
+- **独立开关**：保留 `vlpt_enc/xhpt_enc/vxpt_enc/vwpt_enc`，赋值 `1` 或 `y` 开启，未开启时使用 `encryption=none`。`vlpt/xhpt/vxpt` 始终由 Xray 运行；Vless-ws 未加密时可随 Sing-box 运行，开启 ENC 时增加 Xray 需求。`agsbx list` 从已安装配置恢复 ENC 状态，避免遗漏环境变量后导出错误链接。
 
 ### 4、Vless-ws 独立运行
 原版中 Vless-ws 必须与 Xray 绑定。新版支持使用 Sing-box 独立运行 Vless-ws，按需启用，不强制依赖 Xray。
@@ -138,6 +138,36 @@ Ubuntu amd64 的 `qrencode` 程序和 `libqrencode4` 软件包安装体积合计
 
 项目文件中的 [share.html](share.html)、[分享逻辑](assets/share.js) 与二维码库需一并发布到 GitHub Pages，脚本输出的在线分享页才会生效。
 
+### 9、上游协议接入：XHTTP TLS 与自动 Hy2
+
+对齐 [上游提交 `2c243d7`](https://github.com/yonggekkk/argosbx/commit/2c243d7b07991b05b843efb26465a437ceb5eb22)，保留本地 ENC 独立开关、内外端口分离、证书稳定性及分享功能。
+
+| 协议 / 分组 | 行为 |
+|:---|:---|
+| `xupt`：Vless-xhttp-tls-UDP | Xray，HTTP/3（UDP）直连，默认稳定自签证书 |
+| `xcpt`：Vless-xhttp-tls-TCP/UDP | Xray，TCP 回源；配置域名证书和 CDN 后，客户端至 CDN 可使用 HTTP/3 |
+| `hypt/vmpt/sopt`，以及未加密的 `vwpt` | 本次需要 Xray 时跟随 Xray，否则使用 Sing-box；容器不支持 Sing-box 时回退 Xray |
+| `tupt/anpt/arpt/sspt` | Sing-box 专属；与 Xray 专属协议同选时使用双核 |
+
+**ENC 与 TLS 分开控制**：现有四个 ENC 开关保持独立；新增 `xupt/xcpt` 使用 TLS，VLESS 的 `encryption` 为 `none`。面板中的 Vless-ws 保留在自动组。
+
+**内外端口分开**：`xupt/xcpt` 是服务器监听端口，`xupt_ext/xcpt_ext` 是节点链接使用的公网端口；外部端口未指定时使用内部端口。映射保存至安装目录，后续 `agsbx list` 自动回读。脚本不自动建立商家的 NAT 映射，Argo 回源继续使用内部端口。
+
+```bash
+# 公网 UDP 22443 → 本机 UDP 10443；映射由服务商或宿主机配置
+xupt="10443" xupt_ext="22443" ./argosbx.sh
+
+# 自备可验证的域名证书，公网 TCP 8443 → 本机 TCP 10444
+xcpt="10444" xcpt_ext="8443" tls_cert="/etc/ssl/example/fullchain.pem" \
+  tls_key="/etc/ssl/example/privkey.pem" tls_sni="example.com" ./argosbx.sh
+```
+
+自定义 XHTTP TLS 在面板的「连接与节点 → XHTTP TLS 证书与 CDN」中填写。证书、私钥及 SNI 必须同时提供并匹配；仅影响新增 XHTTP TLS 协议，Hy2/TUIC 继续使用原有稳定证书与分享格式。自签 XHTTP 链接携带 Xray 的 `pcs` 整证书 SHA256 指纹，客户端需支持该参数，或手动配置证书信任；其它协议的 iOS 兼容规则保持原样。
+
+`xcpt` 的 CDN HTTP/3 需要：域名及受信任的域名证书、CDN HTTPS 端口（443、2053、2083、2087、2096、8443）、正确的 TCP 回源映射，以及 CDN 开启 HTTP/3。填写 `cdnym` 和 `argoip` 后满足证书及端口条件才生成 CDN 节点。**它不在服务器上直接监听 UDP；UDP 直连请选 `xupt`。** 私有 CA / 自签证书不适合直接套用 CDN 严格回源验证。
+
+启动前执行 Xray 配置校验。旧核心不支持 Hy2/HTTP3 时会中止并提示先执行 `agsbx upx`，校验详情保存到安装目录的 `xray-check.log`。
+
 ---
 
 ## 命令生成器的配置与部署
@@ -188,6 +218,8 @@ python3 -m http.server 8765 --bind 127.0.0.1 --directory /home/zv/github/argosbx
 | 分类 | 核心变量 | 常用取值与示例 | 说明 |
 |:---|:---|:---|:---|
 | **常用协议端口** | `vlpt` / `xhpt` / `vxpt` / `vwpt` | `"443"` 或 `""` | Vless 家族（支持对应 `_enc` 开启加密） |
+| | `xupt` / `xcpt` | `"10443"` / `"10444"` | XHTTP TLS：UDP 直连 / TCP 回源与 CDN HTTP/3 |
+| | `xupt_ext` / `xcpt_ext` | `"22443"` / `"8443"` | 公网映射端口，持久化回读 |
 | | `hypt` / `hyjpt` | `hypt="443"` `hyjpt="20000:30000"` | Hysteria2 及其 UDP 端口跳跃 |
 | | `tupt` / `sspt` / `vmpt` | `"443"` / `"8388"` / `"8080"` | Tuic / Shadowsocks-2022 / Vmess |
 | **网络与出站** | `ippz` | `""`（默认IPv4）或 `"6"`（IPv6优先） | 切换节点 Address 地址策略 |
@@ -218,10 +250,10 @@ python3 -m http.server 8765 --bind 127.0.0.1 --directory /home/zv/github/argosbx
 ### 临时切换节点地址显示（Address）
 无需重新配置脚本，通过在命令前传入环境变量即可即时输出不同协议族的节点链接：
 ```bash
-ippz=6 agsbx list    # 切换为 IPv6 优先展示（有效避开 NAT VPS 端口映射冲突）
+ippz=6 agsbx list    # 切换为 IPv6 优先展示（切换地址，端口仍遵循外部端口优先规则）
 ippz=4 agsbx list    # 恢复为 IPv4 优先展示
 ```
-> 💡 **使用场景**：在双栈但 IPv4 存在服务商端口映射（外部端口与容器内部端口不一致）的机器上，使用 `ippz=6` 可直接通过 IPv6 直连内网端口，彻底解决 AnyTLS / SS-2022 握手失败问题。详见 [DOCS.md 双栈场景实战](DOCS.md#六双栈-vps-与-nat-端口映射实战ippz-变量)。
+> 💡 `ippz` 只切换地址，不自动切换端口；IPv6 直连且无需 NAT 时，须核对输出端口是否等于内部监听端口。已保存外部端口时，可临时传入同名 `*_ext` 的内部端口值，但会更新该记录；恢复 IPv4 NAT 使用前须重新传回公网映射值。详见 [DOCS.md 双栈与 NAT 端口说明](DOCS.md#六双栈-vps-与-nat-端口映射实战ippz-变量)。
 
 ---
 
